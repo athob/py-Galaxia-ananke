@@ -67,7 +67,8 @@ def check_galaxia_submodule(root_dir):
 
 
 def remove_existing_galaxia():
-    shutil.rmtree(CACHE)
+    if CACHE.is_dir():
+        shutil.rmtree(CACHE)
 
 
 def configure_galaxia(galaxia_dir):
