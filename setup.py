@@ -9,8 +9,8 @@ from distutils.cmd import Command
 from distutils.core import setup
 
 from src._build_utils import *
-from src.Galaxia.constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
-from src.Galaxia.__metadata__ import *
+from src.constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
+from src.__metadata__ import *
 
 ROOT_DIR = pathlib.Path(__file__).parent
 

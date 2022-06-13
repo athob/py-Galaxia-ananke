@@ -9,7 +9,7 @@ import subprocess
 import urllib.request
 from distutils.errors import CompileError
 
-from .Galaxia.constants import *
+from .constants import *
 
 __all__ = ['say', 'all_files', 'download_galaxia', 'check_galaxia_submodule', 'build_and_install_galaxia']
 
