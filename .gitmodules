@@ -1,0 +1,3 @@
+[submodule "galaxia"]
+	path = galaxia
+	url = git@github.com:athob/galaxia.git
