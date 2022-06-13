@@ -62,8 +62,7 @@ def download_galaxia(galaxia_dir):
 def check_galaxia_submodule(root_dir):
     if not pathlib.os.listdir(GALAXIA_SUBMODULE_NAME):
         say("\nEmpty submodule Galaxia, running git...")
-        subprocess.call(['git', 'submodule', 'init'], cwd=root_dir)
-        subprocess.call(['git', 'submodule', 'update'], cwd=root_dir)
+        subprocess.call(['git', 'submodule', 'update', '--init'], cwd=root_dir)
 
 
 def remove_existing_galaxia():
