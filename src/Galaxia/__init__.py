@@ -13,10 +13,10 @@ from .constants import *
 __all__ = []
 
 
-def write_kernel_for_galaxia(masses, rho_pos, rho_vel=None, name='.', knorm=0.596831, ngb=64):
+def write_kernel_for_galaxia(masses, rho_pos, rho_vel, name, knorm, ngb=64):
     kernels = np.vstack([np.sqrt(ngb) * knorm / np.cbrt(rho_pos),
-                         np.sqrt(ngb) * knorm / np.cbrt(rho_vel)]).T  # TODO what if rho_vel = None
-    kname = f"{name}_d{[6, 3][rho_vel is None]}n{ngb}_den.ebf"
+                         np.sqrt(ngb) * knorm / np.cbrt(rho_vel)]).T  # TODO what if rho_vel is None
+    kname = GALAXIA_TMP / f"{name}_d{[6, 3][rho_vel is None]}n{ngb}_den.ebf"
     ebf.initialize(kname)
     ebf.write(kname, '/density', rho_pos, "a")
     ebf.write(kname, '/h_cubic', kernels, "a")
@@ -24,8 +24,8 @@ def write_kernel_for_galaxia(masses, rho_pos, rho_vel=None, name='.', knorm=0.59
     return pathlib.Path(kname)
 
 
-def write_particles_for_galaxia(particles, name='.'):
-    pname = f"{name}.ebf"
+def write_particles_for_galaxia(particles, name):
+    pname = GALAXIA_TMP / f"{name}.ebf"
     ebf.initialize(pname)
     for key in particles.keys():
         ebf.write(pname, '/' + key, particles[key], 'a')
@@ -36,50 +36,60 @@ def write_particles_for_galaxia(particles, name='.'):
 
 def make_symlink(file_path, dest_dir):
     file_path = pathlib.Path(file_path).resolve()
-    symlink_pname = dest_dir / file_path.name
+    symlink_name = dest_dir / file_path.name
     try:
-        symlink_pname.unlink()
+        symlink_name.unlink()
     except FileNotFoundError:
         pass
-    symlink_pname.symlink_to(file_path)
+    symlink_name.symlink_to(file_path)
 
 
-def prepare_galaxia_input_files(kname, pname):
-    temp_name = 'temp'
-    temp_dir = GALAXIA_NBODY1 / temp_name
+def prepare_galaxia_input_files(particles, rho_pos, rho_vel, simname, ngb, **kwargs):
+    masses = particles['mass']  # TODO not really a good design
+    knorm = kwargs.pop('knorm', 0.596831)
+    kname = write_kernel_for_galaxia(masses, rho_pos, rho_vel, simname, knorm, ngb)
+    pname = write_particles_for_galaxia(particles, simname)
+    temp_dir = GALAXIA_NBODY1 / simname
     temp_dir.mkdir(parents=True, exist_ok=True)
     make_symlink(kname, temp_dir)
     make_symlink(pname, temp_dir)
-    (GALAXIA_FILENAMES / temp_name).with_suffix('.txt').write_text(FILENAME_TEMPLATE.substitute(name=temp_name,
-                                                                                                pname=pname.name))
-    return temp_name
+    temp_filename = (GALAXIA_FILENAMES / simname).with_suffix('.txt')
+    temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=simname, pname=pname.name))
+    parfile = pathlib.Path(kwargs.pop('parfile', 'survey_params'))  # TODO make temporary? create a global record of temporary files?
+    if not parfile.is_absolute():
+        parfile = GALAXIA_TMP / parfile
+    parfile.write_text(PARFILE_TEMPLATE.substitute(DEFAULTS_FOR_PARFILE, nres=ngb, **kwargs))
+    #                                             output_file=surveyname, fsample=fsample))
+    return simname, parfile
 
 
-def ebf_to_hdf5(name):
-    # list of keys to export to hdf5 - don't fiddle with these unless you know what you're doing
-    data = ebf.read(f"{name}.ebf")
-    f = h5.File(f"{name}.hdf5", 'w')
-    for k in EXPORT_KEYS:
-        f.create_dataset(name=k, data=data[k])
-    print(f"Exported the following quantities to {name}.hdf5")
-    print(list(f.keys()))
-    f.close()
+def ebf_to_hdf5(ebf_file):
+    hdf5_file = ebf_file.with_suffix('.hdf5')
+    data = ebf.read(ebf_file)
+    with h5.File(hdf5_file, 'w') as f5:
+        for k in EXPORT_KEYS:
+            f5.create_dataset(name=k, data=data[k])
+        print(f"Exported the following quantities to {hdf5_file}")
+        print(list(f5.keys()))
+    return hdf5_file
 
 
-def make_survey(simname, surveyname, fsample=1, hdim=None, ngb=64, photo_sys='WFIRST', parfile='survey_params'):
-    with open(parfile, 'w') as f:
-        f.write(PARFILE_TEMPLATE.substitute(DEFAULTS_FOR_PARFILE,
-                                            nres=ngb,
-                                            surveyname=surveyname, fsample=fsample))
+def run_galaxia_on_input(simname, parfile, photo_sys, surveyname, hdim=None):
+    surveyname_base = GALAXIA_TMP / f"{surveyname}.{simname}"
+    ebf_output_file = surveyname_base.parent / (surveyname_base.name + '.ebf')
     cmd = f"{GALAXIA} -r{(' --hdim=' + str(hdim) if hdim is not None else '')} --nfile={simname} {parfile}"
     print(cmd)
     subprocess.call(cmd.split(' '))
-    surveyname_full = f"{surveyname}.{simname}.ebf"
-    cmd = f"{GALAXIA} -a --psys={photo_sys} {surveyname_full}"
+    cmd = f"{GALAXIA} -a --psys={photo_sys} {ebf_output_file}"
     print(cmd)
     subprocess.call(cmd.split(' '))
-    surveyname_stem = f"{surveyname}.{simname}"
-    ebf_to_hdf5(surveyname_stem)
+    return ebf_to_hdf5(ebf_output_file)
+
+
+def make_survey_from_particles(particles, rho_pos, rho_vel, photo_sys='WFIRST', simname='sim', surveyname='survey', fsample=1, hdim=None, ngb=64, knorm=0.596831, **kwargs):
+    simname, parfile = prepare_galaxia_input_files(particles, rho_pos, rho_vel, simname, ngb, knorm=knorm, output_file=surveyname, fsample=fsample, **kwargs)
+    hdf5_survey = run_galaxia_on_input(simname, parfile, photo_sys, surveyname, hdim=hdim)
+    return hdf5_survey
 
 
 if __name__ == '__main__':
