@@ -33,6 +33,7 @@ GALAXIA = CACHE / BIN_DIR / GALAXIA_EXEC
 FILENAME_TEMPLATE = Template(NBODY1+"/${name}/\n\t1\t1\n${pname}\n")  # TODO Template can't work for N>1 files
 PARFILE_TEMPLATE = Template("""outputFile\t${output_file}\t#don't fiddle
 outputDir\t${output_dir}\t#where to output the survey
+photoCateg\t${photo_categ}\t#name of folder where to select magnitude system
 photoSys\t${photo_sys}\t#magnitude system (see ananke-for-wings/GalaxiaData/Isochrones/padova/ for options)
 magcolorNames\t${mag_color_names}\t#magnitude and color to use for selecting the CMD box
 appMagLimits[0]\t${app_mag_lim_lo}\t#upper and lower limits in apparent mag
@@ -65,6 +66,7 @@ vSun[2]\t${vSun2}
 DEFAULTS_FOR_PARFILE = {
     # 'output_file': ,  # TODO use temporary file
     'output_dir': GALAXIA_TMP,
+    'photo_categ': 'padova',
     'photo_sys': 'WFIRST-HST',  # TODO should it have a default value?
     'mag_color_names': 'F814W,F555W-F814W',  # TODO as above?
     'app_mag_lim_lo': -1000,
