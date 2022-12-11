@@ -39,8 +39,7 @@ class IsochroneFile:
             data = ascii.core.Table.from_pandas(data)
         elif not isinstance(data, ascii.core.Table):
             raise ValueError("Given data should either be a pandas DataFrame or an astropy Table")
-        # TODO check dataframe order here?
-        data.write(self.path, format='ascii.commented_header')
+        data.sort_values(by=[self.isochrone._Age, self.isochrone._M_ini]).write(self.path, format='ascii.commented_header')
 
     def _open(self, *args, **kwargs):
         return open(self._path, *args, **kwargs)
