@@ -46,8 +46,14 @@ class Isochrone:
             _temp = IsochroneFile(path, iso[iso_column_order], isochrone=self)
 
     def _write_file_descriptor(self, isochrone_data):
-        # TODO check [0.0001,0.0002,0.0004,0.0005,0.0006,0.0007,0.0008,0.0009,0.001,0.0012,0.0014,0.0016,0.0018,0.002,0.0022,0.0024,0.0026,0.003,0.0034,0.004,0.005,0.006,0.007,0.008,0.009,0.01,0.012,0.014,0.016,0.018,0.02,0.024,0.028,0.03]
-        headers = [list(iso.keys()) for feh, iso in isochrone_data.items()]
+        metallicities, headers = zip(*[(feh, list(iso.keys())) for feh, iso in isochrone_data.items()])
+        metallicities = set(metallicities)
+        if metallicities != ISO_REQUI_METAL:
+            missing = ISO_REQUI_METAL.difference(metallicities)
+            missing = f"misses {missing}" if missing else ""
+            extra = metallicities.difference(ISO_REQUI_METAL)
+            extra = f"misincludes {extra}" if extra else ""
+            raise ValueError(f"Given isochrone data covers wrong set of metallicities: {missing}{' & ' if missing and extra else ''}{extra}")
         check = []
         for header in headers:
             if header not in check: check.append(header)
