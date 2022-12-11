@@ -7,6 +7,7 @@ import shutil
 import sys
 import subprocess
 import urllib.request
+import tempfile
 from distutils.errors import CompileError
 
 from .constants import *
@@ -65,8 +66,9 @@ def check_galaxia_submodule(root_dir):
         subprocess.call(['git', 'submodule', 'update', '--init'], cwd=root_dir)
 
 
-def remove_existing_galaxia():
+def remove_existing_galaxia(temp_photocat):
     if CACHE.is_dir():
+        (ISOCHRONES_PATH / CUSTOM_PHOTOCAT).rename(temp_photocat)
         shutil.rmtree(CACHE)
 
 
@@ -97,9 +99,16 @@ def make_distclean_galaxia(galaxia_dir):
                         cwd=galaxia_dir, stdout=f, stderr=f)
 
 
+def clean_up_temporary(temp_photocat):
+    if temp_photocat.is_dir():
+        temp_photocat.rename(ISOCHRONES_PATH / CUSTOM_PHOTOCAT)
+
+
 def build_and_install_galaxia(galaxia_dir):
     galaxia_dir = pathlib.Path(galaxia_dir).resolve()
-    remove_existing_galaxia()
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_photocat = pathlib.Path(temp_dir.name) / CUSTOM_PHOTOCAT
+    remove_existing_galaxia(temp_photocat)
     say("\nBuilding Galaxia")
     GALAXIA.parent.mkdir(parents=True, exist_ok=True)
     GALAXIA_LOG.mkdir(parents=True, exist_ok=True)
@@ -111,4 +120,6 @@ def build_and_install_galaxia(galaxia_dir):
     make_install_galaxia(galaxia_dir)
     say("\n\tRunning make distclean")
     make_distclean_galaxia(galaxia_dir)
+    say("\n\tCleaning temporary")
+    clean_up_temporary(temp_photocat)
     say("\n")

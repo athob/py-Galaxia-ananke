@@ -5,7 +5,7 @@ Package parameters
 import pathlib
 from string import Template
 
-__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'CACHE', 'EXPORT_KEYS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
+__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'ISO_FILE_DESCRI', 'ISO_FILE_FORMAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'EXPORT_KEYS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
 
 NAME = 'Galaxia'
 GALAXIA_SUBMODULE_NAME = 'galaxia'
@@ -19,6 +19,13 @@ GALDATA_DIR = 'GalaxiaData'
 
 NBODY1 = 'nbody1'
 FILENAMES = 'filenames'
+LEGACY_PHOTOCAT = 'padova'
+CUSTOM_PHOTOCAT = 'py_custom'
+ISO_FILE_DESCRI = "IsoFileDescriptor.txt"
+ISO_FILE_FORMAT = "output_{}.dat"
+
+DEFAULT_PSYS = [f"{CUSTOM_PHOTOCAT}/Test",'padova/WFIRST']
+DEFAULT_CMD = 'F814W,F555W-F814W'
 
 GLOBAL_CACHE = '~/.cache'  # TODO must adapt to OS
 
@@ -29,6 +36,8 @@ GALAXIA_FILENAMES = GALAXIA_NBODY1 / FILENAMES
 GALAXIA_LOG = CACHE / LOG_DIR
 GALAXIA_TMP = pathlib.Path.cwd()  # CACHE / TMP_DIR   # TODO use temporary directory
 GALAXIA = CACHE / BIN_DIR / GALAXIA_EXEC
+
+ISOCHRONES_PATH = GALAXIA_DATA / 'Isochrones'
 
 FILENAME_TEMPLATE = Template(NBODY1+"/${name}/\n\t1\t1\n${pname}\n")  # TODO Template can't work for N>1 files
 PARFILE_TEMPLATE = Template("""outputFile\t${output_file}\t#don't fiddle
@@ -66,9 +75,6 @@ vSun[2]\t${vSun2}
 DEFAULTS_FOR_PARFILE = {
     # 'output_file': ,  # TODO use temporary file
     'output_dir': GALAXIA_TMP,
-    'photo_categ': 'padova',
-    'photo_sys': 'WFIRST-HST',  # TODO should it have a default value?
-    'mag_color_names': 'F814W,F555W-F814W',  # TODO as above?
     'app_mag_lim_lo': -1000,
     'app_mag_lim_hi': 1000,
     'abs_mag_lim_lo': -7.0,
@@ -95,8 +101,4 @@ DEFAULTS_FOR_PARFILE = {
     'vSun0': 0.0,
     'vSun1': 0.0,
     'vSun2': 0.0}
-EXPORT_KEYS = ['rad', 'wfirst_r062', 'teff', 'alpha', 'wfirst-hst_f606w', 'wfirst-hst_w149', 'wfirst_h158', 'mtip',
-               'pz', 'px', 'py', 'wfirst-hst_f160w', 'feh', 'wfirst-hst_y106', 'wfirst_j129', 'wfirst-hst_f110w',
-               'wfirst-hst_h158', 'wfirst-hst_f184', 'lum', 'wfirst_w149', 'mact', 'wfirst-hst_f814w',
-               'wfirst-hst_f475w', 'parentid', 'dmod', 'wfirst-hst_z087', 'partid', 'wfirst-hst_f555w', 'wfirst_y106',
-               'wfirst_f184', 'age', 'grav', 'wfirst-hst_j129', 'wfirst_z087', 'smass']  # TODO this differs with photo_sys and mag_color_names
+EXPORT_KEYS = ['rad', 'teff', 'alpha', 'mtip', 'pz', 'px', 'py', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
