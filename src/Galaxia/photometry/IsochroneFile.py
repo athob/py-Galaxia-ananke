@@ -14,6 +14,7 @@ __all__ = ['IsochroneFile']
 
 
 class IsochroneFile:
+    _file_format = "output_{}.dat"
     def __init__(self, *args, isochrone=None) -> None:
         if not args:
             raise TypeError("Isochrone requires at least one argument")
@@ -70,7 +71,7 @@ class IsochroneFile:
 
     @property
     def metallicity(self):
-        return float(re.findall("(?<={})(.*)(?={})".format(*tuple(ISO_FILE_FORMAT.split('{}'))),
+        return float(re.findall("(?<={})(.*)(?={})".format(*tuple(self._file_format.split('{}'))),
                                 self.filename)[0])
 
     @property
@@ -88,3 +89,7 @@ class IsochroneFile:
     @property
     def isochrone(self):
         return self._isochrone
+
+
+if __name__ == '__main__':
+    pass

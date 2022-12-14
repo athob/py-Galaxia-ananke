@@ -59,7 +59,11 @@ class Photometry(nested_dict, metaclass=Singleton):
         raise NotImplementedError()
         # return super().__delitem__(__key)
         
-    def add_isochrone(self, name, isochrone_data):
+    def add_isochrone(self, name, isochrone_data, **kwargs):
         if '/' in name:
             raise ValueError()
-        self[CUSTOM_PHOTOCAT][name] = Isochrone(name, isochrone_data)
+        self[CUSTOM_PHOTOCAT][name] = Isochrone(name, isochrone_data, **kwargs)
+
+
+if __name__ == '__main__':
+    pass
