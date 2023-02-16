@@ -2,6 +2,7 @@
 """
 Docstring
 """
+from .__metadata__ import *
 from .constants import *
 from .Input import Input
 from .Survey import Survey

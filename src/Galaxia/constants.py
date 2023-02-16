@@ -2,6 +2,7 @@
 """
 Package parameters
 """
+import sys
 import pathlib
 from string import Template
 
@@ -25,7 +26,7 @@ CUSTOM_PHOTOCAT = 'py_custom'
 DEFAULT_PSYS = [f"{CUSTOM_PHOTOCAT}/Test", 'padova/WFIRST']
 DEFAULT_CMD = 'F814W,F555W-F814W'
 
-GLOBAL_CACHE = '~/.cache'  # TODO must adapt to OS
+GLOBAL_CACHE = pathlib.Path(sys.path[1]).parent.parent / '.cache'
 
 CACHE = pathlib.Path(GLOBAL_CACHE).expanduser().resolve() / NAME
 GALAXIA_DATA = CACHE / GALDATA_DIR

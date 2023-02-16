@@ -13,10 +13,12 @@ __all__ = ['Input']
 
 
 class Input:
+    _pos = 'pos3'
+    _vel = 'vel3'
     _mass = 'mass'
     _kernels = 'h_cubic'
     _density = 'density'
-    _required_keys_in_particles = {'pos3', 'vel3', _mass, 'age', 'parentid', 'dform', 'feh', 'alpha', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium'}
+    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'dform', 'feh', 'alpha', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium'}
     _optional_keys_in_particles = {'id'}
     def __init__(self, particles, rho_pos, rho_vel=None, name='sim', knorm=0.596831, ngb=64) -> None:
         self.__particles = particles
