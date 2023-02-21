@@ -23,7 +23,7 @@ FILENAMES = 'filenames'
 LEGACY_PHOTOCAT = 'padova'
 CUSTOM_PHOTOCAT = 'py_custom'
 
-DEFAULT_PSYS = ['padova/WFIRST']
+DEFAULT_PSYS = ['padova/WFIRST-HST']
 DEFAULT_CMD = 'F814W,F555W-F814W'
 
 GLOBAL_CACHE = pathlib.Path(sys.prefix) / '.cache'
