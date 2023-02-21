@@ -68,7 +68,9 @@ def check_galaxia_submodule(root_dir):
 
 def remove_existing_galaxia(temp_photocat):
     if CACHE.is_dir():
-        (ISOCHRONES_PATH / CUSTOM_PHOTOCAT).rename(temp_photocat)
+        custom_photocat = ISOCHRONES_PATH / CUSTOM_PHOTOCAT
+        if custom_photocat.is_dir():
+            custom_photocat.rename(temp_photocat)
         shutil.rmtree(CACHE)
 
 
