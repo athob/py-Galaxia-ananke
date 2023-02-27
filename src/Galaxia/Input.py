@@ -32,15 +32,13 @@ class Input:
             kwargs['rho_pos'] = args[1]
             self.__input_files_exist = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
-            _pname = pathlib.Path(kwargs['pname'])
-            _kname = pathlib.Path(kwargs['kname'])
+            _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
+            _kname = kwargs['kname'] = pathlib.Path(kwargs['kname'])
             if _pname.parent != _kname.parent: raise  # TODO write error message
             self.__input_dir = _pname.parent
-            kwargs['pname'] = _pname.name
-            kwargs['kname'] = _kname.name
-            kwargs['name'] = re.findall("(.*).ebf", kwargs['pname'])[0]
+            kwargs['name'] = re.findall("(.*).ebf", _pname.name)[0]
             _hdim, kwargs['ngb'] = map(int, re.findall(f"{kwargs['name']}_d(\d*)n(\d*)_den.ebf",
-                                                       kwargs['kname'])[0])  # TODO what if _hdim is 3 ?
+                                                       _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
             _k =  ebf.read(_kname)
             _mass = _k[self._mass]  # dummy line to check format
