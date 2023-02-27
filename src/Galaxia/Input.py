@@ -119,7 +119,7 @@ class Input:
 
     def __verify_particles(self):
         particles_keys = set(self.particles.keys())
-        if particles_keys != self._required_keys_in_particles:
+        if particles_keys-self._optional_keys_in_particles != self._required_keys_in_particles:
             missing = self._required_keys_in_particles.difference(particles_keys)
             missing = f"misses {missing}" if missing else ""
             extra = particles_keys.difference(self._required_keys_in_particles.union(self._optional_keys_in_particles))
