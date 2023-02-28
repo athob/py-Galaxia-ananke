@@ -13,7 +13,7 @@ from .constants import *
 __all__ = ['Output']
 
 class Output:
-    _export_keys = ['rad', 'teff', 'alpha', 'mtip', 'pz', 'px', 'py', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
+    _export_keys = ['ra', 'dec', 'glon', 'glat', 'rad', 'teff', 'alpha', 'mtip', 'pz', 'px', 'py', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
     def __init__(self, survey) -> None:
         self.__survey = survey
         self.__vaex = None
