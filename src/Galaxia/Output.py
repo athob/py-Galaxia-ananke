@@ -14,7 +14,7 @@ __all__ = ['Output']
 
 class Output:
     _export_keys = ['ra', 'dec', 'glon', 'glat', 'rad', 'teff', 'alpha', 'mtip', 'pz', 'px', 'py', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
-    def __init__(self, survey) -> None:
+    def __init__(self, survey) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
         self.__survey = survey
         self.__vaex = None
         self.__path = None
@@ -27,11 +27,11 @@ class Output:
 
     def _ebf_to_hdf5(self):
         export_keys = list(itertools.chain.from_iterable([self._export_keys]+[isochrone.to_export_keys for isochrone in self.isochrones]))
-        data = ebf.read(self._ebf)
+        # data = ebf.read(self._ebf)
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
             for k in export_keys:
-                f5.create_dataset(name=k, data=data[k])
+                f5.create_dataset(name=k, data=ebf.read(self._ebf, f"/{k}"))
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
         self.__vaex = vaex.open(hdf5_file)
