@@ -26,10 +26,11 @@ class Input:
     _optional_keys_in_particles = {'id'}
     def __init__(self, *args, **kwargs) -> None:
         if args:
-            if len(args) != 2: raise  # TODO mix & match args & kwargs for particles and rho_pos
+            if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             self.__input_dir = GALAXIA_TMP
             kwargs['particles'] = args[0]
             kwargs['rho_pos'] = args[1]
+            kwargs['rho_vel'] = args[2] if len(args) == 3 else kwargs.get('rho_vel', None)
             self.__input_files_exist = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])

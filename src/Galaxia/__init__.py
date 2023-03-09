@@ -112,7 +112,7 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
     if pname is not None and kname is not None:
         input = Input(pname=pname, kname=kname)
     elif len(args) == 3:
-        input = Input(*args, simname, knorm, ngb)
+        input = Input(*args,  name=simname, knorm=knorm, ngb=ngb)
     survey = Survey(input, photo_sys=photo_sys, surveyname=surveyname)
     output = survey.make_survey(cmd_magnames=cmd_magnames, fsample=fsample, **kwargs)
     return output

@@ -25,6 +25,7 @@ CUSTOM_PHOTOCAT = 'py_custom'
 
 DEFAULT_PSYS = ['padova/WFIRST-HST']
 DEFAULT_CMD = 'F814W,F555W-F814W'
+DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,5], 'color': [-1000,1000]}
 
 GLOBAL_CACHE = pathlib.Path(sys.prefix) / '.cache'
 
@@ -74,12 +75,12 @@ vSun[2]\t${vSun2}
 DEFAULTS_FOR_PARFILE = {
     # 'output_file': ,  # TODO use temporary file
     'output_dir': GALAXIA_TMP,
-    'app_mag_lim_lo': -1000,
-    'app_mag_lim_hi': 1000,
-    'abs_mag_lim_lo': -7.0,
-    'abs_mag_lim_hi': -2.5,
-    'color_lim_lo': -1000,
-    'color_lim_hi': 1000,
+    'app_mag_lim_lo': DEFAULT_CMD_BOX['app_mag'][0],
+    'app_mag_lim_hi': DEFAULT_CMD_BOX['app_mag'][1],
+    'abs_mag_lim_lo': DEFAULT_CMD_BOX['abs_mag'][0],
+    'abs_mag_lim_hi': DEFAULT_CMD_BOX['abs_mag'][1],
+    'color_lim_lo': DEFAULT_CMD_BOX['color'][0],
+    'color_lim_hi': DEFAULT_CMD_BOX['color'][1],
     'geometry_opt': 0,  # shouldn't use?
     'survey_area': 207.455,
     'fsample': 1,
