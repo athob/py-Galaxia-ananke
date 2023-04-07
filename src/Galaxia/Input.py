@@ -127,7 +127,7 @@ class Input:
         # TODO check format, if dataframe-like
 
     def prepare_input(self, isochrone, cmd_magnames, **kwargs):
-        isochrone.check_cmd_magnames(cmd_magnames)
+        cmd_magnames = isochrone.check_cmd_magnames(cmd_magnames)
         kname = self._write_kernels()
         pname = self._write_particles()
         temp_dir = GALAXIA_NBODY1 / self.name

@@ -25,6 +25,7 @@ CUSTOM_PHOTOCAT = 'py_custom'
 
 DEFAULT_PSYS = ['padova/WFIRST-HST']
 DEFAULT_CMD = 'F814W,F555W-F814W'
+# DEFAULT_CMD = {'magnitude': 'F814W', 'color_minuend': 'F555W', 'color_subtrahend': 'F814W'}
 DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,5], 'color': [-1000,1000]}
 
 GLOBAL_CACHE = pathlib.Path(sys.prefix) / '.cache'

@@ -43,7 +43,7 @@ class Photometry(nested_dict, metaclass=Singleton):
                  for key, item in _temp.groupby(0).groups.items()}
         for key, item in _temp.items():
             cls.instance[key] = {iso.name: iso
-                                 for iso in item}
+                                 for iso in item if iso.has_file_descriptor}
         if not CUSTOM_PHOTOCAT in cls.instance.keys(): cls.instance[CUSTOM_PHOTOCAT] = {}
         return cls.instance
     
