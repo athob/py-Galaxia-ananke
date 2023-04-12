@@ -1,3 +1,3 @@
-[submodule "galaxia_ananke"]
-	path = galaxia_ananke
-	url = ../../athob/galaxia_ananke.git
+[submodule "galaxia-ananke"]
+	path = galaxia-ananke
+	url = ../../athob/galaxia-ananke.git
