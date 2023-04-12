@@ -9,7 +9,7 @@ from string import Template
 __all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
 
 NAME = 'Galaxia_ananke'
-GALAXIA_SUBMODULE_NAME = 'galaxia_ananke'
+GALAXIA_SUBMODULE_NAME = 'galaxia-ananke'
 GALAXIA_URL = 'https://sourceforge.net/projects/galaxia/files/galaxia-0.7.2.tar.gz/download'
 GALAXIA_EXEC = 'galaxia'
 SRC_DIR = 'src'
