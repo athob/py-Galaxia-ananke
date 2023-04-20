@@ -65,6 +65,9 @@ def check_galaxia_submodule(root_dir):
     # if not pathlib.os.listdir(GALAXIA_SUBMODULE_NAME):
     say("\nChecking submodule Galaxia, running git...")
     subprocess.call(['git', 'submodule', 'update', '--init'], cwd=root_dir)
+    install_sh_path = pathlib.Path(root_dir) / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
+    if not pathlib.os.access(install_sh_path, pathlib.os.X_OK):
+        raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
 
 
 def remove_existing_galaxia(temp_photocat):
