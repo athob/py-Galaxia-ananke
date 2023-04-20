@@ -6,7 +6,7 @@ import sys
 import pathlib
 from string import Template
 
-__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
+__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'DEFAULT_CMD_BOX', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
 
 NAME = 'Galaxia_ananke'
 GALAXIA_SUBMODULE_NAME = 'galaxia-ananke'
@@ -28,7 +28,10 @@ DEFAULT_CMD = 'F814W,F555W-F814W'
 # DEFAULT_CMD = {'magnitude': 'F814W', 'color_minuend': 'F555W', 'color_subtrahend': 'F814W'}
 DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,5], 'color': [-1000,1000]}
 
-GLOBAL_CACHE = pathlib.Path(sys.prefix) / '.cache'
+PREFIX = pathlib.Path(sys.prefix)  # TODO check that path has write access
+# if not pathlib.os.access(pathlib.Path(sys.prefix), os.W_OK):
+
+GLOBAL_CACHE = PREFIX / '.cache'
 
 CACHE = pathlib.Path(GLOBAL_CACHE).expanduser().resolve() / NAME
 GALAXIA_DATA = CACHE / GALDATA_DIR
