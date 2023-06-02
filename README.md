@@ -22,4 +22,4 @@ In the log files, check if `Galaxia-make-install.log` contains a mention regardi
 
 ### no writing permission in sys.prefix directory
 
-When you run in a python terminal the following `import sys; sys.prefix`, the resulting path is the path of the directory where the galaxia-ananke cached data is meant to be stored. If this directory doesn't have write permission, the installation will not complete. This is know issue for which we are working on a solution.
+When you run in a python terminal the following `import sys; sys.prefix`, the resulting path is the path of the directory where the galaxia-ananke cached data is meant to be stored. If this directory doesn't have write permission, the installation will not complete. This is a known issue for which we are working on a solution.
