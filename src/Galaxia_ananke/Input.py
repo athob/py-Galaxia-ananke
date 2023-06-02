@@ -11,7 +11,7 @@ import numpy as np
 import ebf
 
 from .constants import *
-from .utils import *
+from .utils import make_symlink, compare_given_and_required
 
 __all__ = ['Input']
 
@@ -117,13 +117,8 @@ class Input:
         return self.__pname
 
     def __verify_particles(self):
-        particles_keys = set(self.particles.keys())
-        if particles_keys-self._optional_keys_in_particles != self._required_keys_in_particles:
-            missing = self._required_keys_in_particles.difference(particles_keys)
-            missing = f"misses {missing}" if missing else ""
-            extra = particles_keys.difference(self._required_keys_in_particles.union(self._optional_keys_in_particles))
-            extra = f"misincludes {extra}" if extra else ""
-            raise ValueError(f"Given particle data covers wrong set of keys: {missing}{' & ' if missing and extra else ''}{extra}")
+        compare_given_and_required(self.particles.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
+                                   error_message="Given particle data covers wrong set of keys")
         # TODO check format, if dataframe-like
 
     def prepare_input(self, isochrone, cmd_magnames, **kwargs):

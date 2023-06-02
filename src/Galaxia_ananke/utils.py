@@ -4,7 +4,7 @@ Docstring
 """
 import pathlib
 
-__all__ = ['make_symlink', 'Singleton']
+__all__ = ['make_symlink', 'compare_given_and_required', 'Singleton']
 
 
 def make_symlink(file_path, dest_dir):
@@ -15,6 +15,18 @@ def make_symlink(file_path, dest_dir):
     except FileNotFoundError:
         pass
     symlink_name.symlink_to(file_path)
+
+
+def compare_given_and_required(given, required, optional={}, error_message= ""):
+    given = set(given)
+    required = set(required)
+    optional = set(optional)
+    if given-optional != required:
+        missing = required.difference(given)
+        missing = f"misses {missing}" if missing else ""
+        extra = given.difference(required.union(optional))
+        extra = f"misincludes {extra}" if extra else ""
+        raise ValueError(f"Given particle data covers wrong set of keys: {missing}{' & ' if missing and extra else ''}{extra}")
 
 
 class Singleton(type):

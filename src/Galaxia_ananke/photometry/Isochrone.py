@@ -8,6 +8,7 @@ import shutil
 from glob import glob
 
 from ..constants import *
+from ..utils import compare_given_and_required
 from . import Photometry
 from .IsochroneFile import IsochroneFile
 
@@ -59,13 +60,7 @@ class Isochrone:
 
     def _write_file_descriptor(self, isochrone_data):
         metallicities, headers = zip(*[(feh, list(iso.keys())) for feh, iso in isochrone_data.items()])
-        metallicities = set(metallicities)
-        if metallicities != self._required_metallicities:
-            missing = self._required_metallicities.difference(metallicities)
-            missing = f"misses {missing}" if missing else ""
-            extra = metallicities.difference(self._required_metallicities)
-            extra = f"misincludes {extra}" if extra else ""
-            raise ValueError(f"Given isochrone data covers wrong set of metallicities: {missing}{' & ' if missing and extra else ''}{extra}")
+        compare_given_and_required(metallicities, self._required_metallicities, error_message="Given isochrone data covers wrong set of metallicities")
         check = []
         for header in headers:
             if header not in check: check.append(header)
@@ -91,13 +86,7 @@ class Isochrone:
         if isinstance(cmd_magnames, str):
             check = set(re.split('[ ,-]', cmd_magnames))
         elif isinstance(cmd_magnames, dict):
-            cmd_magnames_keys = set(cmd_magnames.keys())
-            if cmd_magnames_keys != self._required_cmd_magnames_dictkeys:
-                missing = self._required_cmd_magnames_dictkeys.difference(cmd_magnames_keys)
-                missing = f"misses {missing}" if missing else ""
-                extra = cmd_magnames_keys.difference(self._required_cmd_magnames_dictkeys)
-                extra = f"misincludes {extra}" if extra else ""
-                raise ValueError(f"Given cmd_magnames dict covers wrong set of keys: {missing}{' & ' if missing and extra else ''}{extra}")
+            compare_given_and_required(cmd_magnames.keys(), self._required_cmd_magnames_dictkeys, error_message="Given cmd_magnames dict covers wrong set of keys")
             check = set(cmd_magnames.values())
             cmd_magnames = f"{cmd_magnames['magnitude']},{cmd_magnames['color_minuend']}-{cmd_magnames['color_subtrahend']}"
         else:
