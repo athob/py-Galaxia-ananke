@@ -28,8 +28,13 @@ DEFAULT_CMD = 'F814W,F555W-F814W'
 # DEFAULT_CMD = {'magnitude': 'F814W', 'color_minuend': 'F555W', 'color_subtrahend': 'F814W'}
 DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,5], 'color': [-1000,1000]}
 
-PREFIX = pathlib.Path(sys.prefix)  # TODO check that path has write access
-# if not pathlib.os.access(pathlib.Path(sys.prefix), os.W_OK):
+PREFIX_ENV_VAR = "ANANKE_SYSTEM_PREFIX"
+if PREFIX_ENV_VAR in pathlib.os.environ:
+    PREFIX = pathlib.Path(pathlib.os.environ[PREFIX_ENV_VAR])
+else:
+    PREFIX = pathlib.Path(sys.prefix)
+if not pathlib.os.access(PREFIX, pathlib.os.W_OK):
+    PermissionError(f"Installation cannot complete: to proceed, please give write permission to directory {PREFIX} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")
 
 GLOBAL_CACHE = PREFIX / '.cache'
 
