@@ -22,8 +22,8 @@ class Input:
     _mass = 'mass'
     _kernels = 'h_cubic'
     _density = 'density'
-    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'dform', 'feh', 'alpha', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium'}
-    _optional_keys_in_particles = {'id'}
+    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'feh', 'alpha'}
+    _optional_keys_in_particles = {'id', 'dform', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium'}
     def __init__(self, *args, **kwargs) -> None:
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
@@ -119,6 +119,8 @@ class Input:
     def __verify_particles(self):
         compare_given_and_required(self.particles.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
+        if 'dform' not in self.particles:
+            self.particles['dform'] = 0*self.particles[self._mass]
         # TODO check format, if dataframe-like
 
     def prepare_input(self, isochrone, cmd_magnames, **kwargs):
