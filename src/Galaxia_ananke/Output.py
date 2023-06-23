@@ -31,6 +31,9 @@ class Output:
     def __getitem__(self, item):
         return self._vaex[item]
     
+    def __setitem__(self, item, value):
+        self._vaex[item] = value
+    
     def __getattr__(self, item):
         if (item in self.__vaex.__dir__() and item[:1] != '_') or (item in self._vaex_under_list and self.__vaex is not None):
             return getattr(self.__vaex, item)
