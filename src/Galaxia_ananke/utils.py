@@ -17,7 +17,7 @@ def make_symlink(file_path, dest_dir):
     symlink_name.symlink_to(file_path)
 
 
-def compare_given_and_required(given, required, optional={}, error_message= "Given particle data covers wrong set of keys"):
+def compare_given_and_required(given, required, optional={}, error_message="Given particle data covers wrong set of keys"):
     given = set(given)
     required = set(required)
     optional = set(optional)
