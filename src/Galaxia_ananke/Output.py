@@ -40,8 +40,11 @@ class Output:
         else:
             return self.__getattribute__(item)
     
+    def _make_export_keys(self):
+        return list(itertools.chain.from_iterable([self._export_keys]+[isochrone.to_export_keys for isochrone in self.isochrones]))
+
     def _ebf_to_hdf5(self):
-        export_keys = list(itertools.chain.from_iterable([self._export_keys]+[isochrone.to_export_keys for isochrone in self.isochrones]))
+        export_keys = self._make_export_keys()
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
             for k in export_keys:
