@@ -17,7 +17,7 @@ def make_symlink(file_path, dest_dir):
     symlink_name.symlink_to(file_path)
 
 
-def compare_given_and_required(given, required, optional={}, error_message= ""):
+def compare_given_and_required(given, required, optional={}, error_message= "Given particle data covers wrong set of keys"):
     given = set(given)
     required = set(required)
     optional = set(optional)
@@ -26,7 +26,7 @@ def compare_given_and_required(given, required, optional={}, error_message= ""):
         missing = f"misses {missing}" if missing else ""
         extra = given.difference(required.union(optional))
         extra = f"misincludes {extra}" if extra else ""
-        raise ValueError(f"Given particle data covers wrong set of keys: {missing}{' & ' if missing and extra else ''}{extra}")
+        raise ValueError(f"{error_message}: {missing}{' & ' if missing and extra else ''}{extra}")
 
 
 class Singleton(type):
