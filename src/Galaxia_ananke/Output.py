@@ -39,10 +39,14 @@ class Output:
             return getattr(self.__vaex, item)
         else:
             return self.__getattribute__(item)
+
+    @classmethod
+    def _compile_export_mag_names(cls, isochrones):
+        return list(itertools.chain.from_iterable([isochrone.to_export_keys for isochrone in isochrones]))
     
     @classmethod
     def _make_export_keys(cls, isochrones):
-        return list(itertools.chain.from_iterable([cls._export_keys]+[isochrone.to_export_keys for isochrone in isochrones]))
+        return cls._export_keys + cls._compile_export_mag_names(isochrones)
 
     def _ebf_to_hdf5(self):
         export_keys = self._make_export_keys(self.isochrones)
