@@ -22,8 +22,8 @@ class Input:
     _mass = 'mass'
     _kernels = 'h_cubic'
     _density = 'density'
-    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'feh', 'alpha'}
-    _optional_keys_in_particles = {'id', 'dform', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium'}
+    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'feh'}
+    _optional_keys_in_particles = {'id', 'dform', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium', 'alpha'}
     def __init__(self, *args, **kwargs) -> None:
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
@@ -116,8 +116,14 @@ class Input:
             self.__pname = self._input_dir / f"{self.name}.ebf"
         return self.__pname
 
+    def keys(self):
+        return self.particles.keys()
+    
+    def optional_keys(self):
+        return list(set(self.keys()).intersection(self._optional_keys_in_particles))
+
     def __verify_particles(self):
-        compare_given_and_required(self.particles.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
+        compare_given_and_required(self.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
         if 'dform' not in self.particles:
             self.particles['dform'] = 0*self.particles[self._mass]
@@ -155,7 +161,7 @@ class Input:
             for key in self._required_keys_in_particles:
                 ebf.write(pname, f"/{key}", self.particles[key], 'a')
             for key in self._optional_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key] if key in self.particles.keys() else np.zeros(self.length), 'a')
+                ebf.write(pname, f"/{key}", self.particles[key] if key in self.keys() else np.zeros(self.length), 'a')
         return pname
 
 

@@ -56,7 +56,7 @@ setup(name=NAME,
           "Topic :: Scientific/Engineering :: Astronomy",
           "Topic :: Software Development :: Version Control :: Git"
       ],
-      python_requires='>=3',
+      python_requires='>=3.7.12,<3.11',
       packages=[NAME, f"{NAME}.photometry"],
       package_dir={'': SRC_DIR},
       install_requires=['numpy', 'pandas', 'vaex', 'astropy', 'h5py', 'ebfpy'],
