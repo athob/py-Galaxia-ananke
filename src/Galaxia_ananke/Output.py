@@ -13,7 +13,7 @@ from .constants import *
 __all__ = ['Output']
 
 class Output:
-    _export_keys = ['ra', 'dec', 'glon', 'glat', 'rad', 'teff', 'alpha', 'mtip', 'pz', 'px', 'py', 'vx', 'vy', 'vz', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
+    _export_keys = ['ra', 'dec', 'glon', 'glat', 'rad', 'teff', 'mtip', 'pz', 'px', 'py', 'vx', 'vy', 'vz', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
     _vaex_under_list = ['_repr_html_']
     def __init__(self, survey) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
         self.__survey = survey
@@ -21,7 +21,7 @@ class Output:
         self.__path = None
 
     def __dir__(self):
-        return sorted({i for i in self.__vaex.__dir__() if i[:1]!='_'}.union(
+        return sorted({i for i in self.__vaex.__dir__() if not i.startswith('_')}.union(
             super(Output, self).__dir__()).union(
             self._vaex_under_list if self.__vaex is not None else []))
 
@@ -35,7 +35,7 @@ class Output:
         self._vaex[item] = value
     
     def __getattr__(self, item):
-        if (item in self.__vaex.__dir__() and item[:1] != '_') or (item in self._vaex_under_list and self.__vaex is not None):
+        if (item in self.__vaex.__dir__() and not item.startswith('_')) or (item in self._vaex_under_list and self.__vaex is not None):
             return getattr(self.__vaex, item)
         else:
             return self.__getattribute__(item)
@@ -45,14 +45,13 @@ class Output:
         return list(itertools.chain.from_iterable([isochrone.to_export_keys for isochrone in isochrones]))
     
     @classmethod
-    def _make_export_keys(cls, isochrones):
-        return cls._export_keys + cls._compile_export_mag_names(isochrones)
+    def _make_export_keys(cls, isochrones, extra_keys=[]):
+        return cls._export_keys + extra_keys + cls._compile_export_mag_names(isochrones)
 
     def _ebf_to_hdf5(self):
-        export_keys = self._make_export_keys(self.isochrones)
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
-            for k in export_keys:
+            for k in self.export_keys:
                 f5.create_dataset(name=k, data=ebf.read(self._ebf, f"/{k}"))
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
@@ -79,6 +78,10 @@ class Output:
     @property
     def isochrones(self):
         return self.survey.isochrones
+
+    @property
+    def export_keys(self):
+        return self._make_export_keys(self.isochrones, extra_keys=[k if k != 'id' else 'satid' for k in self.survey.input.optional_keys()])
 
     @property
     def output_name(self):
