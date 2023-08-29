@@ -2,6 +2,8 @@
 """
 Docstring
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import pathlib
 import itertools
 import h5py as h5
@@ -10,12 +12,22 @@ import vaex
 
 from .constants import *
 
+if TYPE_CHECKING:
+    from . import Survey
+
 __all__ = ['Output']
 
+
 class Output:
-    _export_keys = ['ra', 'dec', 'glon', 'glat', 'rad', 'teff', 'mtip', 'pz', 'px', 'py', 'vx', 'vy', 'vz', 'feh', 'lum', 'mact', 'parentid', 'dmod', 'partid', 'age', 'grav', 'smass']
+    _pos = ['px', 'py', 'pz']
+    _vel = ['vx', 'vy', 'vz']
+    _cel = ['ra', 'dec']
+    _gal = ['glon', 'glat']
+    _rad = 'rad'
+    _dmod = 'dmod'
+    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, 'teff', 'mtip', 'feh', 'lum', 'mact', 'parentid', 'partid', 'age', 'grav', 'smass']
     _vaex_under_list = ['_repr_html_']
-    def __init__(self, survey) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
+    def __init__(self, survey: Survey) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
         self.__survey = survey
         self.__vaex = None
         self.__path = None
@@ -113,6 +125,23 @@ class Output:
     def _hdf5(self):
         return self.__name_with_ext('.h5')
     
+    def flush_extra_columns_to_hdf5(self, with_columns=[]):  # temporary until vaex supports it
+        hdf5_file = self._hdf5
+        old_column_names = set(vaex.open(hdf5_file).column_names)
+        with h5.File(hdf5_file, 'r+') as f5:
+            extra_columns = [k for k in set(self.column_names)-old_column_names if not k.startswith('__')]
+            for k in extra_columns:
+                f5.create_dataset(name=k, data=self[k].to_numpy())
+            if extra_columns:
+                print(f"Exported the following quantities to {hdf5_file}")
+                print(extra_columns)
+            for k in with_columns:
+                f5[k][...] = self[k].to_numpy()
+            if with_columns:
+                print(f"Overwritten the following quantities to {hdf5_file}")
+                print(with_columns)
+        self.__vaex = vaex.open(hdf5_file)
+
 
 if __name__ == '__main__':
     pass

@@ -5,17 +5,22 @@ Contains the Survey class definition
 Please note that this module is private. The Survey class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import subprocess
 
 from .constants import *
 from . import photometry
 from .Output import Output
 
+if TYPE_CHECKING:
+    from . import Input
+
 __all__ = ['Survey']
 
 
 class Survey:
-    def __init__(self, input, photo_sys=DEFAULT_PSYS, surveyname='survey') -> None:
+    def __init__(self, input: Input, photo_sys=DEFAULT_PSYS, surveyname='survey') -> None:
         self.__surveyname = surveyname
         self.__input = input
         self.__isochrones = self.set_isochrones_from_photosys(photo_sys)
