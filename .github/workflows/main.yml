@@ -67,11 +67,14 @@ jobs:
       run: git fetch origin
     - name: List branches a second time
       run: git branch -a
-    - name: Create local stable branch
-      run: git checkout -b stable origin/stable
+    - name: Checkout remote stable
+      run: git checkout origin/stable
+    # - name: Create local stable branch
+    #   run: git checkout -b stable origin/stable
     - name: Merge develop into stable
-      run: |
-        git checkout stable
-        git merge develop
+      run: git merge develop
+      # run: |
+      #   git checkout stable
+      #   git merge develop
 
     if: github.ref == 'refs/heads/develop'
