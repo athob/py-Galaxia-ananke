@@ -67,6 +67,8 @@ jobs:
       run: git fetch origin
     - name: List branches a second time
       run: git branch -a
+    - name: Create local stable branch
+      run: git checkout -b stable origin/stable
     - name: Merge develop into stable
       run: |
         git checkout stable
