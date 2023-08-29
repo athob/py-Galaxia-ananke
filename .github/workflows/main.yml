@@ -5,10 +5,6 @@ on:
     branches-ignore:
       - master
       - stable
-  # pull_request:
-  #   branches-ignore:
-  #     - master
-  #     - stable
 
 jobs:
   install:
@@ -57,29 +53,19 @@ jobs:
     needs: [install]
 
     steps:
-    # - name: Check if branch is develop
-    #   run: echo "Branch is develop"
     - name: Checkout code
       uses: actions/checkout@v3
-    - name: List branches
-      run: git branch -a
-    # - name: Fetch origin
-    #   run: git fetch origin
+    # - name: List branches
+    #   run: git branch -a
     - name: Fetch all unshallow
       run: git fetch --all --unshallow
-    # - name: Pull repository
-    #   run: git pull
-    - name: List branches a second time
-      run: git branch -a
+    # - name: List branches a second time
+    #   run: git branch -a
     - name: Checkout stable
       run: git checkout stable
-    # - name: Pull repository
-    #   run: git pull
-    # - name: Checkout remote stable
-    #   run: git checkout origin/stable
-    # - name: Create local stable branch
-    #   run: git checkout -b stable origin/stable
     - name: Merge develop into stable
       run: git merge develop
+    - name: Push merge to repository
+      run: git push
 
     if: github.ref == 'refs/heads/develop'
