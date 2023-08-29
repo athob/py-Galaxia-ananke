@@ -5,10 +5,10 @@ on:
     branches-ignore:
       - master
       - stable
-  pull_request:
-    branches-ignore:
-      - master
-      - stable
+  # pull_request:
+  #   branches-ignore:
+  #     - master
+  #     - stable
 
 jobs:
   install:
@@ -57,13 +57,13 @@ jobs:
     needs: [install]
 
     steps:
-      - name: Check if branch is develop
-        run: echo "Branch is develop"
-    # - name: Checkout code
-    #   uses: actions/checkout@v2
-    # - name: Merge develop into stable
-    #   run: |
-    #     git checkout stable
-    #     git merge develop
+    # - name: Check if branch is develop
+    #   run: echo "Branch is develop"
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Merge develop into stable
+      run: |
+        git checkout stable
+        git merge develop
 
     if: github.ref == 'refs/heads/develop'
