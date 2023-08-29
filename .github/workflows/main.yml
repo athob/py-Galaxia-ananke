@@ -55,12 +55,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-    # - name: List branches
-    #   run: git branch -a
     - name: Fetch all unshallow
       run: git fetch --all --unshallow
-    # - name: List branches a second time
-    #   run: git branch -a
     - name: Checkout stable
       run: git checkout stable
     - name: Merge develop into stable
