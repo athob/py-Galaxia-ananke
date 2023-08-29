@@ -65,14 +65,16 @@ jobs:
       run: git branch -a
     # - name: Fetch origin
     #   run: git fetch origin
-    - name: Pull repository
-      run: git pull
+    - name: Fetch all unshallow
+      run: git fetch --all --unshallow
+    # - name: Pull repository
+    #   run: git pull
     - name: List branches a second time
       run: git branch -a
     - name: Checkout stable
       run: git checkout stable
-    - name: Pull repository
-      run: git pull
+    # - name: Pull repository
+    #   run: git pull
     # - name: Checkout remote stable
     #   run: git checkout origin/stable
     # - name: Create local stable branch
