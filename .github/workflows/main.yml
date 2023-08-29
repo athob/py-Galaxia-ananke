@@ -61,6 +61,12 @@ jobs:
     #   run: echo "Branch is develop"
     - name: Checkout code
       uses: actions/checkout@v3
+    - name: List branches
+      run: git branch -a
+    - name: Fetch origin
+      run: git fetch origin
+    - name: List branches a second time
+      run: git branch -a
     - name: Merge develop into stable
       run: |
         git checkout stable
