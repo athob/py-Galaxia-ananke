@@ -26,10 +26,10 @@ FILENAMES = 'filenames'
 LEGACY_PHOTOCAT = 'padova'
 CUSTOM_PHOTOCAT = 'py_custom'
 
-DEFAULT_PSYS = ['padova/WFIRST-HST']
-DEFAULT_CMD = 'F814W,F555W-F814W'
-# DEFAULT_CMD = {'magnitude': 'F814W', 'color_minuend': 'F555W', 'color_subtrahend': 'F814W'}
-DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,5], 'color': [-1000,1000]}
+DEFAULT_PSYS = ['padova/GAIA']
+DEFAULT_CMD = 'Gmag,G_BPmag-G_RPmag'
+# DEFAULT_CMD = {'magnitude': 'Gmag', 'color_minuend': 'G_BPmag', 'color_subtrahend': 'G_RPmag'}
+DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,20], 'color': [-1000,1000]}
 
 PREFIX_ENV_VAR = "ANANKE_SYSTEM_PREFIX"
 if PREFIX_ENV_VAR in pathlib.os.environ:
