@@ -38,11 +38,11 @@ class Survey:
         return [photometry.available_photo_systems[psys] for psys in photo_sys]
 
     def _run_survey(self, cmd_magnames, fsample, **kwargs):
-        inputname, parfile = self.input.prepare_input(self.isochrones[0], cmd_magnames, output_file=self.surveyname, fsample=fsample, **kwargs)
+        inputname, parfile, for_parfile = self.input.prepare_input(self.isochrones[0], cmd_magnames, output_file=self.surveyname, fsample=fsample, **kwargs)
         cmd = f"{GALAXIA} -r{(' --hdim=' + str(self.hdim) if self.hdim is not None else '')} --nfile={self.inputname} {parfile}"
         print(cmd)
         subprocess.call(cmd.split(' '))
-        self.__output = Output(self)
+        self.__output = Output(self, for_parfile)
 
     def _append_survey(self, isochrone):
         cmd = f"{GALAXIA} -a --pcat={isochrone.category} --psys={isochrone.name} {self.__ebf_output_file}"
@@ -54,6 +54,7 @@ class Survey:
         for isochrone in self.isochrones[1:]:
             self._append_survey(isochrone)
         self.output._ebf_to_hdf5()
+        self.output._post_process()
         return self.output
 
     @property
