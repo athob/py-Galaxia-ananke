@@ -9,6 +9,7 @@ import itertools
 import h5py as h5
 import ebf
 import vaex
+from astropy import units, coordinates
 
 from .constants import *
 
@@ -19,16 +20,26 @@ __all__ = ['Output']
 
 
 class Output:
-    _pos = ['px', 'py', 'pz']
-    _vel = ['vx', 'vy', 'vz']
-    _cel = ['ra', 'dec']
-    _gal = ['glon', 'glat']
-    _rad = 'rad'
-    _dmod = 'dmod'
-    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, 'teff', 'mtip', 'feh', 'lum', 'mact', 'parentid', 'partid', 'age', 'grav', 'smass']
+    _pos = ['px', 'py', 'pz']  # positions
+    _vel = ['vx', 'vy', 'vz']  # velocities
+    _cel = ['ra', 'dec']  # celestial coordinates
+    _gal = ['glon', 'glat']  # galactic coordinates
+    _rad = 'rad'  # distance
+    _dmod = 'dmod'  # distance modulus
+    _teff = 'teff'  # temperature (returned log10(teff/K) by Galaxia)
+    _lum = 'lum'  # luminosity (returned log10(lum/lsun) by Galaxia)
+    #####
+    _pi = 'pi'  # parallax
+    _mu = ['mura', 'mudec']  # proper motions
+    _mugal = ['mul', 'mub']  # galactic proper motions
+    _vr = 'vr'  # radial velocity
+    #####
+    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, _teff, _lum, 'mtip', 'mact', 'smass', 'grav', 'age', 'feh', 'parentid', 'partid']
+    _postprocess_keys = [_pi] + _mu + _mugal + [_vr]
     _vaex_under_list = ['_repr_html_']
-    def __init__(self, survey: Survey) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
+    def __init__(self, survey: Survey, parameters: dict) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
         self.__survey = survey
+        self.__parameters = parameters
         self.__vaex = None
         self.__path = None
 
@@ -60,6 +71,13 @@ class Output:
     def _make_export_keys(cls, isochrones, extra_keys=[]):
         return cls._export_keys + extra_keys + cls._compile_export_mag_names(isochrones)
 
+    @classmethod
+    def _make_catalogue_keys(cls, isochrones, extra_keys=[]):
+        return cls._make_export_keys(isochrones, extra_keys=cls._postprocess_keys+extra_keys)
+
+    def _make_input_optional_keys(self):
+        return [k if k != 'id' else 'satid' for k in self.survey.input.optional_keys()]
+
     def _ebf_to_hdf5(self):
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
@@ -69,6 +87,57 @@ class Output:
             print(list(f5.keys()))
         self.__vaex = vaex.open(hdf5_file)
 
+    def _post_process(self):
+        self._pp_convert_cartesian_to_galactic()
+        self._pp_convert_galactic_to_icrs()
+        self._vaex[self._pi] = 1.0/self._vaex[self._rad]  # parallax in mas (from distance in kpc)
+        self._vaex[self._teff] = 10**self._vaex[self._teff]  #Galaxia returns log10(teff/K)
+        self._vaex[self._lum] = 10**self._vaex[self._lum]  #Galaxia returns log10(lum/lsun)
+        self.flush_extra_columns_to_hdf5(with_columns=[self._teff, self._lum])
+
+    def _pp_convert_cartesian_to_galactic(self):
+        """
+        converts positions & velocities from mock catalog Cartesian coordinates (relative to solar position) 
+        into Galactic coordinates, assuming Sun is on -x axis (use rotateStars)
+        """
+        gc = coordinates.Galactic(u = self._vaex[self._pos[0]].to_numpy()*units.kpc,
+                                  v = self._vaex[self._pos[1]].to_numpy()*units.kpc,
+                                  w = self._vaex[self._pos[2]].to_numpy()*units.kpc,
+                                  U = self._vaex[self._vel[0]].to_numpy()*units.km/units.s,
+                                  V = self._vaex[self._vel[1]].to_numpy()*units.km/units.s,
+                                  W = self._vaex[self._vel[2]].to_numpy()*units.km/units.s,
+                                  representation_type = coordinates.CartesianRepresentation,
+                                  differential_type   = coordinates.CartesianDifferential)
+        # TODO this overwrites Galaxia's outputs? understood now why: things are reoriented prior to that step in original script; is that needed here?
+        self._vaex[self._gal[0]] = -((-gc.spherical.lon.value+180)%360-180) # shift longitude values to be (-180,180)
+        self._vaex[self._gal[1]] = gc.spherical.lat.value
+        self._vaex[self._rad]    = gc.spherical.distance.value
+        ####################################
+        self._vaex[self._mugal[0]] = gc.sphericalcoslat.differentials['s'].d_lon_coslat.value
+        self._vaex[self._mugal[1]] = gc.sphericalcoslat.differentials['s'].d_lat.value
+        self._vaex[self._vr]       = gc.sphericalcoslat.differentials['s'].d_distance.value
+        self.flush_extra_columns_to_hdf5(with_columns=self._gal+[self._rad])
+
+    def _pp_convert_galactic_to_icrs(self):
+        """
+        converts PMs in galactic coordinates (mulcosb, mub) in arcsec/yr (as output by Galaxia)
+        to ra/dec in mas/yr (units of output catalog)
+        """
+        c = coordinates.Galactic(l               = self._vaex[self._gal[0]].to_numpy()*units.degree,
+                                 b               = self._vaex[self._gal[1]].to_numpy()*units.degree,
+                                 distance        = self._vaex[self._rad].to_numpy()*units.kpc,
+                                 pm_l_cosb       = self._vaex[self._mugal[0]].to_numpy()*units.mas/units.yr,
+                                 pm_b            = self._vaex[self._mugal[1]].to_numpy()*units.mas/units.yr,
+                                 radial_velocity = self._vaex[self._vr].to_numpy()*units.km/units.s)
+        c_icrs = c.transform_to(coordinates.ICRS())
+        # TODO this overwrites Galaxia's outputs? understood now why: things are reoriented prior to that step in original script; is that needed here?
+        self._vaex[self._cel[0]] = c_icrs.ra.value
+        self._vaex[self._cel[1]] = c_icrs.dec.value
+        ####################################
+        self._vaex[self._mu[0]]  = c_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
+        self._vaex[self._mu[1]]  = c_icrs.pm_dec.to(units.mas/units.yr).value
+        self.flush_extra_columns_to_hdf5(with_columns=self._cel)
+    
     def __name_with_ext(self, ext):
         name_base = self._file_base
         return name_base.parent / f"{name_base.name}{ext}"
@@ -93,12 +162,25 @@ class Output:
 
     @property
     def export_keys(self):
-        return self._make_export_keys(self.isochrones, extra_keys=[k if k != 'id' else 'satid' for k in self.survey.input.optional_keys()])
-
+        return self._make_export_keys(self.isochrones, extra_keys=self._make_input_optional_keys())
+    
+    @property
+    def catalogue_keys(self):
+        return self._make_catalogue_keys(self.isochrones, extra_keys=self._make_input_optional_keys())
+    
     @property
     def output_name(self):
         return f"{self.survey.surveyname}.{self.survey.inputname}"
 
+    @property
+    def rsun_skycoord(self):
+        _temp = [self._parameters[k] for k in TTAGS.rSun]
+        return coordinates.SkyCoord(u=_temp[0], v=_temp[1], w=_temp[2], unit='kpc', representation_type='cartesian', frame='galactic')
+
+    @property
+    def _parameters(self):
+        return self.__parameters
+    
     @property
     def _vaex(self):
         if self.__vaex is None:

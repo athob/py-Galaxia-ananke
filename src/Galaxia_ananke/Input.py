@@ -142,8 +142,10 @@ class Input:
         parfile = pathlib.Path(kwargs.pop('parfile', 'survey_params'))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
-        parfile.write_text(PARFILE_TEMPLATE.substitute(DEFAULTS_FOR_PARFILE, photo_categ=isochrone.category, photo_sys=isochrone.name, mag_color_names=cmd_magnames, nres=self.ngb, **kwargs))  # output_file=surveyname, fsample=fsample))
-        return self.name, parfile
+        for_parfile = DEFAULTS_FOR_PARFILE.copy()
+        for_parfile.update(**{TTAGS.photo_categ: isochrone.category, TTAGS.photo_sys: isochrone.name, TTAGS.mag_color_names: cmd_magnames, TTAGS.nres: self.ngb}, **kwargs)
+        parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
+        return self.name, parfile, for_parfile
 
     def _write_kernels(self):
         kname = self.kname
