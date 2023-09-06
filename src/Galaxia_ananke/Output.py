@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 __all__ = ['Output']
 
 
+def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
+    return -((-lon+180)%360-180)
+
+
 class Output:
     _pos = ['px', 'py', 'pz']  # positions
     _vel = ['vx', 'vy', 'vz']  # velocities
@@ -26,18 +30,26 @@ class Output:
     _gal = ['glon', 'glat']  # galactic coordinates
     _rad = 'rad'  # distance
     _dmod = 'dmod'  # distance modulus
+    _mtip = 'mtip'  # mass at tip of giant branch for star of given age & metallicity (Msun)
+    _mact = 'mact'  # current stellar mass (Msun)
+    _mini = 'smass'  # ZAMS stellar mass (Msun)
+    _age = 'age'  # age (Gyr)
+    _grav = 'grav'  # surface gravity (log g)
+    _feh = 'feh'  # [fe/h]
     _teff = 'teff'  # temperature (returned log10(teff/K) by Galaxia)
     _lum = 'lum'  # luminosity (returned log10(lum/lsun) by Galaxia)
+    _parentid = 'parentid'  # id of parent particle 
+    _partid = 'partid'  # flag of particle's central star
     #####
     _pi = 'pi'  # parallax
     _mu = ['mura', 'mudec']  # proper motions
     _mugal = ['mul', 'mub']  # galactic proper motions
     _vr = 'vr'  # radial velocity
     #####
-    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, _teff, _lum, 'mtip', 'mact', 'smass', 'grav', 'age', 'feh', 'parentid', 'partid']
+    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, _teff, _lum, _grav, _mtip, _mact, _mini, _age, _feh, _parentid, _partid]
     _postprocess_keys = [_pi] + _mu + _mugal + [_vr]
     _vaex_under_list = ['_repr_html_']
-    def __init__(self, survey: Survey, parameters: dict) -> None:  # TODO kwargs given to parameter file to run survey should be accessible from here: bonus TODO SkyCoord for center point: SkyCoord(u=-rSun[0], v=-rSun[1], w=-rSun[2], unit='kpc', representation_type='cartesian', frame='galactic')
+    def __init__(self, survey: Survey, parameters: dict) -> None:
         self.__survey = survey
         self.__parameters = parameters
         self.__vaex = None
@@ -108,8 +120,7 @@ class Output:
                                   W = self._vaex[self._vel[2]].to_numpy()*units.km/units.s,
                                   representation_type = coordinates.CartesianRepresentation,
                                   differential_type   = coordinates.CartesianDifferential)
-        # TODO this overwrites Galaxia's outputs? understood now why: things are reoriented prior to that step in original script; is that needed here?
-        self._vaex[self._gal[0]] = -((-gc.spherical.lon.value+180)%360-180) # shift longitude values to be (-180,180)
+        self._vaex[self._gal[0]] = shift_g_lon(gc.spherical.lon.value)
         self._vaex[self._gal[1]] = gc.spherical.lat.value
         self._vaex[self._rad]    = gc.spherical.distance.value
         ####################################
@@ -130,7 +141,6 @@ class Output:
                                  pm_b            = self._vaex[self._mugal[1]].to_numpy()*units.mas/units.yr,
                                  radial_velocity = self._vaex[self._vr].to_numpy()*units.km/units.s)
         c_icrs = c.transform_to(coordinates.ICRS())
-        # TODO this overwrites Galaxia's outputs? understood now why: things are reoriented prior to that step in original script; is that needed here?
         self._vaex[self._cel[0]] = c_icrs.ra.value
         self._vaex[self._cel[1]] = c_icrs.dec.value
         ####################################
@@ -138,6 +148,24 @@ class Output:
         self._vaex[self._mu[1]]  = c_icrs.pm_dec.to(units.mas/units.yr).value
         self.flush_extra_columns_to_hdf5(with_columns=self._cel)
     
+    def _pp_convert_icrs_to_galactic(self):
+        """
+        converts PMs from ICRS coordinates (muacosd, mudec) to Galactic (mul, mub)
+        input and output in mas/yr for PMs and degrees for positions
+        also exports the galactic lat and longitude
+        """
+        c = coordinates.ICRS(ra           = self._vaex[self._cel[0]].to_numpy()*units.degree,
+                             dec          = self._vaex[self._cel[1]].to_numpy()*units.degree,
+                             pm_ra_cosdec = self._vaex[self._mu[0]].to_numpy()*units.mas/units.yr,
+                             pm_dec       = self._vaex[self._mu[1]].to_numpy()*units.mas/units.yr)
+
+        c_gal = c.transform_to(coordinates.Galactic())
+        self._vaex[self._gal[0]]   = shift_g_lon(c_gal.l.value)
+        self._vaex[self._gal[1]]   = c_gal.b.value
+        self._vaex[self._mugal[0]] = c_gal.pm_l_cosb.to(units.mas/units.yr).value
+        self._vaex[self._mugal[1]] = c_gal.pm_b.to(units.mas/units.yr).value
+        self.flush_extra_columns_to_hdf5(with_columns=self._gal+self._mugal)
+
     def __name_with_ext(self, ext):
         name_base = self._file_base
         return name_base.parent / f"{name_base.name}{ext}"
