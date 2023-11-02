@@ -15,6 +15,7 @@ import vaex
 from astropy import units, coordinates
 
 from .constants import *
+from . import Input
 
 if TYPE_CHECKING:
     from . import Survey
@@ -27,30 +28,57 @@ def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
 
 
 class Output:
-    _pos = ['px', 'py', 'pz']  # positions
-    _vel = ['vx', 'vy', 'vz']  # velocities
-    _cel = ['ra', 'dec']  # celestial coordinates
-    _gal = ['glon', 'glat']  # galactic coordinates
-    _rad = 'rad'  # distance
-    _dmod = 'dmod'  # distance modulus
-    _mtip = 'mtip'  # mass at tip of giant branch for star of given age & metallicity (Msun)
-    _mact = 'mact'  # current stellar mass (Msun)
-    _mini = 'smass'  # ZAMS stellar mass (Msun)
-    _age = 'age'  # age (Gyr)
-    _grav = 'grav'  # surface gravity (log g)
-    _feh = 'feh'  # [fe/h]
-    _teff = 'teff'  # temperature (returned log10(teff/K) by Galaxia)
-    _lum = 'lum'  # luminosity (returned log10(lum/lsun) by Galaxia)
-    _parentid = 'parentid'  # id of parent particle 
-    _partid = 'partid'  # flag of particle's central star
+    _position_prop = (('px', 'py', 'pz'), "Position coordinates in kpc")
+    _velocity_prop = (('vx', 'vy', 'vz'), "Velocity coordinates in km/s")
+    _celestial_prop = (('ra', 'dec'), "Celestial equatorial coordinates in degrees")
+    _galactic_prop = (('glon', 'glat'), "Celestial galactic coordinates in degrees")
+    _distance_prop = ('rad', "Distance in kpc")
+    _modulus_prop = ('dmod', "Distance modulus in magnitude units")
+    _trgbmass_prop = ('mtip', "Tip of the Red Giant Branch stellar mass in solar masses")
+    _currentmass_prop = ('mact', "Current stellar mass in solar masses")
+    _zamsmass_prop = ('smass', "Zero Age Main Sequence stellar mass in solar masses")
+    _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
+    _surfacegravity_prop = ('grav', "Surface gravity in CGS units and decimal logarithmic scale")
+    _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
+    _temperature_prop = ('teff', "Surface temperature in Kelvin and decimal logarithmic scale")
+    _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
+    _parentindex_prop = ('parentid', "Index of parent particle")
+    _particleflag_prop = ('partid', "Flag = 1 if star not at center of its parent particle")
+    _export_properties =  {_position_prop, _velocity_prop, _celestial_prop, _galactic_prop, _distance_prop, _modulus_prop, _trgbmass_prop, _currentmass_prop, _zamsmass_prop, _age_prop, _surfacegravity_prop, _metallicity_prop, _temperature_prop, _luminosity_prop, _parentindex_prop, _particleflag_prop}
     #####
-    _pi = 'pi'  # parallax
-    _mu = ['mura', 'mudec']  # proper motions
-    _mugal = ['mul', 'mub']  # galactic proper motions
-    _vr = 'vr'  # radial velocity
+    _parallax_prop = ('pi', "Parallax in milliarcseconds")
+    _propermotion_prop = (('mura', 'mudec'), "Equatorial proper motions in milliarcseconds per year")
+    _galacticpropermotion_prop = (('mul', 'mub'), "Galactic proper motions in milliarcseconds per year")
+    _radialvelocity_prop = ('vr', "Radial velocity in km/s")
+    _postprocess_properties = {_parallax_prop, _propermotion_prop, _galacticpropermotion_prop, _radialvelocity_prop}
     #####
-    _export_keys = _pos + _vel + _cel + _gal + [_rad, _dmod, _teff, _lum, _grav, _mtip, _mact, _mini, _age, _feh, _parentid, _partid]
-    _postprocess_keys = [_pi] + _mu + _mugal + [_vr]
+    _all_optional_properties = Input._optional_properties
+    #####
+    _export_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _export_properties], ()))
+    _postprocess_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _postprocess_properties], ()))
+    #####
+    _pos = _position_prop[0]  # ['px', 'py', 'pz']  # positions
+    _vel = _velocity_prop[0]  # ['vx', 'vy', 'vz']  # velocities
+    _cel = _celestial_prop[0]  # ['ra', 'dec']  # celestial coordinates
+    _gal = _galactic_prop[0]  # ['glon', 'glat']  # galactic coordinates
+    _rad = _distance_prop[0]  # 'rad'  # distance
+    _dmod = _modulus_prop[0]  # 'dmod'  # distance modulus
+    _mtip = _trgbmass_prop[0]  # 'mtip'  # mass at tip of giant branch for star of given age & metallicity (Msun)
+    _mact = _currentmass_prop[0]  # 'mact'  # current stellar mass (Msun)
+    _mini = _zamsmass_prop[0]  # 'smass'  # ZAMS stellar mass (Msun)
+    _age = _age_prop[0]  # 'age'  # age (Gyr)
+    _grav = _surfacegravity_prop[0]  # 'grav'  # surface gravity (log g)
+    _feh = _metallicity_prop[0]  # 'feh'  # [fe/h]
+    _teff = _surfacegravity_prop[0]  # 'teff'  # temperature (returned log10(teff/K) by Galaxia)
+    _lum = _luminosity_prop[0]  # 'lum'  # luminosity (returned log10(lum/lsun) by Galaxia)
+    _parentid = _parentindex_prop[0]  # 'parentid'  # id of parent particle 
+    _partid = _particleflag_prop[0]  # 'partid'  # flag of particle's central star
+    #####
+    _pi = _parallax_prop[0]  # 'pi'  # parallax
+    _mu = _propermotion_prop[0]  # ('mura', 'mudec')  # proper motions
+    _mugal = _galacticpropermotion_prop[0]  # ('mul', 'mub')  # galactic proper motions
+    _vr = _radialvelocity_prop[0]  # 'vr'  # radial velocity
+    #####
     _vaex_under_list = ['_repr_html_']
     def __init__(self, survey: Survey, parameters: dict) -> None:
         """
@@ -71,13 +99,34 @@ class Output:
             
             Notes
             -----
-            TODO describe output columns here
+            An Output object almost behaves as a vaex DataFrame, also please
+            consult vaex online tutorials for more hands-on information:
+                https://vaex.io/docs/tutorial.html
+
+            The DataFrame represents the catalogue with columns corresponding
+            to properties of the synthetic stars. Those include the photometric
+            magnitudes per filter, with each filter identified by a key in the
+            lowercase format "photosys_filtername" where photo_sys corresponds
+            to the photometric system and filtername corresponds to a filter
+            name of that system. With those are also always included the
+            following properties: {_output_properties}
+            
+            Additionally, depending on what optional properties were provided
+            with the input particle data, the output can also include the
+            following properties: {_optional_properties}
         """
         self.__survey = survey
         self.__parameters = parameters
         self.__vaex = None
         self.__path = None
 
+    __init__.__doc__ = __init__.__doc__.format(_output_properties=''.join(
+                                                   [f"\n                 -{desc} via key `{str(key)}`"
+                                                     for key, desc in _export_properties.union(_postprocess_properties)]),
+                                               _optional_properties=''.join(
+                                                   [f"\n                 -{desc} via key `{str(key)}`"
+                                                     for key, desc in _all_optional_properties]))
+    
     def __dir__(self):
         return sorted({i for i in self.__vaex.__dir__() if not i.startswith('_')}.union(
             super(Output, self).__dir__()).union(
@@ -100,18 +149,18 @@ class Output:
 
     @classmethod
     def _compile_export_mag_names(cls, isochrones):
-        return list(itertools.chain.from_iterable([isochrone.to_export_keys for isochrone in isochrones]))
+        return tuple(itertools.chain.from_iterable([isochrone.to_export_keys for isochrone in isochrones]))
     
     @classmethod
-    def _make_export_keys(cls, isochrones, extra_keys=[]):
+    def _make_export_keys(cls, isochrones, extra_keys=()):
         return cls._export_keys + extra_keys + cls._compile_export_mag_names(isochrones)
 
     @classmethod
-    def _make_catalogue_keys(cls, isochrones, extra_keys=[]):
+    def _make_catalogue_keys(cls, isochrones, extra_keys=()):
         return cls._make_export_keys(isochrones, extra_keys=cls._postprocess_keys+extra_keys)
 
     def _make_input_optional_keys(self):
-        return [k if k != 'id' else 'satid' for k in self.survey.input.optional_keys()]
+        return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
 
     def _ebf_to_hdf5(self):
         hdf5_file = self._hdf5
@@ -128,7 +177,7 @@ class Output:
         self._vaex[self._pi] = 1.0/self._vaex[self._rad]  # parallax in mas (from distance in kpc)
         self._vaex[self._teff] = 10**self._vaex[self._teff]  #Galaxia returns log10(teff/K)
         self._vaex[self._lum] = 10**self._vaex[self._lum]  #Galaxia returns log10(lum/lsun)
-        self.flush_extra_columns_to_hdf5(with_columns=[self._teff, self._lum])
+        self.flush_extra_columns_to_hdf5(with_columns=(self._teff, self._lum))
 
     def _pp_convert_cartesian_to_galactic(self):
         """
@@ -150,7 +199,7 @@ class Output:
         self._vaex[self._mugal[0]] = gc.sphericalcoslat.differentials['s'].d_lon_coslat.value
         self._vaex[self._mugal[1]] = gc.sphericalcoslat.differentials['s'].d_lat.value
         self._vaex[self._vr]       = gc.sphericalcoslat.differentials['s'].d_distance.value
-        self.flush_extra_columns_to_hdf5(with_columns=self._gal+[self._rad])
+        self.flush_extra_columns_to_hdf5(with_columns=self._gal+(self._rad,))
 
     def _pp_convert_galactic_to_icrs(self):
         """
@@ -258,7 +307,7 @@ class Output:
     def _hdf5(self):
         return self.__name_with_ext('.h5')
     
-    def flush_extra_columns_to_hdf5(self, with_columns=[]):  # temporary until vaex supports it
+    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
         hdf5_file = self._hdf5
         old_column_names = set(vaex.open(hdf5_file).column_names)
         with h5.File(hdf5_file, 'r+') as f5:

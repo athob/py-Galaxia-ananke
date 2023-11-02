@@ -94,7 +94,7 @@ class Survey:
                 Names of the filters Galaxia should use for the color-
                 magnitude diagram box selection. The given string must meet
                 the following format:
-                        f"band1,band2-band3"
+                        "band1,band2-band3"
                 where band1 is the magnitude filter and (band2, band3) are the
                 filters that define the band2-band3 color index. The filter
                 names must correspond to filters that are part of the first
