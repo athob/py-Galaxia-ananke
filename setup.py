@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-"""
-Credit to https://github.com/GalacticDynamics-Oxford/Agama/blob/master/setup.py for tools
-"""
 import pathlib
 import distutils
 from distutils.command.build_ext import build_ext

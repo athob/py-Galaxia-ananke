@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
-Docstring
+Contains the Output class definition
+
+Please note that this module is private. The Output class is
+available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -50,6 +53,26 @@ class Output:
     _postprocess_keys = [_pi] + _mu + _mugal + [_vr]
     _vaex_under_list = ['_repr_html_']
     def __init__(self, survey: Survey, parameters: dict) -> None:
+        """
+            Driver to exploit the output of Galaxia.
+
+            Call signature::
+
+                output = Output(survey, parameters)
+
+            Parameters
+            ----------
+            survey : :obj:`Survey`
+                Survey object that returned this output.
+            
+            parameters : dict
+                Dictionary all of parameters passed by Survey that were used
+                to generate this output.
+            
+            Notes
+            -----
+            TODO describe output columns here
+        """
         self.__survey = survey
         self.__parameters = parameters
         self.__vaex = None

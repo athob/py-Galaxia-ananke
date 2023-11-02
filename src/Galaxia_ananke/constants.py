@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from .utils import Singleton
 
-__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'DEFAULT_CMD_BOX', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'TTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
+__all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'DEFAULT_CMD_BOX', 'DEFAULT_SIMNAME', 'DEFAULT_SURVEYNAME', 'DEFAULT_PARFILE', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA_TMP', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE', 'TTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'DEFAULTS_FOR_PARFILE']
 
 NAME = 'Galaxia_ananke'
 GALAXIA_SUBMODULE_NAME = 'galaxia-ananke'
@@ -26,10 +26,14 @@ FILENAMES = 'filenames'
 LEGACY_PHOTOCAT = 'padova'
 CUSTOM_PHOTOCAT = 'py_custom'
 
-DEFAULT_PSYS = ['padova/GAIA']
+DEFAULT_PSYS = ['padova/GAIADR2']
 DEFAULT_CMD = 'Gmag,G_BPmag-G_RPmag'
 # DEFAULT_CMD = {'magnitude': 'Gmag', 'color_minuend': 'G_BPmag', 'color_subtrahend': 'G_RPmag'}
 DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,20], 'color': [-1000,1000]}
+
+DEFAULT_SIMNAME = 'sim'
+DEFAULT_SURVEYNAME = 'survey'
+DEFAULT_PARFILE = 'survey_params'
 
 PREFIX_ENV_VAR = "ANANKE_SYSTEM_PREFIX"
 if PREFIX_ENV_VAR in pathlib.os.environ:
@@ -37,7 +41,7 @@ if PREFIX_ENV_VAR in pathlib.os.environ:
 else:
     PREFIX = pathlib.Path(sys.prefix)
 if not pathlib.os.access(PREFIX, pathlib.os.W_OK):
-    PermissionError(f"Installation cannot complete: to proceed, please give write permission to directory {PREFIX} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")
+    PermissionError(f"Installation cannot complete: to proceed, please give write permission to directory {PREFIX} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")  # TODO make the variable conda-dependent?
 
 GLOBAL_CACHE = PREFIX / '.cache'
 

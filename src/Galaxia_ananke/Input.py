@@ -17,14 +17,88 @@ __all__ = ['Input']
 
 
 class Input:
-    _pos = 'pos3'
-    _vel = 'vel3'
-    _mass = 'mass'
+    _position_prop = ('pos3', "Position coordinates in kpc (Nx3)")
+    _velocity_prop = ('vel3', "Velocity coordinates in kpc (Nx3)")
+    _mass_prop = ('mass', "Stellar masses in solar masses")
+    _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
+    _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
+    _parentindex_prop = ('parentid', "Index of parent particle")
+    _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop, _parentindex_prop}
+    _populationindex_prop = ('id', "Index of parent particle population")
+    _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
+    _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
+    _carbonabundance_prop = ('carbon', "Carbon abundance [C/H] in dex")
+    _nitrogenabundance_prop = ('nitrogen', "Nitrogen abundance [N/H] in dex")
+    _oxygenabundance_prop = ('oxygen', "Oxygen abundance [O/H] in dex")
+    _neonabundance_prop = ('neon', "Neon abundance [Ne/H] in dex")
+    _magnesiumabundance_prop = ('magnesium', "Magnesium abundance [Mg/H] in dex")
+    _siliconabundance_prop = ('silicon', "Silicon abundance [Si/H] in dex")
+    _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
+    _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
+    _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
+    _optional_properties =  {_populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
+    _required_keys_in_particles = {_property[0] for _property in _required_properties}
+    _optional_keys_in_particles = {_property[0] for _property in _optional_properties}
+    _pos = _position_prop[0]
+    _vel = _velocity_prop[0]
+    _mass = _mass_prop[0]
+    _age = _age_prop[0]
+    _feh = _metallicity_prop[0]
     _kernels = 'h_cubic'
     _density = 'density'
-    _required_keys_in_particles = {_pos, _vel, _mass, 'age', 'parentid', 'feh'}
-    _optional_keys_in_particles = {'id', 'dform', 'helium', 'carbon', 'nitrogen', 'oxygen', 'neon', 'magnesium', 'silicon', 'sulphur', 'calcium', 'alpha'}
     def __init__(self, *args, **kwargs) -> None:
+        """
+            Driver to store and prepare the input data for Galaxia.
+
+            Call signatures::
+
+                input = Input(particles, rho_pos, rho_vel=None, name='{DEFAULT_SIMNAME}',
+                ngb={TTAGS_nres}, knorm=0.596831)
+
+                input = Input(pname, kname)
+            
+            Parameters
+            ----------
+            particles : dict
+                Dictionary where each elements represent the properties of the
+                input particles, given as equal-length array_like objects. The
+                dictionary must include the following properties with
+                corresponding keys: {_required_properties}
+                Additionally, Galaxia can optionally receive particle
+                properties that will be carried over to the generated
+                synthetic star, those include the following: {_optional_properties}
+
+            rho_pos : array_like
+                Contains the position-determined kernel density estimates for
+                the input particles. Must have equal lengths as the elements
+                in the particles dictionary.
+
+            rho_vel : array_like
+                Contains the velocity-determined kernel density estimates for
+                the input particles. Must have equal lengths as the elements
+                in the particles dictionary.
+
+            simname : string
+                Optional name Galaxia should use for the input files.
+                Default to '{DEFAULT_SIMNAME}'.
+            
+            ngb : int
+                Number of neighbouring particles Galaxia should consider.
+                Default to {TTAGS_nres}.
+            
+            knorm : float
+                Kernel normalization factor. Default to 0.596831.
+            
+            pname : string
+                Path to existing pre-formatted particles EBF files to use as
+                input for Galaxia. This keyword argument must be used in
+                conjunction with kname. Default to None if unused.
+
+            kname : string
+                Path to existing pre-formatted kernel EBF files to use as
+                input for Galaxia. This keyword argument must be used in
+                conjunction with pname. Default to None if unused.
+        """
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             self.__input_dir = GALAXIA_TMP
@@ -58,7 +132,16 @@ class Input:
         self.__pname = kwargs.get('pname', None)
         self.__kname = kwargs.get('kname', None)
         self.__knorm = kwargs.get('knorm', 0.596831)
-        self.__ngb = kwargs.get('ngb', 64)
+        self.__ngb = kwargs.get('ngb', TTAGS.nres)
+
+    __init__.__doc__ = __init__.__doc__.format(DEFAULT_SIMNAME=DEFAULT_SIMNAME,
+                                               TTAGS_nres=TTAGS.nres,
+                                               _required_properties=''.join(
+                                                   [f"\n                 -{desc} via key '{key}'"
+                                                     for key, desc in _required_properties]),
+                                               _optional_properties=''.join(
+                                                   [f"\n                 -{desc} via key '{key}'"
+                                                     for key, desc in _optional_properties]))
 
     @property
     def particles(self):
@@ -139,7 +222,7 @@ class Input:
         make_symlink(pname, temp_dir)
         temp_filename = (GALAXIA_FILENAMES / self.name).with_suffix('.txt')
         temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
-        parfile = pathlib.Path(kwargs.pop('parfile', 'survey_params'))  # TODO make temporary? create a global record of temporary files?
+        parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
         for_parfile = DEFAULTS_FOR_PARFILE.copy()

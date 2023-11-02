@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Docstring
+Contains the Galaxia_ananke module building utility tools. Credit to
+https://github.com/GalacticDynamics-Oxford/Agama/blob/master/setup.py.
 """
 import pathlib
 import shutil
