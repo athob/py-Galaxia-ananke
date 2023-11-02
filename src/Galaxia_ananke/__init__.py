@@ -103,7 +103,7 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
             64.
         
         knorm : float
-            TBD. Default to 0.596831.
+            Kernel normalization factor. Default to 0.596831.
         
         **kwargs
             Additional keyword arguments to customize the survey. Refer to

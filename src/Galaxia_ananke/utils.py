@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Docstring
+Module miscellaneous utilities
 """
 import pathlib
 
@@ -30,6 +30,10 @@ def compare_given_and_required(given, required, optional={}, error_message="Give
 
 
 class Singleton(type):
+    """
+    Singleton metaclass. Directly taken from
+    https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+    """
     _instances = {}
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
