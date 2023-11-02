@@ -18,7 +18,7 @@ __all__ = ['Input']
 
 class Input:
     _position_prop = ('pos3', "Position coordinates in kpc (Nx3)")
-    _velocity_prop = ('vel3', "Velocity coordinates in kpc (Nx3)")
+    _velocity_prop = ('vel3', "Velocity coordinates in km/s (Nx3)")
     _mass_prop = ('mass', "Stellar masses in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
@@ -137,10 +137,10 @@ class Input:
     __init__.__doc__ = __init__.__doc__.format(DEFAULT_SIMNAME=DEFAULT_SIMNAME,
                                                TTAGS_nres=TTAGS.nres,
                                                _required_properties=''.join(
-                                                   [f"\n                 -{desc} via key '{key}'"
+                                                   [f"\n                 -{desc} via key `{str(key)}`"
                                                      for key, desc in _required_properties]),
                                                _optional_properties=''.join(
-                                                   [f"\n                 -{desc} via key '{key}'"
+                                                   [f"\n                 -{desc} via key `{str(key)}`"
                                                      for key, desc in _optional_properties]))
 
     @property
