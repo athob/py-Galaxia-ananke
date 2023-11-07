@@ -42,7 +42,7 @@ class Output:
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
     _temperature_prop = ('teff', "Surface temperature in Kelvin and decimal logarithmic scale")
     _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
-    _parentindex_prop = ('parentid', "Index of parent particle")
+    _parentindex_prop = Input._parentindex_prop
     _particleflag_prop = ('partid', "Flag = 1 if star not at center of its parent particle")
     _export_properties =  {_position_prop, _velocity_prop, _celestial_prop, _galactic_prop, _distance_prop, _modulus_prop, _trgbmass_prop, _currentmass_prop, _zamsmass_prop, _age_prop, _surfacegravity_prop, _metallicity_prop, _temperature_prop, _luminosity_prop, _parentindex_prop, _particleflag_prop}
     #####
@@ -52,7 +52,7 @@ class Output:
     _radialvelocity_prop = ('vr', "Radial velocity in km/s")
     _postprocess_properties = {_parallax_prop, _propermotion_prop, _galacticpropermotion_prop, _radialvelocity_prop}
     #####
-    _all_optional_properties = Input._optional_properties
+    _all_optional_properties = Input._optional_properties - {_parentindex_prop}
     #####
     _export_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _export_properties], ()))
     _postprocess_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _postprocess_properties], ()))

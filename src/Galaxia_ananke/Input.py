@@ -23,7 +23,7 @@ class Input:
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
-    _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop, _parentindex_prop}
+    _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop}
     _populationindex_prop = ('id', "Index of parent particle population")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
     _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
@@ -36,7 +36,7 @@ class Input:
     _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
     _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
     _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
-    _optional_properties =  {_populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
+    _optional_properties =  {_parentindex_prop, _populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
     _required_keys_in_particles = {_property[0] for _property in _required_properties}
     _optional_keys_in_particles = {_property[0] for _property in _optional_properties}
     _pos = _position_prop[0]
@@ -44,6 +44,8 @@ class Input:
     _mass = _mass_prop[0]
     _age = _age_prop[0]
     _feh = _metallicity_prop[0]
+    _parentid = _parentindex_prop[0]
+    _dform = _formationdistance_prop[0]
     _kernels = 'h_cubic'
     _density = 'density'
     def __init__(self, *args, **kwargs) -> None:
@@ -109,7 +111,7 @@ class Input:
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
             _kname = kwargs['kname'] = pathlib.Path(kwargs['kname'])
-            if _pname.parent != _kname.parent: raise  # TODO write error message
+            if _pname.parent != _kname.parent: raise ValueError(f"Given pname file {_pname} and kname file {_kname} need to share the same parent directory")
             self.__input_dir = _pname.parent
             kwargs['name'] = re.findall("(.*).ebf", _pname.name)[0]
             _hdim, kwargs['ngb'] = map(int, re.findall(f"{kwargs['name']}_d(\d*)n(\d*)_den.ebf",
@@ -123,7 +125,7 @@ class Input:
             kwargs['rho_vel'] = (np.sqrt(kwargs['ngb']) * kwargs['knorm'] / _k[self._kernels][:,1])**3
             self.__input_files_exist = True
         else:
-            raise  # TODO write error message
+            raise ValueError("Wrong signature: please consult help of the Input constructor")
         self.__particles = kwargs['particles']
         self.__verify_particles()
         self.__rho_pos = kwargs['rho_pos']
@@ -208,8 +210,12 @@ class Input:
     def __verify_particles(self):
         compare_given_and_required(self.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
-        if 'dform' not in self.particles:
-            self.particles['dform'] = 0*self.particles[self._mass]
+        for key in set(self.keys()) - {self._mass}:
+            assert len(self.particles[key]) == self.length, f"Array representing property {key} in the provided particles input dictionary does not have the same length as property {self._mass}."
+        if self._parentid not in self.particles:
+            self.particles[self._parentid] = np.arange(self.length)
+        if self._dform not in self.particles:
+            self.particles[self._dform] = 0*self.particles[self._mass]
         # TODO check format, if dataframe-like
 
     def prepare_input(self, isochrone, cmd_magnames, **kwargs):
