@@ -22,7 +22,7 @@ __all__ = []
 
 
 # check Galaxia installation
-assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#Troubleshooting-installation for troubleshooting."
+assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#troubleshooting-installation for troubleshooting."
 
 
 def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_PSYS, cmd_magnames=DEFAULT_CMD, simname='sim', surveyname='survey', fsample=1, ngb=64, knorm=0.596831, **kwargs):  # args is (particles, rho_pos, rho_vel)
