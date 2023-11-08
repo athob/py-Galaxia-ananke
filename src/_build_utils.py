@@ -12,6 +12,7 @@ import tempfile
 from distutils.errors import CompileError
 
 from .constants import *
+from .__metadata__ import *
 
 __all__ = ['say', 'all_files', 'download_galaxia', 'check_galaxia_submodule', 'build_and_install_galaxia']
 
@@ -65,7 +66,12 @@ def download_galaxia(galaxia_dir):
 def check_galaxia_submodule(root_dir):
     # if not pathlib.os.listdir(GALAXIA_SUBMODULE_NAME):
     say("\nChecking submodule Galaxia, running git...")
-    subprocess.call(['git', 'submodule', 'update', '--init'], cwd=root_dir)
+    try:
+        _temp = subprocess.call(['git', 'submodule', 'update', '--init', '--recursive'], cwd=root_dir)
+    except FileNotFoundError:
+        raise OSError("Your system does not have git installed. Please install git before proceeding")
+    if _temp == 128:
+        raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
     install_sh_path = pathlib.Path(root_dir) / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
     if not pathlib.os.access(install_sh_path, pathlib.os.X_OK):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
