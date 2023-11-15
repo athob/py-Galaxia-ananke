@@ -48,9 +48,9 @@ class IsochroneFile:
     def _load_column_names(self):
         with self._open('r') as f:
             _temp = '#'
-            while (_temp[0] is '#') if _temp else False:
+            while (_temp[0] == '#') if _temp else False:
                 _temp = f.readline()
-                if (_temp[0] is '#') if _temp else False:
+                if (_temp[0] == '#') if _temp else False:
                     header = _temp
         header = header.strip('#').strip(' ').strip('\n').replace('\t',' ')
         while header.count('  '):
