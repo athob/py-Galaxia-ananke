@@ -153,7 +153,7 @@ class Output:
     
     @classmethod
     def _make_export_keys(cls, isochrones, extra_keys=()):
-        return cls._export_keys + extra_keys + cls._compile_export_mag_names(isochrones)
+        return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(isochrones)))
 
     @classmethod
     def _make_catalogue_keys(cls, isochrones, extra_keys=()):
@@ -166,6 +166,7 @@ class Output:
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
             for k in self.export_keys:
+                # print(f"Exporting {k}...")
                 f5.create_dataset(name=k, data=ebf.read(self._ebf, f"/{k}"))
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
