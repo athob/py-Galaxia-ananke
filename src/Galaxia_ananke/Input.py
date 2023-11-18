@@ -12,6 +12,7 @@ import ebf
 
 from .constants import *
 from .utils import make_symlink, compare_given_and_required
+from .photometry import Isochrone
 
 __all__ = ['Input']
 
@@ -56,7 +57,8 @@ class Input:
 
             Call signatures::
 
-                input = Input(particles, rho_pos, rho_vel=None, name='{DEFAULT_SIMNAME}',
+                input = Input(particles, rho_pos, rho_vel=None,
+                input_dir='{GALAXIA_TMP}', name='{DEFAULT_SIMNAME}',
                 ngb={TTAGS_nres}, k_factor=1., former_kernel=False)
 
                 input = Input(pname, kname, former_kernel=False)
@@ -116,7 +118,6 @@ class Input:
         """
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
-            self.__input_dir = GALAXIA_TMP
             kwargs['particles'] = args[0]
             kwargs['rho_pos'] = args[1]
             kwargs['rho_vel'] = args[2] if len(args) == 3 else kwargs.get('rho_vel', None)
@@ -125,7 +126,7 @@ class Input:
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
             _kname = kwargs['kname'] = pathlib.Path(kwargs['kname'])
             if _pname.parent != _kname.parent: raise ValueError(f"Given pname file {_pname} and kname file {_kname} need to share the same parent directory")
-            self.__input_dir = _pname.parent
+            kwargs['input_dir'] = _pname.parent
             kwargs['name'] = re.findall("(.*).ebf", _pname.name)[0]
             _hdim, kwargs['ngb'] = map(int, re.findall(f"{kwargs['name']}_d(\d*)n(\d*)_den.ebf",
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
@@ -150,6 +151,7 @@ class Input:
         self.__verify_particles()
         self.__rho_pos = kwargs['rho_pos']
         self.__rho_vel = kwargs.get('rho_vel')
+        self.__input_dir = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name = kwargs.get('name', 'sim')
         self.__pname = kwargs.get('pname', None)
         self.__kname = kwargs.get('kname', None)
@@ -159,7 +161,8 @@ class Input:
         __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
         self.__k_factor = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
 
-    __init__.__doc__ = __init__.__doc__.format(DEFAULT_SIMNAME=DEFAULT_SIMNAME,
+    __init__.__doc__ = __init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
+                                               DEFAULT_SIMNAME=DEFAULT_SIMNAME,
                                                TTAGS_nres=TTAGS.nres,
                                                _required_properties=''.join(
                                                    [f"\n                 -{desc} via key `{str(key)}`"
@@ -241,23 +244,22 @@ class Input:
             self.particles[self._dform] = 0*self.particles[self._mass]
         # TODO check format, if dataframe-like
 
-    def prepare_input(self, isochrone, cmd_magnames, **kwargs):
+    def prepare_input(self, isochrone: Isochrone, cmd_magnames, **kwargs):
         cmd_magnames = isochrone.check_cmd_magnames(cmd_magnames)
+        parfile, for_parfile = self._write_parameter_file(isochrone, cmd_magnames, **kwargs)
         kname = self._write_kernels()
         pname = self._write_particles()
-        temp_dir = GALAXIA_NBODY1 / self.name
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        make_symlink(kname, temp_dir)
-        make_symlink(pname, temp_dir)
-        temp_filename = (GALAXIA_FILENAMES / self.name).with_suffix('.txt')
-        temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
+        temp_filename = self._prepare_nbody1(kname, pname)
+        return self.name, parfile, for_parfile
+
+    def _write_parameter_file(self, isochrone: Isochrone, cmd_magnames, **kwargs):
         parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
         for_parfile = DEFAULTS_FOR_PARFILE.copy()
         for_parfile.update(**{TTAGS.photo_categ: isochrone.category, TTAGS.photo_sys: isochrone.name, TTAGS.mag_color_names: cmd_magnames, TTAGS.nres: self.ngb}, **kwargs)
         parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
-        return self.name, parfile, for_parfile
+        return parfile, for_parfile
 
     def _write_kernels(self):
         kname = self.kname
@@ -277,6 +279,15 @@ class Input:
             for key in self._optional_keys_in_particles:
                 ebf.write(pname, f"/{key}", self.particles[key] if key in self.keys() else np.zeros(self.length), 'a')
         return pname
+    
+    def _prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
+        temp_dir = GALAXIA_NBODY1 / self.name
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        make_symlink(kname, temp_dir)
+        make_symlink(pname, temp_dir)
+        temp_filename = (GALAXIA_FILENAMES / self.name).with_suffix('.txt')
+        temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
+        return temp_filename
 
 
 if __name__ == '__main__':

@@ -270,6 +270,10 @@ class Output:
         return self._make_catalogue_keys(self.isochrones, extra_keys=self._make_input_optional_keys())
     
     @property
+    def output_dir(self):
+        return pathlib.Path(self._parameters[TTAGS.output_dir])
+
+    @property
     def output_name(self):
         return f"{self.survey.surveyname}.{self.survey.inputname}"
 
@@ -298,7 +302,7 @@ class Output:
 
     @property
     def _file_base(self):
-        return GALAXIA_TMP / self.output_name
+        return self.output_dir / self.output_name
     
     @property
     def _ebf(self):
