@@ -16,6 +16,8 @@ from .utils import make_symlink, compare_given_and_required
 __all__ = ['Input']
 
 
+FOURTHIRDPI = 4*np.pi/3
+
 class Input:
     _position_prop = ('pos3', "Position coordinates in kpc (Nx3)")
     _velocity_prop = ('vel3', "Velocity coordinates in km/s (Nx3)")
@@ -55,9 +57,9 @@ class Input:
             Call signatures::
 
                 input = Input(particles, rho_pos, rho_vel=None, name='{DEFAULT_SIMNAME}',
-                ngb={TTAGS_nres}, knorm=0.596831)
+                ngb={TTAGS_nres}, k_factor=1., former_kernel=False)
 
-                input = Input(pname, kname)
+                input = Input(pname, kname, former_kernel=False)
             
             Parameters
             ----------
@@ -87,9 +89,12 @@ class Input:
             ngb : int
                 Number of neighbouring particles Galaxia should consider.
                 Default to {TTAGS_nres}.
-            
-            knorm : float
-                Kernel normalization factor. Default to 0.596831.
+
+            k_factor : float
+                Scaling factor applied to the kernels lengths to adjust all
+                the kernels sizes uniformly. Lower values reduces the kernels
+                extents, while higher values increases them.
+                Default to 1 (no adjustment).
             
             pname : string
                 Path to existing pre-formatted particles EBF files to use as
@@ -100,6 +105,14 @@ class Input:
                 Path to existing pre-formatted kernel EBF files to use as
                 input for Galaxia. This keyword argument must be used in
                 conjunction with pname. Default to None if unused.
+
+            former_kernel : bool or dict
+                Flag that allow the utilization of the former implementation
+                for the kernels lengths with the consideration of a kernel
+                normalization factor. If providing a dictionary, you can
+                configure the former kernel normalization factor knorm by
+                including the value knorm under key 'knorm'. Default to False,
+                if True, knorm defaults to 0.596831.
         """
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
@@ -120,9 +133,16 @@ class Input:
             _k =  ebf.read(_kname)
             _mass = _k[self._mass]  # dummy line to check format
             kwargs['rho_pos'] = _k[self._density]
-            _knorm = _k['h_cubic'][:,0] * np.cbrt(_k['density']) / np.sqrt(kwargs['ngb'])
-            kwargs['knorm'] = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
-            kwargs['rho_vel'] = (np.sqrt(kwargs['ngb']) * kwargs['knorm'] / _k[self._kernels][:,1])**3
+            _k_factor = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
+            if kwargs.get('former_kernel', False):
+                _knorm = _k_factor/(np.sqrt(kwargs['ngb']) * np.cbrt(FOURTHIRDPI))
+                # _knorm = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
+                _knorm = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
+                kwargs['rho_vel'] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
+                kwargs['former_kernel'] = {'knorm': _knorm}
+            else:
+                kwargs['rho_vel'] = (_k_factor / _k[self._kernels][:,1])**3 / FOURTHIRDPI
+                kwargs['k_factor'] = _k_factor
             self.__input_files_exist = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
@@ -133,8 +153,11 @@ class Input:
         self.__name = kwargs.get('name', 'sim')
         self.__pname = kwargs.get('pname', None)
         self.__kname = kwargs.get('kname', None)
-        self.__knorm = kwargs.get('knorm', 0.596831)
         self.__ngb = kwargs.get('ngb', TTAGS.nres)
+        __old = kwargs.get('former_kernel', False)
+        if __old and not isinstance(__old, dict):  __old = {}
+        __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
+        self.__k_factor = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
 
     __init__.__doc__ = __init__.__doc__.format(DEFAULT_SIMNAME=DEFAULT_SIMNAME,
                                                TTAGS_nres=TTAGS.nres,
@@ -174,12 +197,12 @@ class Input:
         return self.__name
     
     @property
-    def knorm(self):
-        return self.__knorm
-
-    @property
     def ngb(self):
         return self.__ngb
+    
+    @property
+    def k_factor(self):
+        return self.__k_factor
 
     @property
     def _input_dir(self):
@@ -187,7 +210,7 @@ class Input:
 
     @property
     def kernels(self):
-        return np.sqrt(self.ngb) * self.knorm / np.cbrt(self.rho)
+        return self.k_factor/np.cbrt(FOURTHIRDPI*self.rho)
     
     @property
     def kname(self):
