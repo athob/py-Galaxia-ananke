@@ -11,7 +11,7 @@ import numpy as np
 import ebf
 
 from .constants import *
-from .utils import make_symlink, compare_given_and_required
+from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
 from .photometry import Isochrone
 
 __all__ = ['Input']
@@ -236,8 +236,7 @@ class Input:
     def __verify_particles(self):
         compare_given_and_required(self.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
-        for key in set(self.keys()) - {self._mass}:
-            assert len(self.particles[key]) == self.length, f"Array representing property {key} in the provided particles input dictionary does not have the same length as property {self._mass}."
+        confirm_equal_length_arrays_in_dict(self.particles, self._mass, error_message_dict_name='particles')
         if self._parentid not in self.particles:
             self.particles[self._parentid] = np.arange(self.length)
         if self._dform not in self.particles:
