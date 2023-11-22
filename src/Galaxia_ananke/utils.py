@@ -9,6 +9,7 @@ __all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_a
 
 def make_symlink(file_path, dest_dir):
     file_path = pathlib.Path(file_path).resolve()
+    dest_dir = pathlib.Path(dest_dir).resolve()
     symlink_name = dest_dir / file_path.name
     try:
         symlink_name.unlink()
@@ -32,8 +33,11 @@ def compare_given_and_required(given, required=set(), optional=set(), error_mess
 def confirm_equal_length_arrays_in_dict(dictionary: dict, control: str = None, error_message_dict_name: str = ''):
     if control is None and dictionary:
         control = list(dictionary.keys())[0]
+    wrong_keys = []
     for key in set(dictionary.keys()) - {control}:
-        assert len(dictionary[key]) == len(dictionary[control]), f"Array representing property {key} in the provided {error_message_dict_name + bool(error_message_dict_name)*' '}input dictionary does not have the same length as property {control}."
+        if len(dictionary[key]) != len(dictionary[control]): wrong_keys.append(key)
+    if wrong_keys:
+        raise ValueError(f"Array{'' if len(wrong_keys)==1 else 's'} representing propert{'y' if len(wrong_keys)==1 else 'ies'} {set(wrong_keys)} in the provided {error_message_dict_name + bool(error_message_dict_name)*' '}input dictionary do{'es' if len(wrong_keys)==1 else ''} not have the same length as property {control}.")
 
 class Singleton(type):
     """
