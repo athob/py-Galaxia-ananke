@@ -18,11 +18,16 @@ from .Input import Input
 from .Survey import Survey
 from .Output import Output
 
-__all__ = []
+__all__ = ['make_dummy_particles_input', 'make_dummy_densities_input', 'make_survey_from_particles']
 
 
 # check Galaxia installation
 assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#troubleshooting-installation for troubleshooting."
+
+
+make_dummy_particles_input = Input.make_dummy_particles_input
+
+make_dummy_densities_input = Input.make_dummy_densities_input
 
 
 def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_PSYS, cmd_magnames=DEFAULT_CMD, simname='sim', surveyname='survey', fsample=1, ngb=64, k_factor=1, **kwargs):  # args is (particles, rho_pos, rho_vel)
@@ -46,7 +51,9 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
         particles : dict
             Dictionary where each elements represent the properties of the
             input particles, given as equal-length array_like objects. Refer
-            to Input documentation for appropriate formatting.
+            to Input documentation for appropriate formatting. Galaxia_ananke
+            also comes packaged with a function make_dummy_particles_input to
+            produce a dummy example for that dictionary.
 
         rho_pos : array_like
             Contains the position-determined kernel density estimates for the

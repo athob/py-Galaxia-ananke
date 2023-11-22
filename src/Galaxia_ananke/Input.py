@@ -47,6 +47,17 @@ class Input:
     _mass = _mass_prop[0]
     _age = _age_prop[0]
     _feh = _metallicity_prop[0]
+    _He = _heliumabundance_prop[0]
+    _C = _carbonabundance_prop[0]
+    _N = _nitrogenabundance_prop[0]
+    _O = _oxygenabundance_prop[0]
+    _Ne = _neonabundance_prop[0]
+    _Mg = _magnesiumabundance_prop[0]
+    _Si = _siliconabundance_prop[0]
+    _S = _sulphurabundance_prop[0]
+    _Ca = _calciumabundance_prop[0]
+    _elem_list = [_He, _C, _N, _O, _Ne, _Mg, _Si, _S, _Ca]
+    _alph = _alphaabundance_prop[0]
     _parentid = _parentindex_prop[0]
     _dform = _formationdistance_prop[0]
     _kernels = 'h_cubic'
@@ -73,6 +84,8 @@ class Input:
                 Additionally, Galaxia can optionally receive particle
                 properties that will be carried over to the generated
                 synthetic star, those include the following: {_optional_properties}
+                Input comes with class method make_dummy_particles_input to
+                produce a dummy example of that dictionary.
 
             rho_pos : array_like
                 Contains the position-determined kernel density estimates for
@@ -287,6 +300,58 @@ class Input:
         temp_filename = (GALAXIA_FILENAMES / self.name).with_suffix('.txt')
         temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
         return temp_filename
+    
+    @classmethod
+    def make_dummy_particles_input(cls, n_parts=10**5):
+        """
+            Generate an example dummy input particles dictionary for Input
+            made of randomly generated arrays.
+
+            Parameters
+            ----------
+            n_parts : int
+                Number of particles the example include. Default to 10**5.
+
+            Returns
+            -------
+            p : dict
+                Dummy example input particles for Input.
+        """
+        p = {}
+        p[cls._pos] = 30*np.random.randn(n_parts, 3)
+        p[cls._vel] = 50*np.random.randn(n_parts, 3)
+        p[cls._mass] = 5500 + 700*np.random.randn(n_parts)
+        p[cls._age] = 9.7 + 0.4*np.random.randn(n_parts)
+        p[cls._feh] = -0.7 + 0.4*np.random.randn(n_parts)
+        for el in cls._elem_list:
+            p[el] = -0.6 + 0.4*np.random.randn(n_parts)
+        p[cls._alph] = p[cls._Mg] - p[cls._feh]
+        p[cls._parentid] = np.arange(n_parts)
+        p[cls._dform] = np.zeros(n_parts, dtype='float32')
+        return p
+
+    @classmethod
+    def make_dummy_densities_input(cls, n_parts=10**5):
+        """
+            Generate an example dummy input densities for Input
+            made of randomly generated arrays.
+
+            Parameters
+            ----------
+            n_parts : int
+                Number of particles the example include. Default to 10**5.
+
+            Returns
+            -------
+            rho_pos : array
+                Dummy example input position densities for Input.
+
+            rho_vel : array
+                Dummy example input velocity densities for Input.
+        """
+        rho_pos = np.exp(-2.9 + 1.1*np.random.randn(n_parts))
+        rho_vel = np.exp(-4.4 + 1.1*np.random.randn(n_parts))
+        return rho_pos, rho_vel
 
 
 if __name__ == '__main__':
