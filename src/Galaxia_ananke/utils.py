@@ -4,9 +4,8 @@ Module miscellaneous utilities
 """
 import pathlib
 
-from astropy.utils import classproperty
 
-__all__ = ['classproperty', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton']
+__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton']
 
 
 def make_symlink(file_path, dest_dir):
