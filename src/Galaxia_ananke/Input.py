@@ -11,7 +11,7 @@ import numpy as np
 import ebf
 
 from .constants import *
-from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
+from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
 from .photometry import Isochrone
 
 __all__ = ['Input']
@@ -26,7 +26,7 @@ class Input:
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
-    _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop}
+    # _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop}
     _populationindex_prop = ('id', "Index of parent particle population")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
     _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
@@ -39,28 +39,7 @@ class Input:
     _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
     _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
     _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
-    _optional_properties =  {_parentindex_prop, _populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
-    _required_keys_in_particles = {_property[0] for _property in _required_properties}
-    _optional_keys_in_particles = {_property[0] for _property in _optional_properties}
-    _pos = _position_prop[0]
-    _vel = _velocity_prop[0]
-    _mass = _mass_prop[0]
-    _age = _age_prop[0]
-    _feh = _metallicity_prop[0]
-    _He = _heliumabundance_prop[0]
-    _C = _carbonabundance_prop[0]
-    _N = _nitrogenabundance_prop[0]
-    _O = _oxygenabundance_prop[0]
-    _Ne = _neonabundance_prop[0]
-    _Mg = _magnesiumabundance_prop[0]
-    _Si = _siliconabundance_prop[0]
-    _S = _sulphurabundance_prop[0]
-    _Ca = _calciumabundance_prop[0]
-    _elem_list = [_He, _C, _N, _O, _Ne, _Mg, _Si, _S, _Ca]
-    _alph = _alphaabundance_prop[0]
-    _parentid = _parentindex_prop[0]
-    _dform = _formationdistance_prop[0]
-    _pop_id = _populationindex_prop[0]
+    # _optional_properties =  {_parentindex_prop, _populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
     _kernels = 'h_cubic'
     _density = 'density'
     def __init__(self, *args, **kwargs) -> None:
@@ -175,15 +154,121 @@ class Input:
         __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
         self.__k_factor = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
 
-    __init__.__doc__ = __init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
-                                               DEFAULT_SIMNAME=DEFAULT_SIMNAME,
-                                               TTAGS_nres=TTAGS.nres,
-                                               _required_properties=''.join(
-                                                   [f"\n                 -{desc} via key `{str(key)}`"
-                                                     for key, desc in _required_properties]),
-                                               _optional_properties=''.join(
-                                                   [f"\n                 -{desc} via key `{str(key)}`"
-                                                     for key, desc in _optional_properties]))
+    @classproperty
+    def _required_properties(cls):
+        return {
+            cls._position_prop,
+            cls._velocity_prop,
+            cls._mass_prop,
+            cls._age_prop,
+            cls._metallicity_prop
+            }
+
+    @classproperty
+    def _optional_properties(cls):
+        return {
+            cls._parentindex_prop,
+            cls._populationindex_prop,
+            cls._formationdistance_prop,
+            cls._heliumabundance_prop,
+            cls._carbonabundance_prop,
+            cls._nitrogenabundance_prop,
+            cls._oxygenabundance_prop,
+            cls._neonabundance_prop,
+            cls._magnesiumabundance_prop,
+            cls._siliconabundance_prop,
+            cls._sulphurabundance_prop,
+            cls._calciumabundance_prop,
+            cls._alphaabundance_prop
+            }
+
+    @classproperty
+    def _required_keys_in_particles(cls):
+        return {_property[0] for _property in cls._required_properties}
+
+    @classproperty
+    def _optional_keys_in_particles(cls):
+        return {_property[0] for _property in cls._optional_properties}
+
+    @classproperty
+    def all_possible_keys_in_particles(cls):
+        return cls._required_keys_in_particles.union(cls._optional_keys_in_particles)
+    
+    @classproperty
+    def _pos(cls):
+        return cls._position_prop[0]
+
+    @classproperty
+    def _vel(cls):
+        return cls._velocity_prop[0]
+
+    @classproperty
+    def _mass(cls):
+        return cls._mass_prop[0]
+
+    @classproperty
+    def _age(cls):
+        return cls._age_prop[0]
+
+    @classproperty
+    def _feh(cls):
+        return cls._metallicity_prop[0]
+
+    @classproperty
+    def _He(cls):
+        return cls._heliumabundance_prop[0]
+
+    @classproperty
+    def _C(cls):
+        return cls._carbonabundance_prop[0]
+
+    @classproperty
+    def _N(cls):
+        return cls._nitrogenabundance_prop[0]
+
+    @classproperty
+    def _O(cls):
+        return cls._oxygenabundance_prop[0]
+
+    @classproperty
+    def _Ne(cls):
+        return cls._neonabundance_prop[0]
+
+    @classproperty
+    def _Mg(cls):
+        return cls._magnesiumabundance_prop[0]
+
+    @classproperty
+    def _Si(cls):
+        return cls._siliconabundance_prop[0]
+
+    @classproperty
+    def _S(cls):
+        return cls._sulphurabundance_prop[0]
+
+    @classproperty
+    def _Ca(cls):
+        return cls._calciumabundance_prop[0]
+
+    @classproperty
+    def _elem_list(cls):
+        return [cls._He, cls._C, cls._N, cls._O, cls._Ne, cls._Mg, cls._Si, cls._S, cls._Ca]
+
+    @classproperty
+    def _alph(cls):
+        return cls._alphaabundance_prop[0]
+
+    @classproperty
+    def _parentid(cls):
+        return cls._parentindex_prop[0]
+
+    @classproperty
+    def _dform(cls):
+        return cls._formationdistance_prop[0]
+
+    @classproperty
+    def _pop_id(cls):
+        return cls._populationindex_prop[0]
 
     @property
     def particles(self):
@@ -354,6 +439,16 @@ class Input:
         rho_pos = np.exp(-2.9 + 1.1*np.random.randn(n_parts))
         rho_vel = np.exp(-4.4 + 1.1*np.random.randn(n_parts))
         return rho_pos, rho_vel
+
+Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
+                                            DEFAULT_SIMNAME=DEFAULT_SIMNAME,
+                                            TTAGS_nres=TTAGS.nres,
+                                            _required_properties=''.join(
+                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                    for key, desc in Input._required_properties]),
+                                            _optional_properties=''.join(
+                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                    for key, desc in Input._optional_properties]))
 
 
 if __name__ == '__main__':
