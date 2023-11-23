@@ -9,9 +9,10 @@ import re
 import pathlib
 import numpy as np
 import ebf
+from astropy.utils import classproperty
 
 from .constants import *
-from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
+from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
 from .photometry import Isochrone
 
 __all__ = ['Input']
@@ -26,7 +27,6 @@ class Input:
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
-    # _required_properties = {_position_prop, _velocity_prop, _mass_prop, _age_prop, _metallicity_prop}
     _populationindex_prop = ('id', "Index of parent particle population")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
     _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
@@ -39,7 +39,6 @@ class Input:
     _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
     _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
     _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
-    # _optional_properties =  {_parentindex_prop, _populationindex_prop, _formationdistance_prop, _heliumabundance_prop, _carbonabundance_prop, _nitrogenabundance_prop, _oxygenabundance_prop, _neonabundance_prop, _magnesiumabundance_prop, _siliconabundance_prop, _sulphurabundance_prop, _calciumabundance_prop, _alphaabundance_prop}
     _kernels = 'h_cubic'
     _density = 'density'
     def __init__(self, *args, **kwargs) -> None:
