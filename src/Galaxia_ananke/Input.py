@@ -60,6 +60,7 @@ class Input:
     _alph = _alphaabundance_prop[0]
     _parentid = _parentindex_prop[0]
     _dform = _formationdistance_prop[0]
+    _pop_id = _populationindex_prop[0]
     _kernels = 'h_cubic'
     _density = 'density'
     def __init__(self, *args, **kwargs) -> None:
@@ -328,6 +329,7 @@ class Input:
         p[cls._alph] = p[cls._Mg] - p[cls._feh]
         p[cls._parentid] = np.arange(n_parts)
         p[cls._dform] = np.zeros(n_parts, dtype='float32')
+        p[cls._pop_id] = np.zeros(n_parts, dtype='int')
         return p
 
     @classmethod
