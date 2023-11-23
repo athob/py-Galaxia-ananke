@@ -22,7 +22,8 @@ __all__ = ['make_dummy_particles_input', 'make_dummy_densities_input', 'make_sur
 
 
 # check Galaxia installation
-assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#troubleshooting-installation for troubleshooting."
+if __name__ == NAME:
+    assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#troubleshooting-installation for troubleshooting."
 
 
 make_dummy_particles_input = Input.make_dummy_particles_input
