@@ -13,6 +13,7 @@ import h5py as h5
 import ebf
 import vaex
 from astropy import units, coordinates
+from astropy.utils import classproperty
 
 from .constants import *
 from . import Input
@@ -44,41 +45,10 @@ class Output:
     _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
     _parentindex_prop = Input._parentindex_prop
     _particleflag_prop = ('partid', "Flag = 1 if star not at center of its parent particle")
-    _export_properties =  {_position_prop, _velocity_prop, _celestial_prop, _galactic_prop, _distance_prop, _modulus_prop, _trgbmass_prop, _currentmass_prop, _zamsmass_prop, _age_prop, _surfacegravity_prop, _metallicity_prop, _temperature_prop, _luminosity_prop, _parentindex_prop, _particleflag_prop}
-    #####
     _parallax_prop = ('pi', "Parallax in milliarcseconds")
     _propermotion_prop = (('mura', 'mudec'), "Equatorial proper motions in milliarcseconds per year")
     _galacticpropermotion_prop = (('mul', 'mub'), "Galactic proper motions in milliarcseconds per year")
     _radialvelocity_prop = ('vr', "Radial velocity in km/s")
-    _postprocess_properties = {_parallax_prop, _propermotion_prop, _galacticpropermotion_prop, _radialvelocity_prop}
-    #####
-    _all_optional_properties = Input._optional_properties - {_parentindex_prop}
-    #####
-    _export_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _export_properties], ()))
-    _postprocess_keys = tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in _postprocess_properties], ()))
-    #####
-    _pos = _position_prop[0]  # ['px', 'py', 'pz']  # positions
-    _vel = _velocity_prop[0]  # ['vx', 'vy', 'vz']  # velocities
-    _cel = _celestial_prop[0]  # ['ra', 'dec']  # celestial coordinates
-    _gal = _galactic_prop[0]  # ['glon', 'glat']  # galactic coordinates
-    _rad = _distance_prop[0]  # 'rad'  # distance
-    _dmod = _modulus_prop[0]  # 'dmod'  # distance modulus
-    _mtip = _trgbmass_prop[0]  # 'mtip'  # mass at tip of giant branch for star of given age & metallicity (Msun)
-    _mact = _currentmass_prop[0]  # 'mact'  # current stellar mass (Msun)
-    _mini = _zamsmass_prop[0]  # 'smass'  # ZAMS stellar mass (Msun)
-    _age = _age_prop[0]  # 'age'  # age (Gyr)
-    _grav = _surfacegravity_prop[0]  # 'grav'  # surface gravity (log g)
-    _feh = _metallicity_prop[0]  # 'feh'  # [fe/h]
-    _teff = _surfacegravity_prop[0]  # 'teff'  # temperature (returned log10(teff/K) by Galaxia)
-    _lum = _luminosity_prop[0]  # 'lum'  # luminosity (returned log10(lum/lsun) by Galaxia)
-    _parentid = _parentindex_prop[0]  # 'parentid'  # id of parent particle 
-    _partid = _particleflag_prop[0]  # 'partid'  # flag of particle's central star
-    #####
-    _pi = _parallax_prop[0]  # 'pi'  # parallax
-    _mu = _propermotion_prop[0]  # ('mura', 'mudec')  # proper motions
-    _mugal = _galacticpropermotion_prop[0]  # ('mul', 'mub')  # galactic proper motions
-    _vr = _radialvelocity_prop[0]  # 'vr'  # radial velocity
-    #####
     _vaex_under_list = ['_repr_html_']
     def __init__(self, survey: Survey, parameters: dict) -> None:
         """
@@ -120,12 +90,127 @@ class Output:
         self.__vaex = None
         self.__path = None
 
-    __init__.__doc__ = __init__.__doc__.format(_output_properties=''.join(
-                                                   [f"\n                 -{desc} via key `{str(key)}`"
-                                                     for key, desc in _export_properties.union(_postprocess_properties)]),
-                                               _optional_properties=''.join(
-                                                   [f"\n                 -{desc} via key `{str(key)}`"
-                                                     for key, desc in _all_optional_properties]))
+    @classproperty
+    def _export_properties(cls):
+        return {
+            cls._position_prop,
+            cls._velocity_prop,
+            cls._celestial_prop,
+            cls._galactic_prop,
+            cls._distance_prop,
+            cls._modulus_prop,
+            cls._trgbmass_prop,
+            cls._currentmass_prop,
+            cls._zamsmass_prop,
+            cls._age_prop,
+            cls._surfacegravity_prop,
+            cls._metallicity_prop,
+            cls._temperature_prop,
+            cls._luminosity_prop,
+            cls._parentindex_prop,
+            cls._particleflag_prop
+            }
+    
+    @classproperty
+    def _postprocess_properties(cls):
+        return {
+            cls._parallax_prop,
+            cls._propermotion_prop,
+            cls._galacticpropermotion_prop,
+            cls._radialvelocity_prop
+            }
+    
+    @classproperty
+    def _all_optional_properties(cls):
+        return Input._optional_properties - {cls._parentindex_prop}
+    
+    @classproperty
+    def _export_keys(cls):
+        return tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in cls._export_properties], ()))
+    
+    @classproperty
+    def _postprocess_keys(cls):
+        return tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in cls._postprocess_properties], ()))
+    
+    @classproperty
+    def _pos(cls):
+        return cls._position_prop[0]
+    
+    @classproperty
+    def _vel(cls):
+        return cls._velocity_prop[0]
+    
+    @classproperty
+    def _cel(cls):
+        return cls._celestial_prop[0]
+    
+    @classproperty
+    def _gal(cls):
+        return cls._galactic_prop[0]
+    
+    @classproperty
+    def _rad(cls):
+        return cls._distance_prop[0]
+    
+    @classproperty
+    def _dmod(cls):
+        return cls._modulus_prop[0]
+    
+    @classproperty
+    def _mtip(cls):
+        return cls._trgbmass_prop[0]
+    
+    @classproperty
+    def _mact(cls):
+        return cls._currentmass_prop[0]
+    
+    @classproperty
+    def _mini(cls):
+        return cls._zamsmass_prop[0]
+    
+    @classproperty
+    def _age(cls):
+        return cls._age_prop[0]
+    
+    @classproperty
+    def _grav(cls):
+        return cls._surfacegravity_prop[0]
+    
+    @classproperty
+    def _feh(cls):
+        return cls._metallicity_prop[0]
+    
+    @classproperty
+    def _teff(cls):
+        return cls._surfacegravity_prop[0]
+    
+    @classproperty
+    def _lum(cls):
+        return cls._luminosity_prop[0]
+    
+    @classproperty
+    def _parentid(cls):
+        return cls._parentindex_prop[0]\
+        
+    @classproperty
+    def _partid(cls):
+        return cls._particleflag_prop[0]
+    
+    @classproperty
+    def _pi(cls):
+        return cls._parallax_prop[0]
+    
+    @classproperty
+    def _mu(cls):
+        return cls._propermotion_prop[0]
+    
+    @classproperty
+    def _mugal(cls):
+        return cls._galacticpropermotion_prop[0]
+    
+    @classproperty
+    def _vr(cls):
+        return cls._radialvelocity_prop[0]
     
     def __dir__(self):
         return sorted({i for i in self.__vaex.__dir__() if not i.startswith('_')}.union(
@@ -328,6 +413,14 @@ class Output:
                 print(f"Overwritten the following quantities to {hdf5_file}")
                 print(with_columns)
         self.__vaex = vaex.open(hdf5_file)
+
+
+Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(
+                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                    for key, desc in Output._export_properties.union(Output._postprocess_properties)]),
+                                                         _optional_properties=''.join(
+                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                    for key, desc in Output._all_optional_properties]))
 
 
 if __name__ == '__main__':
