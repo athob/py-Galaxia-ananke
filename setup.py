@@ -56,7 +56,7 @@ setup(name=NAME,
       python_requires='>=3.7.12,<3.11',
       packages=[NAME, f"{NAME}.photometry"],
       package_dir={'': SRC_DIR},
-      install_requires=['numpy', 'pandas', 'vaex', 'astropy', 'h5py', 'ebfpy'],
+      install_requires=['numpy', 'pandas', 'vaex>=4.17', 'astropy', 'h5py', 'ebfpy'],
       ext_modules=[distutils.extension.Extension('', [])],
       cmdclass={'build_ext': MyBuildExt, 'test': MyTest},
       )
