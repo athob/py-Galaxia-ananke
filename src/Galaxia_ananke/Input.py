@@ -76,13 +76,17 @@ class Input:
                 the input particles. Must have equal lengths as the elements
                 in the particles dictionary.
 
-            simname : string
+            input_dir : string or pathlib.Path
+                Optional arguments to specify path for the directory where
+                Galaxia's input data should be generated. Default to '{GALAXIA_TMP}'.
+
+            name : string
                 Optional name Galaxia should use for the input files.
                 Default to '{DEFAULT_SIMNAME}'.
             
             ngb : int
                 Number of neighbouring particles Galaxia should consider.
-                Default to {TTAGS_nres}.
+                Default to {TTAGS_nres}. ONLY SUPPORT 8, 32, 64 & 128.
 
             k_factor : float
                 Scaling factor applied to the kernels lengths to adjust all
@@ -140,11 +144,12 @@ class Input:
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
         self.__particles = kwargs['particles']
-        self.__verify_particles()
+        self.__verify_particles(self.particles)
+        self.__complete_particles(self.particles)
         self.__rho_pos = kwargs['rho_pos']
         self.__rho_vel = kwargs.get('rho_vel')
         self.__input_dir = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
-        self.__name = kwargs.get('name', 'sim')
+        self.__name = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname = kwargs.get('pname', None)
         self.__kname = kwargs.get('kname', None)
         self.__ngb = kwargs.get('ngb', TTAGS.nres)
@@ -314,7 +319,7 @@ class Input:
         return self.k_factor/np.cbrt(FOURTHIRDPI*self.rho)
     
     @property
-    def kname(self):
+    def kname(self):  # TODO replace with functools cached_property?
         if self.__kname is None:
             self.__kname = self._input_dir / f"{self.name}_d{self.hdim}n{self.ngb}_den.ebf"
         return self.__kname
@@ -330,16 +335,6 @@ class Input:
     
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
-
-    def __verify_particles(self):
-        compare_given_and_required(self.keys(), self._required_keys_in_particles, self._optional_keys_in_particles,
-                                   error_message="Given particle data covers wrong set of keys")
-        confirm_equal_length_arrays_in_dict(self.particles, self._mass, error_message_dict_name='particles')
-        if self._parentid not in self.particles:
-            self.particles[self._parentid] = np.arange(self.length)
-        if self._dform not in self.particles:
-            self.particles[self._dform] = 0*self.particles[self._mass]
-        # TODO check format, if dataframe-like
 
     def prepare_input(self, isochrone: Isochrone, cmd_magnames, **kwargs):
         cmd_magnames = isochrone.check_cmd_magnames(cmd_magnames)
@@ -386,6 +381,20 @@ class Input:
         temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
         return temp_filename
     
+    @classmethod
+    def __verify_particles(cls, particles):
+        compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,
+                                   error_message="Given particle data covers wrong set of keys")
+        confirm_equal_length_arrays_in_dict(particles, cls._mass, error_message_dict_name='particles')
+        # TODO check format, if dataframe-like
+    
+    @classmethod
+    def __complete_particles(cls, particles):
+        if cls._parentid not in particles:
+            particles[cls._parentid] = np.arange(cls.length)
+        if cls._dform not in particles:
+            particles[cls._dform] = 0*particles[cls._mass]
+
     @classmethod
     def make_dummy_particles_input(cls, n_parts=10**5):
         """
