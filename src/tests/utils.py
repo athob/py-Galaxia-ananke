@@ -3,10 +3,22 @@ import os
 import sys
 import io
 import tempfile
+import random
+import string
 import pathlib
 import contextlib
 import functools
 
+import numpy as np
+
+
+FOURTHIRDPI = 4*np.pi/3
+
+def make_random_string(length=10):
+    return "".join([
+        random.choice(string.ascii_letters+string.digits)
+        for i in range(length)
+        ])
 
 @contextlib.contextmanager
 def tmp_wd():
