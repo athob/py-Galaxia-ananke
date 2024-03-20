@@ -41,13 +41,15 @@ class Input:
     _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
     _kernels = 'h_cubic'
     _density = 'density'
+    _positiondensity_prop = ('rho_pos', 'Position space density in kpc^-3')
+    _velocitydensity_prop = ('rho_vel', 'Velocity space density in [km/s]^-3')
     def __init__(self, *args, **kwargs) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
 
             Call signatures::
 
-                input = Input(particles, rho_pos, rho_vel=None,
+                input = Input(particles, {rho_pos}, {rho_vel}=None,
                 input_dir='{GALAXIA_TMP}', name='{DEFAULT_SIMNAME}',
                 ngb={TTAGS_nres}, k_factor=1., former_kernel=False)
 
@@ -57,21 +59,17 @@ class Input:
             ----------
             particles : dict
                 Dictionary where each elements represent the properties of the
-                input particles, given as equal-length array_like objects. The
-                dictionary must include the following properties with
-                corresponding keys: {_required_properties}
-                Additionally, Galaxia can optionally receive particle
-                properties that will be carried over to the generated
-                synthetic star, those include the following: {_optional_properties}
+                input particles, given as equal-length array_like objects.
+                {particles_dictionary_description}
                 Input comes with class method make_dummy_particles_input to
                 produce a dummy example of that dictionary.
 
-            rho_pos : array_like
+            {rho_pos} : array_like
                 Contains the position-determined kernel density estimates for
                 the input particles. Must have equal lengths as the elements
                 in the particles dictionary.
 
-            rho_vel : array_like
+            {rho_vel} : array_like
                 Contains the velocity-determined kernel density estimates for
                 the input particles. Must have equal lengths as the elements
                 in the particles dictionary.
@@ -115,8 +113,8 @@ class Input:
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             kwargs['particles'] = args[0]
-            kwargs['rho_pos'] = args[1]
-            kwargs['rho_vel'] = args[2] if len(args) == 3 else kwargs.get('rho_vel', None)
+            kwargs[self._rho_pos] = args[1]
+            kwargs[self._rho_vel] = args[2] if len(args) == 3 else kwargs.get(self._rho_vel, None)
             self.__input_files_exist = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
@@ -129,16 +127,16 @@ class Input:
             kwargs['particles'] = ebf.read(_pname)
             _k =  ebf.read(_kname)
             _mass = _k[self._mass]  # dummy line to check format
-            kwargs['rho_pos'] = _k[self._density]
+            kwargs[self._rho_pos] = _k[self._density]
             _k_factor = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
             if kwargs.get('former_kernel', False):
                 _knorm = _k_factor/(np.sqrt(kwargs['ngb']) * np.cbrt(FOURTHIRDPI))
                 # _knorm = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
                 _knorm = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
-                kwargs['rho_vel'] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
+                kwargs[self._rho_vel] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
                 kwargs['former_kernel'] = {'knorm': _knorm}
             else:
-                kwargs['rho_vel'] = (_k_factor / _k[self._kernels][:,1])**3 / FOURTHIRDPI
+                kwargs[self._rho_vel] = (_k_factor / _k[self._kernels][:,1])**3 / FOURTHIRDPI
                 kwargs['k_factor'] = _k_factor
             self.__input_files_exist = True
         else:
@@ -146,8 +144,8 @@ class Input:
         self.__particles = kwargs['particles']
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__rho_pos = kwargs['rho_pos']
-        self.__rho_vel = kwargs.get('rho_vel')
+        self.__pos_density = kwargs[self._rho_pos]
+        self.__vel_density = kwargs.get(self._rho_vel)
         self.__input_dir = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname = kwargs.get('pname', None)
@@ -157,6 +155,25 @@ class Input:
         if __old and not isinstance(__old, dict):  __old = {}
         __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
         self.__k_factor = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
+
+    @classproperty
+    def particles_dictionary_description(cls):
+        description = """
+                The dictionary includes the following properties with
+                corresponding keys:
+                {_required_properties}
+                
+                Additionally, Galaxia can optionally receive particle
+                properties that will be carried over to the generated
+                synthetic star, those include the following: 
+                {_optional_properties}
+        """.format(_required_properties=''.join(
+                       [f"\n                 -{desc} via key `{str(key)}`"
+                        for key, desc in Input._required_properties]),
+                   _optional_properties=''.join(
+                       [f"\n                 -{desc} via key `{str(key)}`"
+                        for key, desc in Input._optional_properties]))
+        return description
 
     @classproperty
     def _required_properties(cls):
@@ -274,6 +291,14 @@ class Input:
     def _pop_id(cls):
         return cls._populationindex_prop[0]
 
+    @classproperty
+    def _rho_pos(cls):
+        return cls._positiondensity_prop[0]
+
+    @classproperty
+    def _rho_vel(cls):
+        return cls._velocitydensity_prop[0]
+
     @property
     def particles(self):
         return self.__particles
@@ -284,11 +309,11 @@ class Input:
     
     @property
     def rho_pos(self):
-        return self.__rho_pos
+        return self.__pos_density
     
     @property
     def rho_vel(self):
-        return self.__rho_vel
+        return self.__vel_density
 
     @property
     def rho(self):
@@ -409,7 +434,8 @@ class Input:
             Returns
             -------
             p : dict
-                Dummy example input particles for Input.
+                Dummy example input particles dictionary for Input.
+                {particles_dictionary_description}
         """
         p = {}
         p[cls._pos] = 30*np.random.randn(n_parts, 3)
@@ -448,15 +474,16 @@ class Input:
         rho_vel = np.exp(-4.4 + 1.1*np.random.randn(n_parts))
         return rho_pos, rho_vel
 
+
 Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
-                                            DEFAULT_SIMNAME=DEFAULT_SIMNAME,
-                                            TTAGS_nres=TTAGS.nres,
-                                            _required_properties=''.join(
-                                                [f"\n                 -{desc} via key `{str(key)}`"
-                                                    for key, desc in Input._required_properties]),
-                                            _optional_properties=''.join(
-                                                [f"\n                 -{desc} via key `{str(key)}`"
-                                                    for key, desc in Input._optional_properties]))
+                                                       DEFAULT_SIMNAME=DEFAULT_SIMNAME,
+                                                       TTAGS_nres=TTAGS.nres,
+                                                       particles_dictionary_description=Input.particles_dictionary_description,
+                                                       rho_pos=Input._rho_pos,
+                                                       rho_vel=Input._rho_vel)
+
+Input.make_dummy_particles_input.__func__.__doc__ = Input.make_dummy_particles_input.__doc__.format(
+    particles_dictionary_description=Input.particles_dictionary_description)
 
 
 if __name__ == '__main__':
