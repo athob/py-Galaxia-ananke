@@ -12,6 +12,8 @@ import ebf
 from astropy.utils import classproperty
 
 from .constants import *
+from .templates import *
+from .defaults import *
 from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
 from .photometry import Isochrone
 

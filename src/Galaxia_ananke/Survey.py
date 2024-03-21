@@ -11,6 +11,7 @@ import subprocess
 from pprint import PrettyPrinter
 
 from .constants import *
+from .defaults import *
 from . import photometry
 from .Output import Output
 
@@ -135,9 +136,8 @@ class Survey:
             vSun0 : float
             vSun1 : float
             vSun2 : float
-                Coordinates for the observer velocity in km/s. Currently not
-                implemented. Respectively default
-                to {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
+                Coordinates for the observer velocity in km/s. Respectively
+                default to {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
             
             r_max : float
             r_min : float

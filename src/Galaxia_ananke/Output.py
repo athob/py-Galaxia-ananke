@@ -16,6 +16,8 @@ from astropy import units, coordinates
 from astropy.utils import classproperty
 
 from .constants import *
+from .templates import *
+from .defaults import *
 from . import Input
 
 if TYPE_CHECKING:
