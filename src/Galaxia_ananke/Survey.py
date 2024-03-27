@@ -7,12 +7,14 @@ available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from warnings import warn
 import subprocess
 from pprint import PrettyPrinter
 
 from .constants import *
 from .defaults import *
 from . import photometry
+from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
 
 if TYPE_CHECKING:
@@ -50,7 +52,7 @@ class Survey:
         """
         self.__surveyname = surveyname
         self.__input = input
-        self.__isochrones = self.set_isochrones_from_photosys(photo_sys)
+        self.__photosystems = self.prepare_photosystems(photo_sys)
         self.__output = None
 
     __init__.__doc__ = __init__.__doc__.format(DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME,
@@ -62,21 +64,26 @@ class Survey:
         return f'{cls}({description})'
 
     @classmethod
-    def set_isochrones_from_photosys(cls, photo_sys):
+    def prepare_photosystems(cls, photo_sys) -> list[PhotoSystem]:
         if isinstance(photo_sys, str):
             photo_sys = [photo_sys]
         return [photometry.available_photo_systems[psys] for psys in photo_sys]
 
+    @classmethod
+    def set_isochrones_from_photosys(cls, photo_sys):
+        warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
+        return cls.prepare_photosystems(photo_sys)
+
     def _run_survey(self, cmd_magnames, fsample, **kwargs):
-        inputname, parfile, for_parfile = self.input.prepare_input(self.isochrones[0], cmd_magnames,
+        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         cmd = f"{GALAXIA} -r{(' --hdim=' + str(self.hdim) if self.hdim is not None else '')} --nfile={self.inputname} {parfile}"
         print(cmd)
         subprocess.call(cmd.split(' '))
         self.__output = Output(self, for_parfile)
 
-    def _append_survey(self, isochrone):
-        cmd = f"{GALAXIA} -a --pcat={isochrone.category} --psys={isochrone.name} {self.__ebf_output_file}"
+    def _append_survey(self, photosystem: PhotoSystem):
+        cmd = f"{GALAXIA} -a --pcat={photosystem.category} --psys={photosystem.name} {self.__ebf_output_file}"
         print(cmd)
         subprocess.call(cmd.split(' '))
 
@@ -183,8 +190,8 @@ class Survey:
                 data.
         """
         self._run_survey(cmd_magnames, fsample, **kwargs)
-        for isochrone in self.isochrones[1:]:
-            self._append_survey(isochrone)
+        for photosystem in self.photosystems[1:]:
+            self._append_survey(photosystem)
         self.output._ebf_to_hdf5()
         self.output._post_process()
         return self.output
@@ -206,12 +213,17 @@ class Survey:
         return self.__input
 
     @property
+    def photosystems(self):
+        return self.__photosystems
+
+    @property
     def isochrones(self):
-        return self.__isochrones
+        warn('This property will be deprecated, please use instead property photosystems', DeprecationWarning, stacklevel=2)
+        return self.photosystems
 
     @property
     def photo_sys(self):
-        return {isochrone.key for isochrone in self.__isochrones}
+        return {photosystem.key for photosystem in self.photosystems}
 
     @property
     def output(self):

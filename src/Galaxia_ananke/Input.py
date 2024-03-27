@@ -15,7 +15,7 @@ from .constants import *
 from .templates import *
 from .defaults import *
 from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
-from .photometry import Isochrone
+from .photometry.PhotoSystem import PhotoSystem
 
 __all__ = ['Input']
 
@@ -363,20 +363,20 @@ class Input:
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, isochrone: Isochrone, cmd_magnames, **kwargs):
-        cmd_magnames = isochrone.check_cmd_magnames(cmd_magnames)
-        parfile, for_parfile = self._write_parameter_file(isochrone, cmd_magnames, **kwargs)
+    def prepare_input(self, photosys: PhotoSystem, cmd_magnames, **kwargs):
+        cmd_magnames = photosys.check_cmd_magnames(cmd_magnames)
+        parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
         kname = self._write_kernels()
         pname = self._write_particles()
         temp_filename = self._prepare_nbody1(kname, pname)
         return self.name, parfile, for_parfile
 
-    def _write_parameter_file(self, isochrone: Isochrone, cmd_magnames, **kwargs):
+    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames, **kwargs):
         parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
         for_parfile = DEFAULTS_FOR_PARFILE.copy()
-        for_parfile.update(**{TTAGS.photo_categ: isochrone.category, TTAGS.photo_sys: isochrone.name, TTAGS.mag_color_names: cmd_magnames, TTAGS.nres: self.ngb}, **kwargs)
+        for_parfile.update(**{TTAGS.photo_categ: photosys.category, TTAGS.photo_sys: photosys.name, TTAGS.mag_color_names: cmd_magnames, TTAGS.nres: self.ngb}, **kwargs)
         parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
         return parfile, for_parfile
 

@@ -2,14 +2,12 @@
 """
 Docstring
 """
-import re
 import pathlib
 import shutil
 from glob import glob
 
 from ..constants import *
 from ..utils import compare_given_and_required
-from . import Photometry
 from .IsochroneFile import IsochroneFile
 
 __all__ = ['Isochrone']
@@ -27,7 +25,6 @@ class Isochrone:
     _Grav = 'Grav'
     _required_keys = [_Age, _M_ini, _M_act, _Lum, _T_eff, _Grav]
     _required_metallicities = {0.0001, 0.0002, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0022, 0.0024, 0.0026, 0.003, 0.0034, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.024, 0.028, 0.03}
-    _required_cmd_magnames_dictkeys = {'magnitude', 'color_minuend', 'color_subtrahend'}
     _file_descriptor = "IsoFileDescriptor.txt"
     def __init__(self, *args, overwrite=False) -> None:
         if not args:
@@ -35,7 +32,7 @@ class Isochrone:
         elif len(args) == 1:
             self._path = pathlib.Path(args[0])
         elif len(args) == 2:
-            self._path = Photometry.ISOCHRONES_PATH / CUSTOM_PHOTOCAT / args[0]
+            self._path = ISOCHRONES_PATH / CUSTOM_PHOTOCAT / args[0]
             if self.path.exists:
                 if overwrite:
                     shutil.rmtree(self.path)
@@ -82,20 +79,6 @@ class Isochrone:
         self._isochrone_files = list(map(lambda path: IsochroneFile(path, isochrone=self),
                                          glob(str(self._path / IsochroneFile._file_format.format('*')))))
     
-    def check_cmd_magnames(self, cmd_magnames):
-        if isinstance(cmd_magnames, str):
-            check = set(re.split('[ ,-]', cmd_magnames))
-        elif isinstance(cmd_magnames, dict):
-            compare_given_and_required(cmd_magnames.keys(), self._required_cmd_magnames_dictkeys, error_message="Given cmd_magnames dict covers wrong set of keys")
-            check = set(cmd_magnames.values())
-            cmd_magnames = f"{cmd_magnames['magnitude']},{cmd_magnames['color_minuend']}-{cmd_magnames['color_subtrahend']}"
-        else:
-            raise ValueError(f"cmd_magnames should be either a string or a dict: given {type(cmd_magnames)} instead")
-        if not check.issubset(set(self.mag_names)):
-            raise ValueError(f"CMD magnitude names '{cmd_magnames}' don't match isochrone names: choose among {self.mag_names}")
-        else:
-            return cmd_magnames
-
     @property
     def path(self):
         return self._path
@@ -107,10 +90,6 @@ class Isochrone:
     @property
     def name(self):
         return self.path.name
-
-    @property
-    def key(self):
-        return f"{self.category}/{self.name}"
 
     @property
     def file_descriptor_path(self):
@@ -132,10 +111,6 @@ class Isochrone:
             with open(self.file_descriptor_path,'r') as f: return f.readline().strip('\n').split()[4:]
         else:
             raise NotImplementedError("Photometric system doesn't have an IsoFileDescriptor.txt file")
-
-    @property
-    def to_export_keys(self):
-        return [f"{self.name.lower()}_{mag_name.lower()}" for mag_name in self.mag_names]
 
 
 if __name__ == '__main__':

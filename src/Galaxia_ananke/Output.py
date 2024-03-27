@@ -7,6 +7,7 @@ available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from warnings import warn
 import pathlib
 import itertools
 import h5py as h5
@@ -18,6 +19,7 @@ from astropy.utils import classproperty
 from .constants import *
 from .templates import *
 from .defaults import *
+from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
 if TYPE_CHECKING:
@@ -235,16 +237,16 @@ class Output:
             return self.__getattribute__(item)
 
     @classmethod
-    def _compile_export_mag_names(cls, isochrones):
-        return tuple(itertools.chain.from_iterable([isochrone.to_export_keys for isochrone in isochrones]))
+    def _compile_export_mag_names(cls, photosystems: list[PhotoSystem]):
+        return tuple(itertools.chain.from_iterable([photosystem.to_export_keys for photosystem in photosystems]))
     
     @classmethod
-    def _make_export_keys(cls, isochrones, extra_keys=()):
-        return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(isochrones)))
+    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()):
+        return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(photosystems)))
 
     @classmethod
-    def _make_catalogue_keys(cls, isochrones, extra_keys=()):
-        return cls._make_export_keys(isochrones, extra_keys=cls._postprocess_keys+extra_keys)
+    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()):
+        return cls._make_export_keys(photosystems, extra_keys=cls._postprocess_keys+extra_keys)
 
     def _make_input_optional_keys(self):
         return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
@@ -345,16 +347,21 @@ class Output:
         return self.__survey
     
     @property
+    def photosystems(self):
+        return self.survey.photosystems
+
+    @property
     def isochrones(self):
-        return self.survey.isochrones
+        warn('This property will be deprecated, please use instead property photosystems', DeprecationWarning, stacklevel=2)
+        return self.photosystems
 
     @property
     def export_keys(self):
-        return self._make_export_keys(self.isochrones, extra_keys=self._make_input_optional_keys())
+        return self._make_export_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
     def catalogue_keys(self):
-        return self._make_catalogue_keys(self.isochrones, extra_keys=self._make_input_optional_keys())
+        return self._make_catalogue_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
     def output_dir(self):

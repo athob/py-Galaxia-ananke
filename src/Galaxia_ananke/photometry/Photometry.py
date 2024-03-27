@@ -10,6 +10,7 @@ import pandas as pd
 from ..constants import *
 from ..utils import Singleton
 from .Isochrone import Isochrone
+from .PhotoSystem import PhotoSystem
 
 __all__ = ['Photometry']
 
@@ -45,7 +46,7 @@ class Photometry(nested_dict, metaclass=Singleton):
         _temp = {key: _temp[cls._isochrone].loc[item].to_list()
                  for key, item in _temp.groupby(cls._category).groups.items()}
         for key, item in _temp.items():
-            cls.instance[key] = {iso.name: iso
+            cls.instance[key] = {iso.name: PhotoSystem(iso)
                                  for iso in item if iso.has_file_descriptor}
         if not CUSTOM_PHOTOCAT in cls.instance.keys(): cls.instance[CUSTOM_PHOTOCAT] = {}
         return cls.instance
