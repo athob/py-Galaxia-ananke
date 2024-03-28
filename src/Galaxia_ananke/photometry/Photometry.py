@@ -2,7 +2,7 @@
 """
 Docstring
 """
-import pathlib
+import shutil
 from glob import glob
 
 import pandas as pd
@@ -40,7 +40,7 @@ class Photometry(nested_dict, metaclass=Singleton):
     def __new__(cls):
         cls.instance = super(Photometry, cls).__new__(cls)
         _temp = pd.DataFrame([[iso_path.parent.name, Isochrone(iso_path)]
-                               for iso_path in map(pathlib.Path, glob(str(ISOCHRONES_PATH / '*' / '*')))
+                               for iso_path in ISOCHRONES_PATH.glob('*/*')
                                if iso_path.is_dir() and iso_path.parent.name != 'BolCorr'],
                              columns=[cls._category, cls._isochrone])
         _temp = {key: _temp[cls._isochrone].loc[item].to_list()
@@ -67,6 +67,11 @@ class Photometry(nested_dict, metaclass=Singleton):
         if '/' in name:
             raise ValueError()
         self[CUSTOM_PHOTOCAT][name] = Isochrone(name, isochrone_data, **kwargs)
+
+    def _purge(self, hard=False, yes=False):
+        if hard and (True if yes else (input("WARNING!! This will remove all the isochrones cached in your installation. Are you certain (y/[n])? ").lower() in ['y', 'yes'])):
+            for dir in ISOCHRONES_PATH.glob('*'):
+                shutil.rmtree(dir)
 
 
 if __name__ == '__main__':
