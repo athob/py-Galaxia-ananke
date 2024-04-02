@@ -33,7 +33,7 @@ class Isochrone:
             self._path = pathlib.Path(args[0])
         elif len(args) == 2:
             self._path = ISOCHRONES_PATH / CUSTOM_PHOTOCAT / args[0]
-            if self.path.exists:
+            if self.path.exists():
                 if overwrite:
                     shutil.rmtree(self.path)
                 else:

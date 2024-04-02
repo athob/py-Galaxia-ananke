@@ -2,6 +2,8 @@
 """
 Docstring
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING, Union
 import pathlib
 import re
 
@@ -10,12 +12,18 @@ from astropy.io import ascii
 
 from ..constants import *
 
+if TYPE_CHECKING:
+    from . import Isochrone
+
 __all__ = ['IsochroneFile']
 
 
 class IsochroneFile:
     _file_format = "output_{}.dat"
-    def __init__(self, *args, isochrone=None) -> None:
+    def __init__(self, *args, isochrone: Isochrone = None) -> None:
+        if isochrone is None:
+            raise TypeError(f"Keyword argument 'isochrone' missing")
+        self._isochrone = isochrone
         if not args:
             raise TypeError("Isochrone requires at least one argument")
         elif len(args) in [1, 2]:
@@ -24,9 +32,6 @@ class IsochroneFile:
                 self._write_table(args[1])
         else:
             raise TypeError(f"Too many arguments ({len(args)} given)")
-        if isochrone is None:
-            raise TypeError(f"Keyword argument 'isochrone' missing")
-        self._isochrone = isochrone
         self._column_names = None
         self._data = None
 
@@ -35,12 +40,13 @@ class IsochroneFile:
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['filename']])
         return f'{cls}({description})'
 
-    def _write_table(self, data):
+    def _write_table(self, data: Union[pd.DataFrame, ascii.core.Table]) -> None:
         if isinstance(data, pd.DataFrame):
             data = ascii.core.Table.from_pandas(data)
         elif not isinstance(data, ascii.core.Table):
             raise ValueError("Given data should either be a pandas DataFrame or an astropy Table")
-        data.sort_values(by=[self.isochrone._Age, self.isochrone._M_ini]).write(self.path, format='ascii.commented_header')
+        data.sort([self.isochrone._Age, self.isochrone._M_ini])
+        data.write(self.path, format='ascii.commented_header')
 
     def _open(self, *args, **kwargs):
         return open(self._path, *args, **kwargs)

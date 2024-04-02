@@ -11,7 +11,7 @@ from .templates import *
 
 __all__ = ['GALAXIA_TMP', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'DEFAULT_CMD_BOX', 'DEFAULT_SIMNAME', 'DEFAULT_SURVEYNAME', 'DEFAULT_PARFILE', 'DEFAULTS_FOR_PARFILE']
 
-DEFAULT_PSYS = ['padova/GAIADR2']
+DEFAULT_PSYS = ['padova/GAIA.DR2']
 DEFAULT_CMD = 'Gmag,G_BPmag-G_RPmag'
 # DEFAULT_CMD = {'magnitude': 'Gmag', 'color_minuend': 'G_BPmag', 'color_subtrahend': 'G_RPmag'}
 DEFAULT_CMD_BOX = {'app_mag': [-1000,1000], 'abs_mag': [-1000,20], 'color': [-1000,1000]}
