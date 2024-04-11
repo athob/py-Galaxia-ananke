@@ -7,6 +7,7 @@ import re
 from ..constants import *
 from ..utils import compare_given_and_required
 from .Isochrone import Isochrone
+from .InterfaceSvoFpsDriver import InterfaceSvoFpsDriver
 
 __all__ = ['PhotoSystem']
 
@@ -18,6 +19,7 @@ class PhotoSystem:
     _required_cmd_magnames_dictkeys = {'magnitude', 'color_minuend', 'color_subtrahend'}
     def __init__(self, isochrone: Isochrone) -> None:
         self.__isochrone = isochrone
+        self.__interface_svofps = InterfaceSvoFpsDriver(self)
     
     def __repr__(self) -> str:
         cls = self.__class__.__name__
@@ -41,6 +43,10 @@ class PhotoSystem:
     @property
     def _isochrone(self):
         return self.__isochrone
+
+    @property
+    def _interface_svofps(self):
+        return self.__interface_svofps
 
     @property
     def category(self):

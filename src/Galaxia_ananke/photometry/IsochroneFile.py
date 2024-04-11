@@ -13,7 +13,7 @@ from astropy.io import ascii
 from ..constants import *
 
 if TYPE_CHECKING:
-    from . import Isochrone
+    from .Isochrone import Isochrone
 
 __all__ = ['IsochroneFile']
 
