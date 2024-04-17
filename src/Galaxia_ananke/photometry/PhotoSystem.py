@@ -4,6 +4,8 @@ Docstring
 """
 import re
 
+import numpy as np
+
 from ..constants import *
 from ..utils import compare_given_and_required
 from .Isochrone import Isochrone
@@ -63,6 +65,11 @@ class PhotoSystem:
     @property
     def mag_names(self):
         return self._isochrone.mag_names
+    
+    @property  # TODO not a fan of that implementation, but that will do for now
+    def effective_wavelengths(self):
+        stack = np.vstack([sfd.svo_filter_list['WavelengthEff'].to('micron') for sfd in self.svofpsdrivers]).T
+        return np.nanmean(stack, axis=1)
 
     @property
     def to_export_keys(self):
