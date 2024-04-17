@@ -68,7 +68,7 @@ class PhotoSystem:
     
     @property  # TODO not a fan of that implementation, but that will do for now
     def effective_wavelengths(self):
-        stack = np.vstack([sfd.svo_filter_list['WavelengthEff'].to('micron') for sfd in self.svofpsdrivers]).T
+        stack = np.vstack([sfd.svo_filter_list['WavelengthEff'].to('micron') for sfd in self._interface_svofps.svofpsdrivers]).T
         return np.nanmean(stack, axis=1)
 
     @property
