@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import pathlib
-import distutils
-from distutils.command.build_ext import build_ext
-from distutils.cmd import Command
-from distutils.core import setup
+import setuptools
+from setuptools.command.build_ext import build_ext
+from setuptools import setup, Command
 
 from src._build_utils import *
 from src.constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
@@ -57,6 +56,6 @@ setup(name=NAME,
       packages=[NAME, f"{NAME}.photometry"],
       package_dir={'': SRC_DIR},
       install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1'],
-      ext_modules=[distutils.extension.Extension('', [])],
+      ext_modules=[setuptools.extension.Extension('', [])],
       cmdclass={'build_ext': MyBuildExt, 'test': MyTest},
       )
