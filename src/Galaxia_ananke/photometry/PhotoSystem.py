@@ -5,8 +5,10 @@ Docstring
 import re
 
 import numpy as np
+from astropy import units
 
 from ..constants import *
+from ..defaults import *
 from ..utils import compare_given_and_required
 from .Isochrone import Isochrone
 from .InterfaceSvoFpsDriver import InterfaceSvoFpsDriver
@@ -41,6 +43,18 @@ class PhotoSystem:
             raise ValueError(f"CMD magnitude names '{cmd_magnames}' don't match isochrone names: choose among {self.mag_names}")
         else:
             return cmd_magnames
+    
+    def _extract_from_svo_filter_list(self, key: str, unit=None, aggregate=lambda stack: np.nanmean(stack, axis=1)):
+        stack = np.vstack(
+            [
+                (
+                _colu:= sfd.svo_filter_list[key],  # ignored
+                _unit:= getattr(_colu, 'unit', None) if unit is None else unit,  # ignored
+                _colu.value if _unit is None or _colu.dtype.hasobject else _colu.to(_unit)  # returned
+                )[-1]
+            for sfd in self._interface_svofps.svofpsdrivers
+            ]).T
+        return aggregate(stack)
 
     @property
     def _isochrone(self):
@@ -66,10 +80,15 @@ class PhotoSystem:
     def mag_names(self):
         return self._isochrone.mag_names
     
-    @property  # TODO not a fan of that implementation, but that will do for now
+    @property
     def effective_wavelengths(self):
-        stack = np.vstack([sfd.svo_filter_list['WavelengthEff'].to('micron') for sfd in self._interface_svofps.svofpsdrivers]).T
-        return np.nanmean(stack, axis=1)
+        return self._extract_from_svo_filter_list('WavelengthEff', unit=DEF_UNIT.wavelength)
+
+    @property
+    def zeropoints(self):
+        return self._extract_from_svo_filter_list('ZeroPoint').to(
+            DEF_UNIT.spectral, equivalencies=units.spectral_density(self.effective_wavelengths)
+            )
 
     @property
     def to_export_keys(self):

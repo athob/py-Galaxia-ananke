@@ -28,7 +28,8 @@ class InterfaceSvoFpsDriver:
         'Generic__Johnson_UBVRIJHK': 'Generic__Johnson_UBVRIJHKL',
         'Generic__Stroemgren': 'Generic__Stromgren',
         'LSST_DP0': 'LSST',
-        'Pan_STARRS1': 'PAN-STARRS'
+        'Pan_STARRS1': 'PAN-STARRS',
+        'HST__WFC3': 'HST__WFC3_UVIS1+HST__WFC3_UVIS2+HST__WFC3_IR'
         }
     def __init__(self, photosystem: PhotoSystem) -> None:
         self.__photosystem: PhotoSystem = photosystem
@@ -44,8 +45,10 @@ class InterfaceSvoFpsDriver:
     
     @cached_property
     def list_of_instruments(self) -> List[str]:
-        return list(map(self._special_cases_formatter,
-                        self._special_cases_formatter(self.name).split(self._plus_in_isochrone_name)))
+        return self._plus_in_isochrone_name.join(
+            map(self._special_cases_formatter,
+                self._special_cases_formatter(self.name).split(self._plus_in_isochrone_name))
+                ).split(self._plus_in_isochrone_name)
     
     @property
     def svofpsdrivers(self) -> List[SvoFpsDriver]:
