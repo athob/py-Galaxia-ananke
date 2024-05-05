@@ -456,7 +456,8 @@ class Input:
         for el in cls._elem_list:
             p[el] = -0.6 + 0.4*np.random.randn(n_parts)
         p[cls._alph] = p[cls._Mg] - p[cls._feh]
-        p[cls._parentid] = np.arange(n_parts)
+        p[cls._parentid] = np.arange(n_parts).astype('int')
+        p[cls._partitionid] = np.zeros(n_parts, dtype='int')
         p[cls._dform] = np.zeros(n_parts, dtype='float32')
         p[cls._pop_id] = np.zeros(n_parts, dtype='int')
         return p
