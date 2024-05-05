@@ -48,6 +48,7 @@ class Output:
     _temperature_prop = ('teff', "Surface temperature in Kelvin and decimal logarithmic scale")
     _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
     _parentindex_prop = Input._parentindex_prop
+    _partitionindex_prop = Input._partitionindex_prop
     _particleflag_prop = ('partid', "Flag = 1 if star not at center of its parent particle")
     _parallax_prop = ('pi', "Parallax in milliarcseconds")
     _propermotion_prop = (('mura', 'mudec'), "Equatorial proper motions in milliarcseconds per year")
@@ -112,7 +113,8 @@ class Output:
             cls._temperature_prop,
             cls._luminosity_prop,
             cls._parentindex_prop,
-            cls._particleflag_prop
+            cls._particleflag_prop,
+            cls._partitionindex_prop
             }
     
     @classproperty
@@ -126,7 +128,7 @@ class Output:
     
     @classproperty
     def _all_optional_properties(cls):
-        return Input._optional_properties - {cls._parentindex_prop}
+        return Input._optional_properties - {cls._parentindex_prop, cls._partitionindex_prop}
     
     @classproperty
     def _export_keys(cls):
@@ -256,7 +258,7 @@ class Output:
         with h5.File(hdf5_file, 'w') as f5:
             for k in self.export_keys:
                 # print(f"Exporting {k}...")
-                f5.create_dataset(name=k, data=ebf.read(self._ebf, f"/{k}"))
+                f5.create_dataset(name=k, data=ebf.read(str(self._ebf), f"/{k}"))
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
         self.__vaex = vaex.open(hdf5_file)

@@ -30,6 +30,7 @@ class Input:
     _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
     _populationindex_prop = ('id', "Index of parent particle population")
+    _partitionindex_prop = ('partitionid', "Index of the data partition that contains the particle")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
     _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
     _carbonabundance_prop = ('carbon', "Carbon abundance [C/H] in dex")
@@ -191,6 +192,7 @@ class Input:
     def _optional_properties(cls):
         return {
             cls._parentindex_prop,
+            cls._partitionindex_prop,
             cls._populationindex_prop,
             cls._formationdistance_prop,
             cls._heliumabundance_prop,
@@ -284,6 +286,10 @@ class Input:
     @classproperty
     def _parentid(cls):
         return cls._parentindex_prop[0]
+
+    @classproperty
+    def _partitionid(cls):
+        return cls._partitionindex_prop[0]
 
     @classproperty
     def _dform(cls):
@@ -418,7 +424,9 @@ class Input:
     @classmethod
     def __complete_particles(cls, particles):
         if cls._parentid not in particles:
-            particles[cls._parentid] = np.arange(cls.length)
+            particles[cls._parentid] = np.arange(particles[cls._mass].shape[0])
+        if cls._partitionid not in particles:
+            particles[cls._partitionid] = np.zeros(particles[cls._mass].shape[0], dtype='int')
         if cls._dform not in particles:
             particles[cls._dform] = 0*particles[cls._mass]
 
