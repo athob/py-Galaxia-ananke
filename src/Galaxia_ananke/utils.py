@@ -2,10 +2,11 @@
 """
 Module miscellaneous utilities
 """
+from typing import Dict
 import pathlib
 
 
-__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton']
+__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton', 'common_entries']
 
 
 def make_symlink(file_path, dest_dir):
@@ -59,6 +60,17 @@ class Singleton(type):
 #         if index not in cls._instances:
 #             cls._instances[index] = super(CachedInstance, cls).__call__(*args, **kwargs)
 #         return cls._instances[index]
+
+
+def common_entries(*dcts: Dict):
+    """
+    common_entries function equivalent to zip in dictionaries. Directly taken from
+    https://stackoverflow.com/a/16458780
+    """
+    if not dcts:
+        return
+    for i in set(dcts[0]).intersection(*dcts[1:]):
+        yield (i,) + tuple(d[i] for d in dcts)
 
 
 if __name__ == '__main__':

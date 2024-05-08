@@ -6,19 +6,24 @@ Please note that this module is private. The Output class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Dict
+from numpy.typing import ArrayLike
 from warnings import warn
+from functools import cached_property
 import pathlib
 import itertools
+import numpy as np
 import h5py as h5
 import ebf
 import vaex
+import pandas as pd
 from astropy import units, coordinates
 from astropy.utils import classproperty
 
 from .constants import *
 from .templates import *
 from .defaults import *
+from .utils import common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -196,7 +201,11 @@ class Output:
     
     @classproperty
     def _parentid(cls):
-        return cls._parentindex_prop[0]\
+        return cls._parentindex_prop[0]
+    
+    @classproperty
+    def _partitionid(cls):
+        return cls._partitionindex_prop[0]
         
     @classproperty
     def _partid(cls):
@@ -253,7 +262,7 @@ class Output:
     def _make_input_optional_keys(self):
         return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
 
-    def _ebf_to_hdf5(self):
+    def __ebf_to_hdf5_old(self):
         hdf5_file = self._hdf5
         with h5.File(hdf5_file, 'w') as f5:
             for k in self.export_keys:
@@ -262,6 +271,26 @@ class Output:
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
         self.__vaex = vaex.open(hdf5_file)
+
+    def _ebf_to_hdf5(self):
+        for i, hdf5_file, partition_slices, partition_indices in common_entries(self._hdf5s, self.__ebf_partition_slices, self.__ebf_partitions):
+            with h5.File(hdf5_file, 'w') as f5:
+                for k in self.export_keys:
+                    # print(f"Exporting {k}...")
+                    # f5.create_dataset(name=k, data=ebf.read_ind(str(self._ebf), f"/{k}", partition_indices))
+                    data = np.zeros(partition_indices.shape[0],
+                                    dtype=ebf.read_ind(str(self._ebf), f"/{k}", [0]).dtype)
+                    head = 0
+                    for p_slice in partition_slices:
+                        data[head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(str(self._ebf),
+                                                                                      f"/{k}",
+                                                                                      begin=p_slice.start,
+                                                                                      end=p_slice.stop)
+                    f5.create_dataset(name=k,
+                                      data=data)
+                print(f"Exported the following quantities to {hdf5_file} for partition {i}")
+                print(list(f5.keys()))
+        self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
     def _post_process(self):
         self._pp_convert_cartesian_to_galactic()
@@ -334,7 +363,7 @@ class Output:
         name_base = self._file_base
         return name_base.parent / f"{name_base.name}{ext}"
     
-    def save(self, path):
+    def save(self, path):  # TODO Gotta update this
         """
             Save output to new path
         """
@@ -382,6 +411,31 @@ class Output:
     def _parameters(self):
         return self.__parameters
     
+    @cached_property
+    def __ebf_partitions(self) -> Dict[int, ArrayLike]:
+        if self._ebf.exists():
+            return pd.DataFrame(ebf.read(str(self._ebf), f"/{self._partitionid}")).groupby([0]).indices
+        else:
+            raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
+
+    @cached_property
+    def __ebf_partition_slices(self) -> Dict[int, List[slice]]:
+        return {i: [slice(start, stop)
+                    for start, stop in zip(
+                        [indices[0]]+indices[where_slice_change+1].tolist(),
+                        (indices[where_slice_change]+1).tolist() + [indices[-1]+1]
+                        )]
+                for i,indices in self.__ebf_partitions.items()
+                if (where_slice_change:=np.where(np.diff(indices)>1)[0]) is not None}
+
+    @cached_property
+    def __vaex_partitions(self) -> Dict[int, ArrayLike]:
+        return self._vaex[self._partitionid].to_pandas_series().to_frame().groupby([0]).indices
+
+    @cached_property
+    def __vaex_partition_slices(self) -> Dict[int, slice]:
+        return {i: slice(indices[0], indices[-1]+1) for i,indices in self.__vaex_partitions.items()}
+
     @property
     def _vaex(self):
         if self.__vaex is None:
@@ -408,7 +462,18 @@ class Output:
     def _hdf5(self):
         return self.__name_with_ext('.h5')
     
-    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
+    @property
+    def _hdf5_glob_pattern(self):
+        return self.__name_with_ext('.*.h5')
+    
+    @cached_property
+    def _hdf5s(self):
+        pattern = self._hdf5_glob_pattern
+        partitions = self.__ebf_partitions
+        length_tags = len(str(max(partitions.keys())))
+        return {i: pattern.parent / pattern.name.replace('*',f"{i:0{length_tags}d}") for i in partitions.keys()}
+    
+    def __flush_extra_columns_to_hdf5_old(self, with_columns=()):  # temporary until vaex supports it
         hdf5_file = self._hdf5
         old_column_names = set(vaex.open(hdf5_file).column_names)
         with h5.File(hdf5_file, 'r+') as f5:
@@ -424,6 +489,23 @@ class Output:
                 print(f"Overwritten the following quantities to {hdf5_file}")
                 print(with_columns)
         self.__vaex = vaex.open(hdf5_file)
+
+    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
+        old_column_names = set(vaex.open(str(self._hdf5s[0])).column_names)
+        extra_columns = [k for k in set(self.column_names)-old_column_names if not k.startswith('__')]
+        for i, hdf5_file, vaex_slice in common_entries(self._hdf5s, self.__vaex_partition_slices):
+            with h5.File(hdf5_file, 'r+') as f5:
+                for k in extra_columns:
+                    f5.create_dataset(name=k, data=self[vaex_slice][k].to_numpy())
+                if extra_columns:
+                    print(f"Exported the following quantities to {hdf5_file} for partition {i}")
+                    print(extra_columns)
+                for k in with_columns:
+                    f5[k][...] = self[vaex_slice][k].to_numpy()
+                if with_columns:
+                    print(f"Overwritten the following quantities to {hdf5_file} for partition {i}")
+                    print(with_columns)
+        self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(

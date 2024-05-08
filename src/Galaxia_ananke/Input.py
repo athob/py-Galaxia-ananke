@@ -144,7 +144,7 @@ class Input:
             self.__input_files_exist = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
-        self.__particles = kwargs['particles']
+        self.__particles = kwargs['particles'].copy()
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
         self.__pos_density = kwargs[self._rho_pos]
@@ -372,8 +372,9 @@ class Input:
     def prepare_input(self, photosys: PhotoSystem, cmd_magnames, **kwargs):
         cmd_magnames = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
-        kname = self._write_kernels()
-        pname = self._write_particles()
+        sorter = np.lexsort((self.particles[self._partitionid],))
+        kname = self._write_kernels(sorter)
+        pname = self._write_particles(sorter)
         temp_filename = self._prepare_nbody1(kname, pname)
         return self.name, parfile, for_parfile
 
@@ -386,23 +387,23 @@ class Input:
         parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
         return parfile, for_parfile
 
-    def _write_kernels(self):
+    def _write_kernels(self, sorter):
         kname = self.kname
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._density}", self.rho_pos, "a")
-            ebf.write(kname, f"/{self._kernels}", self.kernels, "a")
-            ebf.write(kname, f"/{self._mass}", self.particles['mass'], "a")
+            ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
+            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
         return kname
 
-    def _write_particles(self):
+    def _write_particles(self, sorter):
         pname = self.pname
         if not self.__input_files_exist:
             ebf.initialize(pname)
             for key in self._required_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key], 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][sorter], 'a')
             for key in self._optional_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key] if key in self.keys() else np.zeros(self.length), 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][sorter] if key in self.keys() else np.zeros(self.length), 'a')
         return pname
     
     def _prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
