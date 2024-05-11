@@ -5,6 +5,7 @@ Contains the Input class definition
 Please note that this module is private. The Input class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
+from typing import Union, Tuple, Dict
 import re
 import pathlib
 import numpy as np
@@ -332,7 +333,7 @@ class Input:
         return 3 if self.rho_vel is None else 6
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__name
     
     @property
@@ -369,8 +370,8 @@ class Input:
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, photosys: PhotoSystem, cmd_magnames, **kwargs):
-        cmd_magnames = photosys.check_cmd_magnames(cmd_magnames)
+    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+        cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
         sorter = np.lexsort((self.particles[self._partitionid],))
         kname = self._write_kernels(sorter)
@@ -378,7 +379,7 @@ class Input:
         temp_filename = self._prepare_nbody1(kname, pname)
         return self.name, parfile, for_parfile
 
-    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames, **kwargs):
+    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
         parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile

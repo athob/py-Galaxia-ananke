@@ -2,11 +2,13 @@
 """
 Module miscellaneous utilities
 """
-from typing import Dict
+from typing import Union, List, Dict
+from itertools import zip_longest
+import subprocess
 import pathlib
 
 
-__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton', 'common_entries']
+__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton', 'execute', 'common_entries']
 
 
 def make_symlink(file_path, dest_dir):
@@ -60,6 +62,35 @@ class Singleton(type):
 #         if index not in cls._instances:
 #             cls._instances[index] = super(CachedInstance, cls).__call__(*args, **kwargs)
 #         return cls._instances[index]
+
+
+def _execute_generator(cmds: Union[List[str], List[List[str]]], **kwargs):
+    if all([isinstance(el, str) for el in cmds]):
+        cmds: List[List[str]] = [cmds]
+    popens = [subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               universal_newlines=True, **kwargs)
+              for cmd in cmds]
+    master_stdout_readline_iter = zip_longest(*(iter(popen.stdout.readline, "") for popen in popens))
+    for stdout_lines in master_stdout_readline_iter:
+        for tag, stdout_line in enumerate(stdout_lines):
+            yield tag, stdout_line
+    return_codes = [popen.wait() for popen in popens if popen.stdout.close() is None]
+    for return_code, cmd in zip(return_codes, cmds):
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, cmd)
+
+
+def execute(cmds: Union[List[str], List[List[str]]], verbose: bool = True, **kwargs):
+    """
+    Run the commands described by cmds, and use
+    verbose kwarg to redirect output/error stream
+    to python output stream.
+    Adapted from https://stackoverflow.com/a/4417735
+    """
+    n_cmds = len(cmds)
+    len_tags = len(str(n_cmds))
+    for proc_id, stdout_line in _execute_generator(cmds, **kwargs):
+        print(f"FROM {proc_id: {len_tags}d}| {stdout_line}", end="") if verbose else None
 
 
 def common_entries(*dcts: Dict):

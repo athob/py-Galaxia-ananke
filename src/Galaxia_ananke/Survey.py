@@ -6,13 +6,13 @@ Please note that this module is private. The Survey class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union, Dict
 from warnings import warn
-import subprocess
 from pprint import PrettyPrinter
 
 from .constants import *
 from .defaults import *
+from .utils import execute
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -64,37 +64,37 @@ class Survey:
         return f'{cls}({description})'
 
     @classmethod
-    def prepare_photosystems(cls, photo_sys) -> list[PhotoSystem]:
+    def prepare_photosystems(cls, photo_sys: str) -> list[PhotoSystem]:
         if isinstance(photo_sys, str):
             photo_sys = [photo_sys]
         return [photometry.available_photo_systems[psys] for psys in photo_sys]
 
     @classmethod
-    def set_isochrones_from_photosys(cls, photo_sys):
+    def set_isochrones_from_photosys(cls, photo_sys: str) -> list[PhotoSystem]:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames, fsample, **kwargs):
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, verbose: bool = True, **kwargs) -> None:
         inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
+        self.__output = Output(self, for_parfile)
         cmd = f"{GALAXIA} -r{(' --hdim=' + str(self.hdim) if self.hdim is not None else '')} --nfile={self.inputname} {parfile}"
         print(cmd)
-        subprocess.call(cmd.split(' '))
-        self.__output = Output(self, for_parfile)
+        execute(cmd.split(' '), verbose=verbose)
 
-    def _append_survey(self, photosystem: PhotoSystem):
+    def _append_survey(self, photosystem: PhotoSystem, verbose: bool = True) -> None:
         cmd = f"{GALAXIA} -a --pcat={photosystem.category} --psys={photosystem.name} {self.__ebf_output_file}"
         print(cmd)
-        subprocess.call(cmd.split(' '))
+        execute(cmd.split(' '), verbose=verbose)
 
-    def make_survey(self, cmd_magnames=DEFAULT_CMD, fsample=1, **kwargs):
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, verbose: bool = True, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
 
             Call signature::
 
                 output = self.make_survey(cmd_magnames='{DEFAULT_CMD}',
-                                          fsample=1, **kwargs)
+                                          fsample=1, verbose=True, **kwargs)
 
             Parameters
             ----------
@@ -113,6 +113,10 @@ class Survey:
                 Sampling rate from 0 to 1 for the resulting synthetic star
                 survey. 1 returns a full sample while any value under returns
                 partial surveys. Default to 1.
+            
+            verbose : bool
+                Verbose boolean flag to allow pipeline to print what it's doing
+                to stdout. Default to True.
 
             parfile : string
                 Name of file where Input should save the parameters for
@@ -189,9 +193,9 @@ class Survey:
                 Handler with utilities to utilize the output survey and its
                 data.
         """
-        self._run_survey(cmd_magnames, fsample, **kwargs)
+        self._run_survey(cmd_magnames, fsample, verbose=verbose, **kwargs)
         for photosystem in self.photosystems[1:]:
-            self._append_survey(photosystem)
+            self._append_survey(photosystem, verbose=verbose)
         self.output._ebf_to_hdf5()
         self.output._post_process()
         return self.output

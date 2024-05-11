@@ -99,6 +99,7 @@ class Output:
         self.__parameters = parameters
         self.__vaex = None
         self.__path = None
+        self.__clear_ebfs(force=True)
 
     @classproperty
     def _export_properties(cls):
@@ -454,11 +455,26 @@ class Output:
     def _file_base(self):
         return self.output_dir / self.output_name
     
-    @property
+    @cached_property
     def _ebf(self):
-        return self.__name_with_ext('.ebf')
-
+        # return self.__name_with_ext('.0.ebf')
+        return next(self._ebf_glob)
+    
     @property
+    def _ebf_glob_pattern(self):
+        return self.__name_with_ext('.*.ebf')
+    
+    @property
+    def _ebf_glob(self):
+        _temp = self._ebf_glob_pattern
+        return _temp.parent.glob(_temp.name)
+    
+    def __clear_ebfs(self, force: bool = False) -> None:
+        for ebf in self._ebf_glob:
+            if True if force else input(f"You are about to remove {ebf}, do I proceed? [y/N] ") == 'y':
+                ebf.unlink()
+
+    @cached_property
     def _hdf5(self):
         return self.__name_with_ext('.h5')
     

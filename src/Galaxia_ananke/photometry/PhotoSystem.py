@@ -2,6 +2,7 @@
 """
 Docstring
 """
+from typing import Union, Dict
 import re
 
 import numpy as np
@@ -30,7 +31,7 @@ class PhotoSystem:
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['category', 'name']])
         return f'{cls}({description})'
     
-    def check_cmd_magnames(self, cmd_magnames):
+    def check_cmd_magnames(self, cmd_magnames: Union[str,Dict[str,str]]) -> str:
         if isinstance(cmd_magnames, str):
             check = set(re.split('[ ,-]', cmd_magnames))
         elif isinstance(cmd_magnames, dict):
