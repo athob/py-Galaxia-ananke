@@ -75,30 +75,28 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, verbose: bool = True, **kwargs) -> None:
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, n_jobs: int = 1, verbose: bool = True, **kwargs) -> None:
         inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)
-        cmd = RUN_TEMPLATE.substitute(**{
+        cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
             CTTAGS.nfile      : self.inputname,
-            CTTAGS.ngen       : 1,
+            CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
-        })
-        print(cmd)
-        execute(cmd.split(' '), verbose=verbose)
+        }) for ngen in range(n_jobs)]
+        execute(cmds, verbose=verbose)
 
     def _append_survey(self, photosystem: PhotoSystem, verbose: bool = True) -> None:
-        cmd = APPEND_TEMPLATE.substitute(**{
+        cmds = [APPEND_TEMPLATE.substitute(**{
             CTTAGS.pcat     : photosystem.category,
             CTTAGS.psys     : photosystem.name,
-            CTTAGS.filename : self.__ebf_output_file
-        })
-        print(cmd)
-        execute(cmd.split(' '), verbose=verbose)
+            CTTAGS.filename : filename
+        }) for filename in self.__ebf_output_files_glob]
+        execute(cmds, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, verbose: bool = True, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = 1, verbose: bool = True, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
 
@@ -124,6 +122,10 @@ class Survey:
                 Sampling rate from 0 to 1 for the resulting synthetic star
                 survey. 1 returns a full sample while any value under returns
                 partial surveys. Default to 1.
+
+            n_jobs : int
+                Number of independent catalog generations ran in parallel.
+                Default to 1.
             
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
@@ -204,7 +206,7 @@ class Survey:
                 Handler with utilities to utilize the output survey and its
                 data.
         """
-        self._run_survey(cmd_magnames, fsample, verbose=verbose, **kwargs)
+        self._run_survey(cmd_magnames, fsample, n_jobs=n_jobs, verbose=verbose, **kwargs)
         for photosystem in self.photosystems[1:]:
             self._append_survey(photosystem, verbose=verbose)
         self.output._ebf_to_hdf5()
@@ -256,8 +258,8 @@ class Survey:
         return self.input.name
     
     @property
-    def __ebf_output_file(self):
-        return self.output._ebf
+    def __ebf_output_files_glob(self):
+        return self.output._ebf_glob
 
 
 if __name__ == '__main__':
