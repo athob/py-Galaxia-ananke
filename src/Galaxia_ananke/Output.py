@@ -397,7 +397,7 @@ class Output:
     
     @property
     def output_dir(self):
-        return pathlib.Path(self._parameters[TTAGS.output_dir])
+        return pathlib.Path(self._parameters[FTTAGS.output_dir])
 
     @property
     def output_name(self):
@@ -405,7 +405,7 @@ class Output:
 
     @property
     def rsun_skycoord(self):
-        _temp = [self._parameters[k] for k in TTAGS.rSun]
+        _temp = [self._parameters[k] for k in FTTAGS.rSun]
         return coordinates.SkyCoord(u=_temp[0], v=_temp[1], w=_temp[2], unit='kpc', representation_type='cartesian', frame='galactic')
 
     @property

@@ -154,7 +154,7 @@ class Input:
         self.__name = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname = kwargs.get('pname', None)
         self.__kname = kwargs.get('kname', None)
-        self.__ngb = kwargs.get('ngb', TTAGS.nres)
+        self.__ngb = kwargs.get('ngb', FTTAGS.nres)
         __old = kwargs.get('former_kernel', False)
         if __old and not isinstance(__old, dict):  __old = {}
         __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
@@ -384,7 +384,7 @@ class Input:
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
         for_parfile = DEFAULTS_FOR_PARFILE.copy()
-        for_parfile.update(**{TTAGS.photo_categ: photosys.category, TTAGS.photo_sys: photosys.name, TTAGS.mag_color_names: cmd_magnames, TTAGS.nres: self.ngb}, **kwargs)
+        for_parfile.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
         parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
         return parfile, for_parfile
 
@@ -490,7 +490,7 @@ class Input:
 
 Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
                                                        DEFAULT_SIMNAME=DEFAULT_SIMNAME,
-                                                       TTAGS_nres=TTAGS.nres,
+                                                       TTAGS_nres=FTTAGS.nres,
                                                        particles_dictionary_description=Input.particles_dictionary_description,
                                                        rho_pos=Input._rho_pos,
                                                        rho_vel=Input._rho_vel)

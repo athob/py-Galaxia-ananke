@@ -9,10 +9,10 @@ from .utils import Singleton
 from .constants import *
 
 
-__all__ = ['TTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE']
+__all__ = ['FTTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'CTTAGS', 'RUN_TEMPLATE', 'HDIMBLOCK_TEMPLATE', 'APPEND_TEMPLATE']
 
 @dataclass(frozen=True)
-class TemplateTags(metaclass=Singleton):
+class FileTemplateTags(metaclass=Singleton):
     name: str            = 'name'
     pname: str           = 'pname'
     output_file: str     = 'output_file'
@@ -55,38 +55,55 @@ class TemplateTags(metaclass=Singleton):
     def vSun(self):
         return [self.vSun0, self.vSun1, self.vSun2]
 
-TTAGS = TemplateTags()
+FTTAGS = FileTemplateTags()
 
-FILENAME_TEMPLATE = Template(NBODY1+f"/${{{TTAGS.name}}}/\n\t1\t1\n${{{TTAGS.pname}}}\n")  # TODO Template can't work for N>1 files
-PARFILE_TEMPLATE = Template(f"""outputFile\t${{{TTAGS.output_file}}}\t#don't fiddle
-outputDir\t${{{TTAGS.output_dir}}}\t#where to output the survey
-photoCateg\t${{{TTAGS.photo_categ}}}\t#name of folder where to select magnitude system
-photoSys\t${{{TTAGS.photo_sys}}}\t#magnitude system (see ananke-for-wings/GalaxiaData/Isochrones/padova/ for options)
-magcolorNames\t${{{TTAGS.mag_color_names}}}\t#magnitude and color to use for selecting the CMD box
-appMagLimits[0]\t${{{TTAGS.app_mag_lim_lo}}}\t#upper and lower limits in apparent mag
-appMagLimits[1]\t${{{TTAGS.app_mag_lim_hi}}}
-absMagLimits[0]\t${{{TTAGS.abs_mag_lim_lo}}}\t#upper and lower limits in absolute mag
-absMagLimits[1]\t${{{TTAGS.abs_mag_lim_hi}}}
-colorLimits[0]\t${{{TTAGS.color_lim_lo}}}\t#upper and lower limits in color defined on line 4
-colorLimits[1]\t${{{TTAGS.color_lim_hi}}}
-geometryOption\t${{{TTAGS.geometry_opt}}}\t#don't fiddle
-surveyArea\t${{{TTAGS.survey_area}}}\t#not used
-fSample\t${{{TTAGS.fsample}}}\t#don't fiddle
-popID\t${{{TTAGS.pop_id}}}\t#don't fiddle
-warpFlareOn\t${{{TTAGS.warp_flare_on}}}\t#not used
-longitude\t${{{TTAGS.longitude}}}\t#not used
-latitude\t${{{TTAGS.latitude}}}\t#not used
-starType\t${{{TTAGS.star_type}}}\t#don't fiddle
-photoError\t${{{TTAGS.photo_error}}}\t#not used
-seed\t${{{TTAGS.rand_seed}}}\t#change if you want a different random sample
-r_max\t${{{TTAGS.r_max}}}\t#max distance from galactic center to include
-r_min\t${{{TTAGS.r_min}}}\t#min distance from galactic center to include
-nres\t${{{TTAGS.nres}}}\t#nres
-nstart\t${{{TTAGS.nstart}}}\t#integer at which to start numbering synthetic stars
-rSun[0]\t${{{TTAGS.rSun0}}}\t#location of survey viewpoint relative to galactic center
-rSun[1]\t${{{TTAGS.rSun1}}}
-rSun[2]\t${{{TTAGS.rSun2}}}
-vSun[0]\t${{{TTAGS.vSun0}}}\t#velocity of survey viewpoint relative to galactic center (not used)
-vSun[1]\t${{{TTAGS.vSun1}}}
-vSun[2]\t${{{TTAGS.vSun2}}}
+FILENAME_TEMPLATE = Template(NBODY1+f"/${{{FTTAGS.name}}}/\n\t1\t1\n${{{FTTAGS.pname}}}\n")  # TODO Template can't work for N>1 files
+PARFILE_TEMPLATE = Template(f"""outputFile\t${{{FTTAGS.output_file}}}\t#don't fiddle
+outputDir\t${{{FTTAGS.output_dir}}}\t#where to output the survey
+photoCateg\t${{{FTTAGS.photo_categ}}}\t#name of folder where to select magnitude system
+photoSys\t${{{FTTAGS.photo_sys}}}\t#magnitude system (see ananke-for-wings/GalaxiaData/Isochrones/padova/ for options)
+magcolorNames\t${{{FTTAGS.mag_color_names}}}\t#magnitude and color to use for selecting the CMD box
+appMagLimits[0]\t${{{FTTAGS.app_mag_lim_lo}}}\t#upper and lower limits in apparent mag
+appMagLimits[1]\t${{{FTTAGS.app_mag_lim_hi}}}
+absMagLimits[0]\t${{{FTTAGS.abs_mag_lim_lo}}}\t#upper and lower limits in absolute mag
+absMagLimits[1]\t${{{FTTAGS.abs_mag_lim_hi}}}
+colorLimits[0]\t${{{FTTAGS.color_lim_lo}}}\t#upper and lower limits in color defined on line 4
+colorLimits[1]\t${{{FTTAGS.color_lim_hi}}}
+geometryOption\t${{{FTTAGS.geometry_opt}}}\t#don't fiddle
+surveyArea\t${{{FTTAGS.survey_area}}}\t#not used
+fSample\t${{{FTTAGS.fsample}}}\t#don't fiddle
+popID\t${{{FTTAGS.pop_id}}}\t#don't fiddle
+warpFlareOn\t${{{FTTAGS.warp_flare_on}}}\t#not used
+longitude\t${{{FTTAGS.longitude}}}\t#not used
+latitude\t${{{FTTAGS.latitude}}}\t#not used
+starType\t${{{FTTAGS.star_type}}}\t#don't fiddle
+photoError\t${{{FTTAGS.photo_error}}}\t#not used
+seed\t${{{FTTAGS.rand_seed}}}\t#change if you want a different random sample
+r_max\t${{{FTTAGS.r_max}}}\t#max distance from galactic center to include
+r_min\t${{{FTTAGS.r_min}}}\t#min distance from galactic center to include
+nres\t${{{FTTAGS.nres}}}\t#nres
+nstart\t${{{FTTAGS.nstart}}}\t#integer at which to start numbering synthetic stars
+rSun[0]\t${{{FTTAGS.rSun0}}}\t#location of survey viewpoint relative to galactic center
+rSun[1]\t${{{FTTAGS.rSun1}}}
+rSun[2]\t${{{FTTAGS.rSun2}}}
+vSun[0]\t${{{FTTAGS.vSun0}}}\t#velocity of survey viewpoint relative to galactic center (not used)
+vSun[1]\t${{{FTTAGS.vSun1}}}
+vSun[2]\t${{{FTTAGS.vSun2}}}
 """)
+
+@dataclass(frozen=True)
+class CommandTemplateTags(metaclass=Singleton):
+    hdim_block: str = 'hdim_block'
+    hdim: str       = 'hdim'
+    nfile: str      = 'nfile'
+    ngen: str       = 'ngen'
+    parfile: str    = 'parfile'
+    pcat: str       = 'pcat'
+    psys: str       = 'psys'
+    filename: str   = 'filename'
+
+CTTAGS = CommandTemplateTags()
+
+RUN_TEMPLATE = Template(f"{GALAXIA} -r${{{CTTAGS.hdim_block}}} --nfile=${{{CTTAGS.nfile}}} --ngen=${{{CTTAGS.ngen}}} ${{{CTTAGS.parfile}}}")
+HDIMBLOCK_TEMPLATE = Template(f" --hdim=${{{CTTAGS.hdim}}}")
+APPEND_TEMPLATE = Template(f"{GALAXIA} -a --pcat=${{{CTTAGS.pcat}}} --psys=${{{CTTAGS.psys}}} ${{{CTTAGS.filename}}}")

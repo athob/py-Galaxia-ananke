@@ -11,6 +11,7 @@ from warnings import warn
 from pprint import PrettyPrinter
 
 from .constants import *
+from .templates import *
 from .defaults import *
 from .utils import execute
 from . import photometry
@@ -78,12 +79,22 @@ class Survey:
         inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)
-        cmd = f"{GALAXIA} -r{(' --hdim=' + str(self.hdim) if self.hdim is not None else '')} --nfile={self.inputname} {parfile}"
+        cmd = RUN_TEMPLATE.substitute(**{
+            CTTAGS.hdim_block : '' if self.hdim is None
+                                else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
+            CTTAGS.nfile      : self.inputname,
+            CTTAGS.ngen       : 1,
+            CTTAGS.parfile    : parfile
+        })
         print(cmd)
         execute(cmd.split(' '), verbose=verbose)
 
     def _append_survey(self, photosystem: PhotoSystem, verbose: bool = True) -> None:
-        cmd = f"{GALAXIA} -a --pcat={photosystem.category} --psys={photosystem.name} {self.__ebf_output_file}"
+        cmd = APPEND_TEMPLATE.substitute(**{
+            CTTAGS.pcat     : photosystem.category,
+            CTTAGS.psys     : photosystem.name,
+            CTTAGS.filename : self.__ebf_output_file
+        })
         print(cmd)
         execute(cmd.split(' '), verbose=verbose)
 
