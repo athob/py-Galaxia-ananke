@@ -7,7 +7,7 @@ available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Dict
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
 import pathlib
@@ -263,27 +263,31 @@ class Output:
     def _make_input_optional_keys(self):
         return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
 
-    def __ebf_to_hdf5_old(self):
-        hdf5_file = self._hdf5
+    def __ebf_to_hdf5_older(self):
+        warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
+        return
+        hdf5_file = self.__hdf5
         with h5.File(hdf5_file, 'w') as f5:
             for k in self.export_keys:
                 # print(f"Exporting {k}...")
-                f5.create_dataset(name=k, data=ebf.read(str(self._ebf), f"/{k}"))
+                f5.create_dataset(name=k, data=ebf.read(str(self.__ebf), f"/{k}"))
             print(f"Exported the following quantities to {hdf5_file}")
             print(list(f5.keys()))
         self.__vaex = vaex.open(hdf5_file)
 
-    def _ebf_to_hdf5(self):
-        for i, hdf5_file, partition_slices, partition_indices in common_entries(self._hdf5s, self.__ebf_partition_slices, self.__ebf_partitions):
+    def __ebf_to_hdf5_old(self):
+        warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
+        return
+        for i, hdf5_file, partition_slices, partition_indices in common_entries(self._hdf5s, self.__ebf_part_slices, self.__ebf_partitions):
             with h5.File(hdf5_file, 'w') as f5:
                 for k in self.export_keys:
                     # print(f"Exporting {k}...")
                     # f5.create_dataset(name=k, data=ebf.read_ind(str(self._ebf), f"/{k}", partition_indices))
                     data = np.zeros(partition_indices.shape[0],
-                                    dtype=ebf.read_ind(str(self._ebf), f"/{k}", [0]).dtype)
+                                    dtype=ebf.read_ind(str(self.__ebf), f"/{k}", [0]).dtype)
                     head = 0
                     for p_slice in partition_slices:
-                        data[head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(str(self._ebf),
+                        data[head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(str(self.__ebf),
                                                                                       f"/{k}",
                                                                                       begin=p_slice.start,
                                                                                       end=p_slice.stop)
@@ -291,6 +295,41 @@ class Output:
                                       data=data)
                 print(f"Exported the following quantities to {hdf5_file} for partition {i}")
                 print(list(f5.keys()))
+        self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+
+    def _ebf_to_hdf5(self) -> None:
+        ebfs: List[pathlib.Path] = self._ebfs
+        n_ebfs: int              = len(ebfs)
+        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths):
+            data_length: int         = sum(part_lengths_in_ebfs.values())
+            ebfs_slices: Dict[slice] = {ebf_path.name: slice(bounds[0],bounds[1])
+                                        for ebf_path, bounds in zip(ebfs, 
+                                                                    np.repeat(np.cumsum(
+                                                                        [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]
+                                                                              ),
+                                                                              [1]+(n_ebfs-1)*[2]+[1]
+                                                                             ).reshape((n_ebfs,2)))}
+            ebf_sorter: NDArray      = (i + np.arange(n_ebfs)) % n_ebfs
+            i_ebf: int               = ebf_sorter[0]
+            first_ebf_str: str       = str(ebfs[i_ebf].resolve())
+            with h5.File(hdf5_file, 'w') as f5:
+                f5datasets = {name: f5.create_dataset(name=name,
+                                                      shape=(data_length,),
+                                                      dtype=ebf.read_ind(first_ebf_str, f"/{name}", [0]).dtype)
+                              for name in self.export_keys}
+                for ebf_path in ebfs[i_ebf:]+ebfs[:i_ebf]:
+                    ebf_name: str            = ebf_path.name
+                    ebf_str: str             = str(ebf_path.resolve())
+                    f5data_slice: slice      = ebfs_slices[ebf_name]
+                    part_slices: List[slice] = part_slices_in_ebfs[ebf_name]
+                    for name in self.export_keys:
+                        head = f5data_slice.start
+                        for p_slice in part_slices:
+                            f5datasets[name][head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(
+                                ebf_str, f"/{name}", begin=p_slice.start, end=p_slice.stop
+                                )
+                    print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
+                    print(list(f5.keys()))
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
     def _post_process(self):
@@ -368,6 +407,7 @@ class Output:
         """
             Save output to new path
         """
+        raise NotImplementedError
         old_path = self._path
         self.__path = pathlib.Path(path)
         self._vaex.close()
@@ -413,14 +453,38 @@ class Output:
         return self.__parameters
     
     @cached_property
-    def __ebf_partitions(self) -> Dict[int, ArrayLike]:
-        if self._ebf.exists():
-            return pd.DataFrame(ebf.read(str(self._ebf), f"/{self._partitionid}")).groupby([0]).indices
+    def __ebf_partitions(self) -> Dict[int, NDArray]:
+        warn('This property is deprecated as remnant of the single ebf output implementation, this will be removed in future versions', DeprecationWarning, stacklevel=2)
+        if self.__ebf.exists():
+            return pd.DataFrame(ebf.read(str(self.__ebf), f"/{self._partitionid}")).groupby([0]).indices
         else:
             raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
 
     @cached_property
-    def __ebf_partition_slices(self) -> Dict[int, List[slice]]:
+    def __ebfs_partitions(self) -> Dict[int, Dict[str, NDArray]]:
+        return_dict = {}
+        for ebf_path in self._ebfs:
+            if ebf_path.exists():
+                ebf_name: str = ebf_path.name
+                ebf_str: str = str(ebf_path.resolve())
+                for i, ind in pd.DataFrame(ebf.read(ebf_str, f"/{self._partitionid}")).groupby([0]).indices.items():
+                    if i in return_dict:
+                        return_dict[i][ebf_name] = ind
+                    else:
+                        return_dict[i] = {ebf_name: ind}
+            else:
+                raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
+        return return_dict
+
+    @property
+    def __ebfs_part_lengths(self) -> Dict[int, Dict[str, int]]:
+        return {i: {ebf_name: len(indices)
+                    for ebf_name,indices in indices_per_ebf.items()}
+                for i,indices_per_ebf in self.__ebfs_partitions.items()}
+
+    @cached_property
+    def __ebf_part_slices(self) -> Dict[int, List[slice]]:
+        warn('This property is deprecated as remnant of the single ebf output implementation, this will be removed in future versions', DeprecationWarning, stacklevel=2)
         return {i: [slice(start, stop)
                     for start, stop in zip(
                         [indices[0]]+indices[where_slice_change+1].tolist(),
@@ -430,7 +494,18 @@ class Output:
                 if (where_slice_change:=np.where(np.diff(indices)>1)[0]) is not None}
 
     @cached_property
-    def __vaex_partitions(self) -> Dict[int, ArrayLike]:
+    def __ebfs_part_slices(self) -> Dict[int, Dict[str, List[slice]]]:
+        return {i: {ebf_name: [slice(start, stop)
+                    for start, stop in zip(
+                        [indices[0]]+indices[where_slice_change+1].tolist(),
+                        (indices[where_slice_change]+1).tolist() + [indices[-1]+1]
+                        )]
+                    for ebf_name,indices in indices_per_ebf.items()
+                    if (where_slice_change:=np.where(np.diff(indices)>1)[0]) is not None}
+                for i,indices_per_ebf in self.__ebfs_partitions.items()}
+
+    @cached_property
+    def __vaex_partitions(self) -> Dict[int, NDArray]:
         return self._vaex[self._partitionid].to_pandas_series().to_frame().groupby([0]).indices
 
     @cached_property
@@ -446,8 +521,9 @@ class Output:
 
     @property
     def _path(self):
+        raise NotImplementedError
         if self.__path is None:
-            return self._hdf5
+            return self.__hdf5
         else:
             return self.__path
 
@@ -456,8 +532,8 @@ class Output:
         return self.output_dir / self.output_name
     
     @cached_property
-    def _ebf(self):
-        # return self.__name_with_ext('.0.ebf')
+    def __ebf(self):
+        warn('This property is deprecated as remnant of the single ebf/single hdf5 output implementation, this will be removed in future versions', DeprecationWarning, stacklevel=2)
         return next(self._ebf_glob)
     
     @property
@@ -469,13 +545,18 @@ class Output:
         _temp = self._ebf_glob_pattern
         return _temp.parent.glob(_temp.name)
     
+    @cached_property
+    def _ebfs(self):
+        return list(self._ebf_glob)
+    
     def __clear_ebfs(self, force: bool = False) -> None:
         for ebf in self._ebf_glob:
             if True if force else input(f"You are about to remove {ebf}, do I proceed? [y/N] ") == 'y':
                 ebf.unlink()
 
     @cached_property
-    def _hdf5(self):
+    def __hdf5(self):
+        warn('This property is deprecated as remnant of the single ebf/single hdf5 output implementation, this will be removed in future versions', DeprecationWarning, stacklevel=2)
         return self.__name_with_ext('.h5')
     
     @property
@@ -485,12 +566,14 @@ class Output:
     @cached_property
     def _hdf5s(self):
         pattern = self._hdf5_glob_pattern
-        partitions = self.__ebf_partitions
+        partitions = self.__ebfs_partitions
         length_tags = len(str(max(partitions.keys())))
         return {i: pattern.parent / pattern.name.replace('*',f"{i:0{length_tags}d}") for i in partitions.keys()}
     
     def __flush_extra_columns_to_hdf5_old(self, with_columns=()):  # temporary until vaex supports it
-        hdf5_file = self._hdf5
+        warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
+        return
+        hdf5_file = self.__hdf5
         old_column_names = set(vaex.open(hdf5_file).column_names)
         with h5.File(hdf5_file, 'r+') as f5:
             extra_columns = [k for k in set(self.column_names)-old_column_names if not k.startswith('__')]
