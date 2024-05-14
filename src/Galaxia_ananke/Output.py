@@ -6,10 +6,11 @@ Please note that this module is private. The Output class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING, Tuple, List, Dict
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
+import concurrent.futures
 import pathlib
 import itertools
 import numpy as np
@@ -249,18 +250,18 @@ class Output:
             return self.__getattribute__(item)
 
     @classmethod
-    def _compile_export_mag_names(cls, photosystems: list[PhotoSystem]):
+    def _compile_export_mag_names(cls, photosystems: list[PhotoSystem]) -> Tuple[str]:
         return tuple(itertools.chain.from_iterable([photosystem.to_export_keys for photosystem in photosystems]))
     
     @classmethod
-    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()):
+    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str]:
         return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(photosystems)))
 
     @classmethod
-    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()):
+    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str]:
         return cls._make_export_keys(photosystems, extra_keys=cls._postprocess_keys+extra_keys)
 
-    def _make_input_optional_keys(self):
+    def _make_input_optional_keys(self) -> Tuple[str]:
         return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
 
     def __ebf_to_hdf5_older(self):
@@ -299,38 +300,50 @@ class Output:
 
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
-        n_ebfs: int              = len(ebfs)
-        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths):
-            data_length: int         = sum(part_lengths_in_ebfs.values())
-            ebfs_slices: Dict[slice] = {ebf_path.name: slice(bounds[0],bounds[1])
-                                        for ebf_path, bounds in zip(ebfs, 
-                                                                    np.repeat(np.cumsum(
-                                                                        [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]
-                                                                              ),
-                                                                              [1]+(n_ebfs-1)*[2]+[1]
-                                                                             ).reshape((n_ebfs,2)))}
-            ebf_sorter: NDArray      = (i + np.arange(n_ebfs)) % n_ebfs
-            i_ebf: int               = ebf_sorter[0]
-            first_ebf_str: str       = str(ebfs[i_ebf].resolve())
-            with h5.File(hdf5_file, 'w') as f5:
-                f5datasets = {name: f5.create_dataset(name=name,
-                                                      shape=(data_length,),
-                                                      dtype=ebf.read_ind(first_ebf_str, f"/{name}", [0]).dtype)
-                              for name in self.export_keys}
-                for ebf_path in ebfs[i_ebf:]+ebfs[:i_ebf]:
-                    ebf_name: str            = ebf_path.name
-                    ebf_str: str             = str(ebf_path.resolve())
-                    f5data_slice: slice      = ebfs_slices[ebf_name]
-                    part_slices: List[slice] = part_slices_in_ebfs[ebf_name]
-                    for name in self.export_keys:
-                        head = f5data_slice.start
-                        for p_slice in part_slices:
-                            f5datasets[name][head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(
-                                ebf_str, f"/{name}", begin=p_slice.start, end=p_slice.stop
-                                )
-                    print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
-                    print(list(f5.keys()))
+        export_keys: Tuple[str] = self.export_keys
+        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+            # Submit tasks to the executor
+            futures = [executor.submit(self.__singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
+                       for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
+            # Collect the results
+            results = [future.result() for future in concurrent.futures.as_completed(futures)]
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+
+    @classmethod
+    def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
+                                   part_slices_in_ebfs: Dict[str, List[slice]],
+                                   part_lengths_in_ebfs: Dict[str, int],
+                                   ebfs: List[pathlib.Path], export_keys: Tuple[str]) -> None:
+        n_ebfs: int              = len(ebfs)
+        data_length: int         = sum(part_lengths_in_ebfs.values())
+        ebfs_slices: Dict[slice] = {ebf_path.name: slice(bounds[0],bounds[1])
+                                    for ebf_path, bounds in zip(ebfs, 
+                                                                np.repeat(np.cumsum(
+                                                                    [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]
+                                                                            ),
+                                                                            [1]+(n_ebfs-1)*[2]+[1]
+                                                                            ).reshape((n_ebfs,2)))}
+        ebf_sorter: NDArray      = (i + np.arange(n_ebfs)) % n_ebfs
+        i_ebf: int               = ebf_sorter[0]
+        first_ebf_str: str       = str(ebfs[i_ebf].resolve())
+        with h5.File(hdf5_file, 'w') as f5:
+            f5datasets = {name: f5.create_dataset(name=name,
+                                                    shape=(data_length,),
+                                                    dtype=ebf.read_ind(first_ebf_str, f"/{name}", [0]).dtype)
+                            for name in export_keys}
+            for ebf_path in ebfs[i_ebf:]+ebfs[:i_ebf]:
+                ebf_name: str            = ebf_path.name
+                ebf_str: str             = str(ebf_path.resolve())
+                f5data_slice: slice      = ebfs_slices[ebf_name]
+                part_slices: List[slice] = part_slices_in_ebfs[ebf_name]
+                for name in export_keys:
+                    head = f5data_slice.start
+                    for p_slice in part_slices:
+                        f5datasets[name][head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(
+                            ebf_str, f"/{name}", begin=p_slice.start, end=p_slice.stop
+                            )
+                print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
+                print(list(f5.keys()))
 
     def _post_process(self):
         self._pp_convert_cartesian_to_galactic()
@@ -428,11 +441,11 @@ class Output:
         return self.photosystems
 
     @property
-    def export_keys(self):
+    def export_keys(self) -> Tuple[str]:
         return self._make_export_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
-    def catalogue_keys(self):
+    def catalogue_keys(self) -> Tuple[str]:
         return self._make_catalogue_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
