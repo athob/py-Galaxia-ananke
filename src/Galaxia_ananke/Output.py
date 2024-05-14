@@ -410,13 +410,14 @@ class Output:
 
     @classmethod
     def __pp_last_conversions(cls, df: pd.DataFrame) -> None:
-        df[cls._pi] = 1.0/df[cls._rad]  # parallax in mas (from distance in kpc)
+        df[cls._pi]   = 1.0/df[cls._rad]  # parallax in mas (from distance in kpc)
         df[cls._teff] = 10**df[cls._teff]  #Galaxia returns log10(teff/K)
-        df[cls._lum] = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
+        df[cls._lum]  = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
 
-    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, flush_with_columns=()):
-        post_process(self._vaex)
-        self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False):
+        post_process(self._vaex, *args)
+        if not(hold_flush):
+            self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
 
     def _post_process(self) -> None:
         self._pp_convert_cartesian_to_galactic()

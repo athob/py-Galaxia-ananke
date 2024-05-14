@@ -2,7 +2,7 @@
 """
 Module miscellaneous utilities
 """
-from typing import Union, List, Dict, Protocol
+from typing import Any, Union, List, Dict, Protocol
 from itertools import zip_longest
 import subprocess
 import pathlib
@@ -14,7 +14,7 @@ __all__ = ['CallableDFtoNone', 'make_symlink', 'compare_given_and_required', 'co
 
 
 class CallableDFtoNone(Protocol):
-    def __call__(self, df: pd.DataFrame) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
+    def __call__(self, df: pd.DataFrame, *args: Any) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
         pass
 
 
