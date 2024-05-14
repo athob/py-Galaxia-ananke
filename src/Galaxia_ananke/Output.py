@@ -24,7 +24,7 @@ from astropy.utils import classproperty
 from .constants import *
 from .templates import *
 from .defaults import *
-from .utils import common_entries
+from .utils import CallableDFtoNone, common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -99,6 +99,7 @@ class Output:
         self.__survey = survey
         self.__parameters = parameters
         self.__vaex = None
+        self.__vaex_per_partition = None
         self.__path = None
         self.__clear_ebfs(force=True)
 
@@ -308,6 +309,7 @@ class Output:
             # Collect the results
             results = [future.result() for future in concurrent.futures.as_completed(futures)]
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+        self.__vaex_per_partition = [vaex.open(str(hdf5_file)) for hdf5_file in self._hdf5s.values()]
 
     @classmethod
     def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
@@ -345,72 +347,93 @@ class Output:
                 print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
                 print(list(f5.keys()))
 
-    def _post_process(self):
-        self._pp_convert_cartesian_to_galactic()
-        self._pp_convert_galactic_to_icrs()
-        self._vaex[self._pi] = 1.0/self._vaex[self._rad]  # parallax in mas (from distance in kpc)
-        self._vaex[self._teff] = 10**self._vaex[self._teff]  #Galaxia returns log10(teff/K)
-        self._vaex[self._lum] = 10**self._vaex[self._lum]  #Galaxia returns log10(lum/lsun)
-        self.flush_extra_columns_to_hdf5(with_columns=(self._teff, self._lum))
+    ### DEFINING POST PROCESSING PIPELINES BELOW # TODO consider a PostProcess class that runs postprocess pipeline at __call__ and holds flush_with_columns
 
-    def _pp_convert_cartesian_to_galactic(self):
+    @classmethod
+    def __pp_convert_cartesian_to_galactic(cls, df: pd.DataFrame) -> None:
         """
         converts positions & velocities from mock catalog Cartesian coordinates (relative to solar position) 
         into Galactic coordinates, assuming Sun is on -x axis (use rotateStars)
         """
-        gc = coordinates.Galactic(u = self._vaex[self._pos[0]].to_numpy()*units.kpc,
-                                  v = self._vaex[self._pos[1]].to_numpy()*units.kpc,
-                                  w = self._vaex[self._pos[2]].to_numpy()*units.kpc,
-                                  U = self._vaex[self._vel[0]].to_numpy()*units.km/units.s,
-                                  V = self._vaex[self._vel[1]].to_numpy()*units.km/units.s,
-                                  W = self._vaex[self._vel[2]].to_numpy()*units.km/units.s,
+        gc = coordinates.Galactic(u = df[cls._pos[0]].to_numpy()*units.kpc,
+                                  v = df[cls._pos[1]].to_numpy()*units.kpc,
+                                  w = df[cls._pos[2]].to_numpy()*units.kpc,
+                                  U = df[cls._vel[0]].to_numpy()*units.km/units.s,
+                                  V = df[cls._vel[1]].to_numpy()*units.km/units.s,
+                                  W = df[cls._vel[2]].to_numpy()*units.km/units.s,
                                   representation_type = coordinates.CartesianRepresentation,
                                   differential_type   = coordinates.CartesianDifferential)
-        self._vaex[self._gal[0]] = shift_g_lon(gc.spherical.lon.value)
-        self._vaex[self._gal[1]] = gc.spherical.lat.value
-        self._vaex[self._rad]    = gc.spherical.distance.value
+        df[cls._gal[0]] = shift_g_lon(gc.spherical.lon.value)
+        df[cls._gal[1]] = gc.spherical.lat.value
+        df[cls._rad]    = gc.spherical.distance.value
         ####################################
-        self._vaex[self._mugal[0]] = gc.sphericalcoslat.differentials['s'].d_lon_coslat.value
-        self._vaex[self._mugal[1]] = gc.sphericalcoslat.differentials['s'].d_lat.value
-        self._vaex[self._vr]       = gc.sphericalcoslat.differentials['s'].d_distance.value
-        self.flush_extra_columns_to_hdf5(with_columns=self._gal+(self._rad,))
+        df[cls._mugal[0]] = gc.sphericalcoslat.differentials['s'].d_lon_coslat.value
+        df[cls._mugal[1]] = gc.sphericalcoslat.differentials['s'].d_lat.value
+        df[cls._vr]       = gc.sphericalcoslat.differentials['s'].d_distance.value
 
-    def _pp_convert_galactic_to_icrs(self):
+    @classmethod
+    def __pp_convert_galactic_to_icrs(cls, df: pd.DataFrame) -> None:
         """
         converts PMs in galactic coordinates (mulcosb, mub) in arcsec/yr (as output by Galaxia)
         to ra/dec in mas/yr (units of output catalog)
         """
-        c = coordinates.Galactic(l               = self._vaex[self._gal[0]].to_numpy()*units.degree,
-                                 b               = self._vaex[self._gal[1]].to_numpy()*units.degree,
-                                 distance        = self._vaex[self._rad].to_numpy()*units.kpc,
-                                 pm_l_cosb       = self._vaex[self._mugal[0]].to_numpy()*units.mas/units.yr,
-                                 pm_b            = self._vaex[self._mugal[1]].to_numpy()*units.mas/units.yr,
-                                 radial_velocity = self._vaex[self._vr].to_numpy()*units.km/units.s)
+        c = coordinates.Galactic(l               = df[cls._gal[0]].to_numpy()*units.degree,
+                                 b               = df[cls._gal[1]].to_numpy()*units.degree,
+                                 distance        = df[cls._rad].to_numpy()*units.kpc,
+                                 pm_l_cosb       = df[cls._mugal[0]].to_numpy()*units.mas/units.yr,
+                                 pm_b            = df[cls._mugal[1]].to_numpy()*units.mas/units.yr,
+                                 radial_velocity = df[cls._vr].to_numpy()*units.km/units.s)
         c_icrs = c.transform_to(coordinates.ICRS())
-        self._vaex[self._cel[0]] = c_icrs.ra.value
-        self._vaex[self._cel[1]] = c_icrs.dec.value
+        df[cls._cel[0]] = c_icrs.ra.value
+        df[cls._cel[1]] = c_icrs.dec.value
         ####################################
-        self._vaex[self._mu[0]]  = c_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
-        self._vaex[self._mu[1]]  = c_icrs.pm_dec.to(units.mas/units.yr).value
-        self.flush_extra_columns_to_hdf5(with_columns=self._cel)
+        df[cls._mu[0]]  = c_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
+        df[cls._mu[1]]  = c_icrs.pm_dec.to(units.mas/units.yr).value
     
-    def _pp_convert_icrs_to_galactic(self):
+    @classmethod
+    def __pp_convert_icrs_to_galactic(cls, df: pd.DataFrame) -> None:
         """
         converts PMs from ICRS coordinates (muacosd, mudec) to Galactic (mul, mub)
         input and output in mas/yr for PMs and degrees for positions
         also exports the galactic lat and longitude
         """
-        c = coordinates.ICRS(ra           = self._vaex[self._cel[0]].to_numpy()*units.degree,
-                             dec          = self._vaex[self._cel[1]].to_numpy()*units.degree,
-                             pm_ra_cosdec = self._vaex[self._mu[0]].to_numpy()*units.mas/units.yr,
-                             pm_dec       = self._vaex[self._mu[1]].to_numpy()*units.mas/units.yr)
+        c = coordinates.ICRS(ra           = df[cls._cel[0]].to_numpy()*units.degree,
+                             dec          = df[cls._cel[1]].to_numpy()*units.degree,
+                             pm_ra_cosdec = df[cls._mu[0]].to_numpy()*units.mas/units.yr,
+                             pm_dec       = df[cls._mu[1]].to_numpy()*units.mas/units.yr)
 
         c_gal = c.transform_to(coordinates.Galactic())
-        self._vaex[self._gal[0]]   = shift_g_lon(c_gal.l.value)
-        self._vaex[self._gal[1]]   = c_gal.b.value
-        self._vaex[self._mugal[0]] = c_gal.pm_l_cosb.to(units.mas/units.yr).value
-        self._vaex[self._mugal[1]] = c_gal.pm_b.to(units.mas/units.yr).value
-        self.flush_extra_columns_to_hdf5(with_columns=self._gal+self._mugal)
+        df[cls._gal[0]]   = shift_g_lon(c_gal.l.value)
+        df[cls._gal[1]]   = c_gal.b.value
+        df[cls._mugal[0]] = c_gal.pm_l_cosb.to(units.mas/units.yr).value
+        df[cls._mugal[1]] = c_gal.pm_b.to(units.mas/units.yr).value
+
+    @classmethod
+    def __pp_last_conversions(cls, df: pd.DataFrame) -> None:
+        df[cls._pi] = 1.0/df[cls._rad]  # parallax in mas (from distance in kpc)
+        df[cls._teff] = 10**df[cls._teff]  #Galaxia returns log10(teff/K)
+        df[cls._lum] = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
+
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, flush_with_columns=()):
+        post_process(self._vaex)
+        self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
+
+    def _post_process(self) -> None:
+        self._pp_convert_cartesian_to_galactic()
+        self._pp_convert_galactic_to_icrs()
+        self._pp_last_conversions()
+
+    def _pp_convert_cartesian_to_galactic(self) -> None:
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,))
+
+    def _pp_convert_galactic_to_icrs(self) -> None:
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel)
+    
+    def _pp_convert_icrs_to_galactic(self) -> None:
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal)
+
+    def _pp_last_conversions(self) -> None:
+        self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum))
 
     def __name_with_ext(self, ext):
         name_base = self._file_base
@@ -531,6 +554,13 @@ class Output:
             raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
         else:
             return self.__vaex
+
+    @property
+    def _vaex_per_partition(self):
+        if self.__vaex_per_partition is None:
+            raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
+        else:
+            return self.__vaex_per_partition
 
     @property
     def _path(self):

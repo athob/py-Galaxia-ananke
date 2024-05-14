@@ -2,13 +2,20 @@
 """
 Module miscellaneous utilities
 """
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Protocol
 from itertools import zip_longest
 import subprocess
 import pathlib
 
+import pandas as pd
 
-__all__ = ['make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton', 'execute', 'common_entries']
+
+__all__ = ['CallableDFtoNone', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'Singleton', 'execute', 'common_entries']
+
+
+class CallableDFtoNone(Protocol):
+    def __call__(self, df: pd.DataFrame) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
+        pass
 
 
 def make_symlink(file_path, dest_dir):
@@ -42,6 +49,7 @@ def confirm_equal_length_arrays_in_dict(dictionary: dict, control: str = None, e
         if len(dictionary[key]) != len(dictionary[control]): wrong_keys.append(key)
     if wrong_keys:
         raise ValueError(f"Array{'' if len(wrong_keys)==1 else 's'} representing propert{'y' if len(wrong_keys)==1 else 'ies'} {set(wrong_keys)} in the provided {error_message_dict_name + bool(error_message_dict_name)*' '}input dictionary do{'es' if len(wrong_keys)==1 else ''} not have the same length as property {control}.")
+
 
 class Singleton(type):
     """
