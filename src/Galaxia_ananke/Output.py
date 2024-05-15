@@ -11,6 +11,7 @@ from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
 import concurrent.futures
+import gc
 import pathlib
 import itertools
 import numpy as np
@@ -307,9 +308,8 @@ class Output:
             futures = [executor.submit(self.__singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
-            results = [future.result() for future in concurrent.futures.as_completed(futures)]
-        self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
-        self.__vaex_per_partition = [vaex.open(str(hdf5_file)) for hdf5_file in self._hdf5s.values()]
+            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+        self.__reload_vaex()
 
     @classmethod
     def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
@@ -415,7 +415,12 @@ class Output:
         df[cls._lum]  = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
 
     def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False):
-        post_process(self._vaex, *args)
+        # post_process(self._vaex, *args)
+        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+            # Submit tasks to the executor
+            futures = [executor.submit(post_process, vaex_df, *args) for vaex_df in self._vaex_per_partition.values()]
+            # Collect the results
+            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush):
             self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
 
@@ -614,7 +619,7 @@ class Output:
         length_tags = len(str(max(partitions.keys())))
         return {i: pattern.parent / pattern.name.replace('*',f"{i:0{length_tags}d}") for i in partitions.keys()}
     
-    def __flush_extra_columns_to_hdf5_old(self, with_columns=()):  # temporary until vaex supports it
+    def __flush_extra_columns_to_hdf5_older(self, with_columns=()):  # temporary until vaex supports it
         warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
         return
         hdf5_file = self.__hdf5
@@ -633,7 +638,9 @@ class Output:
                 print(with_columns)
         self.__vaex = vaex.open(hdf5_file)
 
-    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
+    def __flush_extra_columns_to_hdf5_old(self, with_columns=()):  # temporary until vaex supports it
+        warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
+        return
         old_column_names = set(vaex.open(str(self._hdf5s[0])).column_names)
         extra_columns = [k for k in set(self.column_names)-old_column_names if not k.startswith('__')]
         for i, hdf5_file, vaex_slice in common_entries(self._hdf5s, self.__vaex_partition_slices):
@@ -648,7 +655,36 @@ class Output:
                 if with_columns:
                     print(f"Overwritten the following quantities to {hdf5_file} for partition {i}")
                     print(with_columns)
+        self.__reload_vaex()
+
+    def __singlethread_flush_extra_columns_to_hdf5(self, vaex_df: pd.DataFrame, hdf5_file: pathlib.Path, with_columns=()):  # temporary until vaex supports it
+        old_column_names = set(vaex.open(hdf5_file).column_names)
+        extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
+        with h5.File(hdf5_file, 'r+') as f5:
+            for k in extra_columns:
+                f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
+            if extra_columns:
+                print(f"Exported the following quantities to {hdf5_file}")
+                print(extra_columns)
+            for k in with_columns:
+                f5[k][...] = vaex_df[k].to_numpy()
+            if with_columns:
+                print(f"Overwritten the following quantities to {hdf5_file}")
+                print(with_columns)
+
+    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
+        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+            # Submit tasks to the executor
+            futures = [executor.submit(self.__singlethread_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns=with_columns)
+                       for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
+            # Collect the results
+            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+        self.__reload_vaex()
+        gc.collect()
+
+    def __reload_vaex(self) -> None:
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+        self.__vaex_per_partition = {i: vaex.open(str(hdf5_file)) for i, hdf5_file in self._hdf5s.items()}
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(
