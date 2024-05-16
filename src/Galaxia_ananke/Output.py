@@ -197,7 +197,7 @@ class Output:
     
     @classproperty
     def _teff(cls):
-        return cls._surfacegravity_prop[0]
+        return cls._temperature_prop[0]
     
     @classproperty
     def _lum(cls):
@@ -430,15 +430,23 @@ class Output:
         self._pp_last_conversions()
 
     def _pp_convert_cartesian_to_galactic(self) -> None:
+        pipeline_name = "convert_cartesian_to_galactic"
+        print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,))
 
     def _pp_convert_galactic_to_icrs(self) -> None:
+        pipeline_name = "convert_galactic_to_icrs"
+        print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel)
     
     def _pp_convert_icrs_to_galactic(self) -> None:
+        pipeline_name = "convert_icrs_to_galactic"
+        print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal)
 
     def _pp_last_conversions(self) -> None:
+        pipeline_name = "last_conversions"
+        print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum))
 
     def __name_with_ext(self, ext):
