@@ -6,6 +6,11 @@ import _sitebuiltins
 import textwrap
 from datetime import date
 
+try:
+    from .__license__ import __license_full__
+except ImportError:
+    __license_full__ = ""
+
 __all__ = ['__project__', '__description__', '__url__', '__year__', '__author__', '__contributors__', '__license__',
            '__version__', '__date__', '__maintainer__', '__email__', '__classifiers__',
            '__credits__', '__doi__', '__citation__', '__adsurl__', '__bibtex__', '__copyright__', '__readme__',
@@ -140,5 +145,5 @@ __readme__ = f"""
 # DEFINING PRINTERS
 copyright = _sitebuiltins._Printer('copyright', __copyright__)
 credits = _sitebuiltins._Printer('credits', __credits__)
-license = _sitebuiltins._Printer('license', __license__)
+license = _sitebuiltins._Printer('license', __license_full__)
 readme = _sitebuiltins._Printer('readme', __readme__)
