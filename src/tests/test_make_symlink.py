@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import pathlib
 
-from ..Galaxia_ananke.utils import make_symlink
+from ..Galaxia_ananke._builtin_utils import make_symlink
 from .utils import in_tmp_wd
 
 
