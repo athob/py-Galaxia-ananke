@@ -25,7 +25,7 @@ from astropy.utils import classproperty
 from .constants import *
 from .templates import *
 from .defaults import *
-from .utils import CallableDFtoNone, common_entries
+from .utils import CallableDFtoNone, State, common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -102,7 +102,12 @@ class Output:
         self.__vaex = None
         self.__vaex_per_partition = None
         self.__path = None
-        self.__clear_ebfs(force=True)
+        self.__make_state()
+        if not self.caching:
+            self.__clear_ebfs(force=True)
+
+    class _State(State):
+        pass
 
     @classproperty
     def _export_properties(cls):
@@ -300,7 +305,7 @@ class Output:
                 print(list(f5.keys()))
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
-    def _ebf_to_hdf5(self) -> None:
+    def _ebf_to_hdf5(self) -> None:  # TODO add self.verbose support
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
         with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
@@ -309,7 +314,6 @@ class Output:
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        self.__reload_vaex()
 
     @classmethod
     def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
@@ -346,6 +350,10 @@ class Output:
                             )
                 print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
                 print(list(f5.keys()))
+
+    def read_galaxia_output(self) -> None:
+        self.check_state_before_running(description="convert_ebf_to_hdf5")(self._ebf_to_hdf5)()
+        self.__reload_vaex()
 
     ### DEFINING POST PROCESSING PIPELINES BELOW # TODO consider a PostProcess class that runs postprocess pipeline at __call__ and holds flush_with_columns
 
@@ -424,27 +432,27 @@ class Output:
         if not(hold_flush):
             self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
 
-    def _post_process(self) -> None:
-        self._pp_convert_cartesian_to_galactic()
-        self._pp_convert_galactic_to_icrs()
-        self._pp_last_conversions()
+    def post_process_output(self) -> None:
+        self.check_state_before_running(description="pp_cartesian_to_galactic")(self._pp_convert_cartesian_to_galactic)()
+        self.check_state_before_running(description="pp_galactic_to_icrs", level=1)(self._pp_convert_galactic_to_icrs)()
+        self.check_state_before_running(description="pp_last_conversions", level=1)(self._pp_last_conversions)()
 
-    def _pp_convert_cartesian_to_galactic(self) -> None:
+    def _pp_convert_cartesian_to_galactic(self) -> None:  # TODO add self.verbose support
         pipeline_name = "convert_cartesian_to_galactic"
         print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,))
 
-    def _pp_convert_galactic_to_icrs(self) -> None:
+    def _pp_convert_galactic_to_icrs(self) -> None:  # TODO add self.verbose support
         pipeline_name = "convert_galactic_to_icrs"
         print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel)
     
-    def _pp_convert_icrs_to_galactic(self) -> None:
+    def _pp_convert_icrs_to_galactic(self) -> None:  # TODO add self.verbose support
         pipeline_name = "convert_icrs_to_galactic"
         print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal)
 
-    def _pp_last_conversions(self) -> None:
+    def _pp_last_conversions(self) -> None:  # TODO add self.verbose support
         pipeline_name = "last_conversions"
         print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum))
@@ -463,6 +471,25 @@ class Output:
         self._vaex.close()
         old_path.rename(self._path)
         self.__vaex = vaex.open(self._path)
+
+    def __make_state(self):
+        self.__state: Output._State = self._State(self.__name_with_ext('.dummy'), self)
+
+    @property
+    def _state(self) -> Output._State:
+        return self.__state
+
+    @property
+    def check_state_before_running(self):
+        return self._state.check_state_file_before_running
+
+    @property
+    def caching(self):
+        return self.survey.caching
+
+    @property
+    def verbose(self):
+        return self.survey.verbose
 
     @property
     def survey(self):

@@ -5,9 +5,14 @@ Contains the Input class definition
 Please note that this module is private. The Input class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
-from typing import Union, Tuple, Dict
+from typing import Any, Optional, Union, Tuple, Dict, OrderedDict
+from numpy.typing import NDArray
+from collections import OrderedDict as ODict
+from warnings import warn
+from functools import cached_property
 import re
 import pathlib
+import hashlib
 import numpy as np
 import ebf
 from astropy.utils import classproperty
@@ -54,10 +59,13 @@ class Input:
             Call signatures::
 
                 input = Input(particles, {rho_pos}, {rho_vel}=None,
-                input_dir='{GALAXIA_TMP}', name='{DEFAULT_SIMNAME}',
-                ngb={TTAGS_nres}, k_factor=1., former_kernel=False)
+                              input_dir='{GALAXIA_TMP}',
+                              name='{DEFAULT_SIMNAME}', caching=False,
+                              ngb={TTAGS_nres},
+                              k_factor=1., former_kernel=False)
 
-                input = Input(pname, kname, former_kernel=False)
+                input = Input(pname, kname, caching=False,
+                              former_kernel=False)
             
             Parameters
             ----------
@@ -86,6 +94,9 @@ class Input:
                 Optional name Galaxia should use for the input files.
                 Default to '{DEFAULT_SIMNAME}'.
             
+            caching : bool
+                TODO
+
             ngb : int
                 Number of neighbouring particles Galaxia should consider.
                 Default to {TTAGS_nres}. ONLY SUPPORT 8, 32, 64 & 128.
@@ -114,12 +125,13 @@ class Input:
                 including the value knorm under key 'knorm'. Default to False,
                 if True, knorm defaults to 0.596831.
         """
+        self.caching: bool = kwargs.get('caching', False)
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             kwargs['particles'] = args[0]
             kwargs[self._rho_pos] = args[1]
             kwargs[self._rho_vel] = args[2] if len(args) == 3 else kwargs.get(self._rho_vel, None)
-            self.__input_files_exist = False
+            self.__input_files_exist: bool = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
             _kname = kwargs['kname'] = pathlib.Path(kwargs['kname'])
@@ -129,36 +141,36 @@ class Input:
             _hdim, kwargs['ngb'] = map(int, re.findall(f"{kwargs['name']}_d(\\d*)n(\\d*)_den.ebf",
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
-            _k =  ebf.read(_kname)
-            _mass = _k[self._mass]  # dummy line to check format
+            _k: Dict[str, NDArray] =  ebf.read(_kname)
+            _mass: NDArray = _k[self._mass]  # dummy line to check format
             kwargs[self._rho_pos] = _k[self._density]
-            _k_factor = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
+            _k_factor: NDArray = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
             if kwargs.get('former_kernel', False):
-                _knorm = _k_factor/(np.sqrt(kwargs['ngb']) * np.cbrt(FOURTHIRDPI))
+                _knorm: NDArray = _k_factor/(np.sqrt(kwargs['ngb']) * np.cbrt(FOURTHIRDPI))
                 # _knorm = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
-                _knorm = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
+                _knorm: Union[float, NDArray] = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
                 kwargs[self._rho_vel] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
                 kwargs['former_kernel'] = {'knorm': _knorm}
             else:
                 kwargs[self._rho_vel] = (_k_factor / _k[self._kernels][:,1])**3 / FOURTHIRDPI
                 kwargs['k_factor'] = _k_factor
-            self.__input_files_exist = True
+            self.__input_files_exist: bool = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
-        self.__particles = kwargs['particles'].copy()
+        self.__particles: OrderedDict[str, NDArray] = self.__lexicalorder_particles(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__pos_density = kwargs[self._rho_pos]
-        self.__vel_density = kwargs.get(self._rho_vel)
-        self.__input_dir = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
-        self.__name = kwargs.get('name', DEFAULT_SIMNAME)
-        self.__pname = kwargs.get('pname', None)
-        self.__kname = kwargs.get('kname', None)
-        self.__ngb = kwargs.get('ngb', FTTAGS.nres)
-        __old = kwargs.get('former_kernel', False)
+        self.__pos_density: NDArray = kwargs[self._rho_pos]
+        self.__vel_density: Optional[NDArray] = kwargs.get(self._rho_vel)
+        self.__input_dir: pathlib.Path = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
+        self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
+        self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
+        self.__kname: Optional[pathlib.Path] = kwargs.get('kname', None)
+        self.__ngb: int = kwargs.get('ngb', FTTAGS.nres)
+        __old: Union[bool, Dict[str, Any]] = kwargs.get('former_kernel', False)
         if __old and not isinstance(__old, dict):  __old = {}
-        __knorm = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
-        self.__k_factor = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
+        __knorm: Optional[Union[float, NDArray]] = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
+        self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
 
     @classproperty
     def particles_dictionary_description(cls):
@@ -309,27 +321,37 @@ class Input:
         return cls._velocitydensity_prop[0]
 
     @property
-    def particles(self):
+    def caching(self) -> bool:
+        return self.__caching
+
+    @caching.setter
+    def caching(self, value: bool) -> None:
+        if value:
+            warn(f"You have requested caching mode, be aware this feature is currently experimental and may result in unintended behaviour.", DeprecationWarning, stacklevel=2)
+        self.__caching: bool = value
+    
+    @property
+    def particles(self) -> Dict[str, NDArray]:
         return self.__particles
     
     @property
-    def length(self):
+    def length(self) -> int:
         return len(self.particles[self._mass])
     
     @property
-    def rho_pos(self):
+    def rho_pos(self) -> NDArray:
         return self.__pos_density
     
     @property
-    def rho_vel(self):
+    def rho_vel(self) -> Optional[NDArray]:
         return self.__vel_density
 
     @property
-    def rho(self):
+    def rho(self) -> NDArray:
         return np.vstack([self.rho_pos, self.rho_vel]).T  # TODO what if rho_vel is None
     
     @property
-    def hdim(self):
+    def hdim(self) -> int:
         return 3 if self.rho_vel is None else 6
 
     @property
@@ -337,32 +359,50 @@ class Input:
         return self.__name
     
     @property
-    def ngb(self):
+    def name_hash(self) -> str:
+        return f"{self.name}_{self.hash[:7]}"
+
+    @property
+    def hash(self) -> str:
+        return self._inputhash.decode()
+
+    @property
+    def ngb(self) -> int:
         return self.__ngb
     
     @property
-    def k_factor(self):
+    def k_factor(self) -> Union[float, NDArray]:
         return self.__k_factor
 
     @property
-    def _input_dir(self):
+    def _input_dir(self) -> pathlib.Path:
         return self.__input_dir
 
     @property
-    def kernels(self):
+    def kernels(self) -> NDArray:
         return self.k_factor/np.cbrt(FOURTHIRDPI*self.rho)
     
     @property
-    def kname(self):  # TODO replace with functools cached_property?
-        if self.__kname is None:
-            self.__kname = self._input_dir / f"{self.name}_d{self.hdim}n{self.ngb}_den.ebf"
-        return self.__kname
+    def _base_inputfile(self) -> pathlib.Path:
+        return self._input_dir / self.name_hash
+
+    @cached_property
+    def _hashname(self) -> pathlib.Path:
+        return self._base_inputfile.with_suffix(f".{HASH_EXT}")
 
     @property
-    def pname(self):
+    def pname(self) -> pathlib.Path:
         if self.__pname is None:
-            self.__pname = self._input_dir / f"{self.name}.ebf"
+            # self.__pname = self._input_dir / f"{self.name}.ebf"
+            self.__pname = self._base_inputfile.with_suffix(".ebf")
         return self.__pname
+
+    @property
+    def kname(self) -> pathlib.Path:
+        if self.__kname is None:
+            # self.__kname = self._input_dir / f"{self.name}_d{self.hdim}n{self.ngb}_den.ebf"
+            self.__kname = self.pname.with_name(f"{self.pname.stem}_d{self.hdim}n{self.ngb}_den.ebf")
+        return self.__kname
 
     def keys(self):
         return self.particles.keys()
@@ -373,58 +413,90 @@ class Input:
     def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
-        sorter = np.lexsort((self.particles[self._partitionid],))
-        kname = self._write_kernels(sorter)
-        pname = self._write_particles(sorter)
-        temp_filename = self._prepare_nbody1(kname, pname)
-        return self.name, parfile, for_parfile
+        temp_filename = self._write_ebf_files()
+        return self.name_hash, parfile, for_parfile
 
-    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
+    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:  # TODO add survey object as kwarg, hash for_parfile, and append survey.name with hash[:7]? How do I add hash to survey name...
         parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
         for_parfile = DEFAULTS_FOR_PARFILE.copy()
         for_parfile.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
-        parfile.write_text(PARFILE_TEMPLATE.substitute(for_parfile))
+        parfile_text = PARFILE_TEMPLATE.substitute(for_parfile)
+        if ((parfile.read_text() != parfile_text # proceed if parfile_text is not in parfile,
+            if parfile.exists()                  # only if parfile exist,
+            else True)                           # otherwise proceed if doesn't exist
+            if self.caching else True):          # -> proceed anyway if self.caching is False
+            parfile.write_text(parfile_text)
         return parfile, for_parfile
 
-    def _write_kernels(self, sorter):
-        kname = self.kname
-        if not self.__input_files_exist:
-            ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
-            ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
-            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
-        return kname
+    def _write_ebf_files(self):
+        particlefile: pathlib.Path = self.pname
+        kernelfile: pathlib.Path = self.kname
+        inputhashfile: pathlib.Path = self._hashname
+        inputhash = self._inputhash
+        if ((inputhashfile.read_bytes() != inputhash # proceed if hashes don't match,
+            if (particlefile.exists() and            # only if particlefile exists,
+                kernelfile.exists() and              # and kernelfile exists,
+                inputhashfile.exists())              # and inputhashfile exists,
+            else True)                               # otherwise proceed if both don't exist
+            if self.caching else True):              # -> proceed anyway if caching is False
+            sorter: NDArray[np.int_] = self.__lex_partitionid_sorter
+            self.__write_particles(particlefile, sorter)
+            self.__write_kernels(kernelfile, sorter)
+            inputhashfile.write_bytes(inputhash)
+        temp_filename = self.__prepare_nbody1(kernelfile, particlefile)
+        return temp_filename
 
-    def _write_particles(self, sorter):
-        pname = self.pname
+    @cached_property
+    def _inputhash(self) -> bytes:
+        return bytes(hashlib.sha256(
+            bytes('\n'.join([hashlib.sha256(array.copy(order='C')).hexdigest()
+                             for array in list(self.particles.values())+[self.rho]]),
+                  HASH_ENCODING)
+            ).hexdigest(), HASH_ENCODING)
+
+    @property
+    def __lex_partitionid_sorter(self) -> NDArray[np.int_]:
+        return np.lexsort((self.particles[self._partitionid],))
+
+    def __write_particles(self, pname: pathlib.Path, sorter: NDArray[np.int_]):
         if not self.__input_files_exist:
             ebf.initialize(pname)
             for key in self._required_keys_in_particles:
                 ebf.write(pname, f"/{key}", self.particles[key][sorter], 'a')
             for key in self._optional_keys_in_particles:
                 ebf.write(pname, f"/{key}", self.particles[key][sorter] if key in self.keys() else np.zeros(self.length), 'a')
-        return pname
-    
-    def _prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
-        temp_dir = GALAXIA_NBODY1 / self.name
+   
+    def __write_kernels(self, kname: pathlib.Path, sorter: NDArray[np.int_]):
+        if not self.__input_files_exist:
+            ebf.initialize(self.kname)
+            ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
+            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
+ 
+    def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
+        temp_dir = GALAXIA_NBODY1 / self.name_hash
         temp_dir.mkdir(parents=True, exist_ok=True)
         make_symlink(kname, temp_dir)
         make_symlink(pname, temp_dir)
-        temp_filename = (GALAXIA_FILENAMES / self.name).with_suffix('.txt')
-        temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name, pname=pname.name))
+        temp_filename = (GALAXIA_FILENAMES / self.name_hash).with_suffix('.txt')
+        temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name_hash, pname=pname.name))
         return temp_filename
     
     @classmethod
-    def __verify_particles(cls, particles):
+    def __lexicalorder_particles(cls, particles: Dict[str, Any]) -> OrderedDict[str, Any]:
+        return ODict({k: particles[k] for k in sorted(particles)})
+
+    @classmethod
+    def __verify_particles(cls, particles: Dict[str, NDArray]):
         compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
         confirm_equal_length_arrays_in_dict(particles, cls._mass, error_message_dict_name='particles')
         # TODO check format, if dataframe-like
     
     @classmethod
-    def __complete_particles(cls, particles):
+    def __complete_particles(cls, particles: Dict[str, NDArray]):
         if cls._parentid not in particles:
             particles[cls._parentid] = np.arange(particles[cls._mass].shape[0])
         if cls._partitionid not in particles:

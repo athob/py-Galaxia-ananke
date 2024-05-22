@@ -2,13 +2,18 @@
 """
 Module utilities using built-in implementation
 """
-from typing import Union, List, Dict
+from typing import Type, TypeVar, Any, Union, List, Dict, Callable
+from typing_extensions import Self, ParamSpec
+from functools import total_ordering
 from itertools import zip_longest
+import contextlib as cl
+import dataclasses as dc
 import subprocess
 import pathlib
+import json
 
 
-__all__ = ['Singleton', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
+__all__ = ['Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
 
 
 class Singleton(type):
@@ -30,6 +35,80 @@ class Singleton(type):
 #         if index not in cls._instances:
 #             cls._instances[index] = super(CachedInstance, cls).__call__(*args, **kwargs)
 #         return cls._instances[index]
+
+
+_BS = TypeVar('_BS', bound='_BaseState')
+
+
+@total_ordering
+@dc.dataclass()
+class _BaseState:
+    """
+    Base dataclass to track an evolving state.
+    """
+    register: List[int] = dc.field(default_factory=lambda: [0])
+    description: str = "initial"
+    @classmethod
+    def fromdict(cls: Type[_BS], dictionary: Dict[str, Any]) -> _BS:
+        return cls(**dictionary)
+    def asdict(self) -> Dict[str, Any]:
+        return dc.asdict(self)
+    def __increment_register(self, level: int) -> None:
+        self.register += max(level+1 - len(self.register), 0)*[0]
+        del self.register[level+1:]
+        self.register[level] += 1
+    def update(self, description: str = "", level: int = 0) -> None:
+        self.__increment_register(level)
+        self.description = description
+    def __eq__(self, other: Self) -> bool:
+        return (self.register, self.description) == (other.register, other.description)
+    def __lt__(self, other: Self) -> bool:
+        return (self.register, self.description) < (other.register, other.description)
+
+
+Param = ParamSpec("Param")
+
+
+class State(_BaseState):
+    """
+    Class to track an evolving state with a file.
+    """
+    def __init__(self, filebase: Union[None, str, pathlib.Path], parent, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs) 
+        self.filebase = filebase
+        self.parent = parent
+        if not self.file_path.exists():
+            self.__writefile()
+    @property
+    def caching(self):
+        return self.parent.caching
+    @property
+    def verbose(self):
+        return self.parent.verbose
+    @property
+    def file_path(self) -> pathlib.Path:
+        return pathlib.Path(self.filebase).with_suffix(".state").resolve()
+    def __writefile(self) -> None:
+        self.file_path.write_bytes(bytes(json.dumps(self.asdict()),'ascii'))
+    def __readfile(self) -> _BaseState:
+        file_path = self.file_path
+        if file_path.exists():
+            return _BaseState.fromdict(json.loads(self.file_path.read_bytes()))
+        else:
+            return _BaseState()
+    @property
+    def __is_behind_state_of_file(self) -> bool:
+        return self <= self.__readfile()
+    def check_state_file_before_running(self, *args, **kwargs):
+        def decorator(func: Callable[Param, None]) -> Callable[Param, None]:
+            def wrapper(*w_args, **w_kwargs) -> None:
+                self.update(*args, **kwargs)
+                if (not self.__is_behind_state_of_file
+                    if self.caching else True):
+                    func(*w_args, **w_kwargs)
+                    self.__writefile()
+            return wrapper
+        return decorator
 
 
 def _execute_generator(cmds: List[str], **kwargs):

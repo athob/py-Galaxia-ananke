@@ -9,7 +9,7 @@ import pandas as pd
 from ._builtin_utils import *
 
 
-__all__ = ['CallableDFtoNone', 'Singleton', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
+__all__ = ['CallableDFtoNone', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
 
 
 class CallableDFtoNone(Protocol):
