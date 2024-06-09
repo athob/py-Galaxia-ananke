@@ -39,6 +39,13 @@ def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
     return -((-lon+180)%360-180)
 
 
+def _decorate_post_processing(pp: CallableDFtoNone) -> CallableDFtoNone:
+    def new_pp(*args) -> None:
+        pp(*args)
+        gc.collect()
+    return new_pp
+
+
 class Output:
     _position_prop = (('px', 'py', 'pz'), "Position coordinates in kpc")
     _velocity_prop = (('vx', 'vy', 'vz'), "Velocity coordinates in km/s")
@@ -355,7 +362,7 @@ class Output:
         converts positions & velocities from mock catalog Cartesian coordinates (relative to solar position) 
         into Galactic coordinates, assuming Sun is on -x axis (use rotateStars)
         """
-        gc = coordinates.Galactic(u = df[cls._pos[0]].to_numpy()*units.kpc,
+        GC = coordinates.Galactic(u = df[cls._pos[0]].to_numpy()*units.kpc,
                                   v = df[cls._pos[1]].to_numpy()*units.kpc,
                                   w = df[cls._pos[2]].to_numpy()*units.kpc,
                                   U = df[cls._vel[0]].to_numpy()*units.km/units.s,
@@ -363,13 +370,13 @@ class Output:
                                   W = df[cls._vel[2]].to_numpy()*units.km/units.s,
                                   representation_type = coordinates.CartesianRepresentation,
                                   differential_type   = coordinates.CartesianDifferential)
-        df[cls._gal[0]] = shift_g_lon(gc.spherical.lon.value)
-        df[cls._gal[1]] = gc.spherical.lat.value
-        df[cls._rad]    = gc.spherical.distance.value
+        df[cls._gal[0]] = shift_g_lon(GC.spherical.lon.value)
+        df[cls._gal[1]] = GC.spherical.lat.value
+        df[cls._rad]    = GC.spherical.distance.value
         ####################################
-        df[cls._mugal[0]] = gc.sphericalcoslat.differentials['s'].d_lon_coslat.value
-        df[cls._mugal[1]] = gc.sphericalcoslat.differentials['s'].d_lat.value
-        df[cls._vr]       = gc.sphericalcoslat.differentials['s'].d_distance.value
+        df[cls._mugal[0]] = GC.sphericalcoslat.differentials['s'].d_lon_coslat.value
+        df[cls._mugal[1]] = GC.sphericalcoslat.differentials['s'].d_lat.value
+        df[cls._vr]       = GC.sphericalcoslat.differentials['s'].d_distance.value
 
     @classmethod
     def __pp_convert_galactic_to_icrs(cls, df: pd.DataFrame) -> None:
@@ -377,18 +384,18 @@ class Output:
         converts PMs in galactic coordinates (mulcosb, mub) in arcsec/yr (as output by Galaxia)
         to ra/dec in mas/yr (units of output catalog)
         """
-        c = coordinates.Galactic(l               = df[cls._gal[0]].to_numpy()*units.degree,
-                                 b               = df[cls._gal[1]].to_numpy()*units.degree,
-                                 distance        = df[cls._rad].to_numpy()*units.kpc,
-                                 pm_l_cosb       = df[cls._mugal[0]].to_numpy()*units.mas/units.yr,
-                                 pm_b            = df[cls._mugal[1]].to_numpy()*units.mas/units.yr,
-                                 radial_velocity = df[cls._vr].to_numpy()*units.km/units.s)
-        c_icrs = c.transform_to(coordinates.ICRS())
-        df[cls._cel[0]] = c_icrs.ra.value
-        df[cls._cel[1]] = c_icrs.dec.value
+        GC = coordinates.Galactic(l               = df[cls._gal[0]].to_numpy()*units.degree,
+                                  b               = df[cls._gal[1]].to_numpy()*units.degree,
+                                  distance        = df[cls._rad].to_numpy()*units.kpc,
+                                  pm_l_cosb       = df[cls._mugal[0]].to_numpy()*units.mas/units.yr,
+                                  pm_b            = df[cls._mugal[1]].to_numpy()*units.mas/units.yr,
+                                  radial_velocity = df[cls._vr].to_numpy()*units.km/units.s)
+        GC_icrs = GC.transform_to(coordinates.ICRS())
+        df[cls._cel[0]] = GC_icrs.ra.value
+        df[cls._cel[1]] = GC_icrs.dec.value
         ####################################
-        df[cls._mu[0]]  = c_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
-        df[cls._mu[1]]  = c_icrs.pm_dec.to(units.mas/units.yr).value
+        df[cls._mu[0]]  = GC_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
+        df[cls._mu[1]]  = GC_icrs.pm_dec.to(units.mas/units.yr).value
     
     @classmethod
     def __pp_convert_icrs_to_galactic(cls, df: pd.DataFrame) -> None:
@@ -397,16 +404,16 @@ class Output:
         input and output in mas/yr for PMs and degrees for positions
         also exports the galactic lat and longitude
         """
-        c = coordinates.ICRS(ra           = df[cls._cel[0]].to_numpy()*units.degree,
-                             dec          = df[cls._cel[1]].to_numpy()*units.degree,
-                             pm_ra_cosdec = df[cls._mu[0]].to_numpy()*units.mas/units.yr,
-                             pm_dec       = df[cls._mu[1]].to_numpy()*units.mas/units.yr)
+        IC = coordinates.ICRS(ra           = df[cls._cel[0]].to_numpy()*units.degree,
+                              dec          = df[cls._cel[1]].to_numpy()*units.degree,
+                              pm_ra_cosdec = df[cls._mu[0]].to_numpy()*units.mas/units.yr,
+                              pm_dec       = df[cls._mu[1]].to_numpy()*units.mas/units.yr)
 
-        c_gal = c.transform_to(coordinates.Galactic())
-        df[cls._gal[0]]   = shift_g_lon(c_gal.l.value)
-        df[cls._gal[1]]   = c_gal.b.value
-        df[cls._mugal[0]] = c_gal.pm_l_cosb.to(units.mas/units.yr).value
-        df[cls._mugal[1]] = c_gal.pm_b.to(units.mas/units.yr).value
+        IC_gal = IC.transform_to(coordinates.Galactic())
+        df[cls._gal[0]]   = shift_g_lon(IC_gal.l.value)
+        df[cls._gal[1]]   = IC_gal.b.value
+        df[cls._mugal[0]] = IC_gal.pm_l_cosb.to(units.mas/units.yr).value
+        df[cls._mugal[1]] = IC_gal.pm_b.to(units.mas/units.yr).value
 
     @classmethod
     def __pp_last_conversions(cls, df: pd.DataFrame) -> None:
@@ -418,7 +425,7 @@ class Output:
         # post_process(self._vaex, *args)
         with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(post_process, vaex_df, *args) for vaex_df in self._vaex_per_partition.values()]
+            futures = [executor.submit(_decorate_post_processing(post_process), vaex_df, *args) for vaex_df in self._vaex_per_partition.values()]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush):
