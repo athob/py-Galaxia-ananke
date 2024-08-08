@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Galaxia
-======
+=======
 
 Provides a set of utilities to run a modified version of the synthetic star
 survey generator Galaxia (`Sharma et al 2011 <http://ascl.net/1101.007>`).
