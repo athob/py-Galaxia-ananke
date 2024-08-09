@@ -11,4 +11,5 @@ py-Galaxia-ananke documentation
    :caption: Contents:
 
    README.md
+   testing_Galaxia.ipynb
    reference.rst
