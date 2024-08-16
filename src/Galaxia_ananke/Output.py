@@ -22,9 +22,9 @@ import pandas as pd
 from astropy import units, coordinates
 from astropy.utils import classproperty
 
-from .constants import *
-from .templates import *
-from .defaults import *
+from ._constants import *
+from ._templates import *
+from ._defaults import *
 from .utils import CallableDFtoNone, common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input

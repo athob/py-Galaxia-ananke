@@ -10,7 +10,7 @@ import re
 import pandas as pd
 from astropy.io import ascii
 
-from ..constants import *
+from .._constants import *
 
 if TYPE_CHECKING:
     from .Isochrone import Isochrone

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from astropy import coordinates, units
 
 from .utils import Singleton
-from .templates import *
+from ._templates import *
 
 
 __all__ = ['GALAXIA_TMP', 'DEFAULT_PSYS', 'DEFAULT_CMD', 'DEFAULT_CMD_BOX', 'DEFAULT_SIMNAME', 'DEFAULT_SURVEYNAME', 'DEFAULT_PARFILE', 'DEF_UNIT', 'DEFAULTS_FOR_PARFILE']

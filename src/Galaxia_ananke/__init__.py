@@ -13,8 +13,8 @@ Galaxia comes with the function make_survey_from_particles, please refer to
 its documentation for further help.
 """
 from .__metadata__ import *
-from .constants import *
-from .defaults import *
+from ._constants import *
+from ._defaults import *
 from .Input import Input
 from .Survey import Survey
 from .Output import Output

@@ -7,7 +7,7 @@ from glob import glob
 
 import pandas as pd
 
-from ..constants import *
+from .._constants import *
 from ..utils import Singleton
 from .Isochrone import Isochrone
 from .PhotoSystem import PhotoSystem
