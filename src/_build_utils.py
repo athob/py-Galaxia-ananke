@@ -11,7 +11,7 @@ import urllib.request
 import tempfile
 from distutils.errors import CompileError
 
-from .constants import *
+from ._constants import *
 from .__metadata__ import *
 
 __all__ = ['say', 'all_files', 'download_galaxia', 'check_galaxia_submodule', 'build_and_install_galaxia']

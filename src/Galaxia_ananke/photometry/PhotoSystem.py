@@ -8,8 +8,8 @@ import re
 import numpy as np
 from astropy import units
 
-from ..constants import *
-from ..defaults import *
+from .._constants import *
+from .._defaults import *
 from ..utils import compare_given_and_required
 from .Isochrone import Isochrone
 from .InterfaceSvoFpsDriver import InterfaceSvoFpsDriver

@@ -10,7 +10,7 @@ import numpy as np
 from astroquery.svo_fps import SvoFps
 from astropy.table import Table
 
-from ..constants import *
+from .._constants import *
 
 if TYPE_CHECKING:
     from .InterfaceSvoFpsDriver import InterfaceSvoFpsDriver

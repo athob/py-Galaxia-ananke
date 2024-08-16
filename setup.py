@@ -5,7 +5,7 @@ from setuptools.command.build_ext import build_ext
 from setuptools import setup, Command
 
 from src._build_utils import *
-from src.constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
+from src._constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
 from src.__metadata__ import *
 
 ROOT_DIR = pathlib.Path(__file__).parent

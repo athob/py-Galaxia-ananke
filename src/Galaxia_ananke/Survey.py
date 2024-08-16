@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Union, Dict
 from warnings import warn
 from pprint import PrettyPrinter
 
-from .constants import *
-from .templates import *
-from .defaults import *
+from ._constants import *
+from ._templates import *
+from ._defaults import *
 from .utils import execute
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem

@@ -6,7 +6,7 @@ import pathlib
 import shutil
 from glob import glob
 
-from ..constants import *
+from .._constants import *
 from ..utils import compare_given_and_required
 from .IsochroneFile import IsochroneFile
 
