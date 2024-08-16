@@ -1,5 +1,7 @@
 # py-Galaxia-ananke
 
+[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)
+
 Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://ascl.net/1101.007)).
 
 ## Getting started
