@@ -201,7 +201,7 @@ class Survey:
                 Currently not implemented. Default to {TTAGS_photo_error}
 
             Returns
-            ----------
+            -------
             output : :obj:`Output`
                 Handler with utilities to utilize the output survey and its
                 data.
