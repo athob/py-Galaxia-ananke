@@ -99,30 +99,32 @@ class Survey:
     def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = 1, verbose: bool = True, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
-
+            
             Call signature::
-
-                output = self.make_survey(cmd_magnames='{DEFAULT_CMD}',
+            
+                output = self.make_survey(cmd_magnames= '{DEFAULT_CMD}' ,
                                           fsample=1, verbose=True, **kwargs)
-
+            
             Parameters
             ----------
             cmd_magnames : string
                 Names of the filters Galaxia should use for the color-
                 magnitude diagram box selection. The given string must meet
                 the following format:
-                        "band1,band2-band3"
+
+                    "band1,band2-band3"
+                
                 where band1 is the magnitude filter and (band2, band3) are the
                 filters that define the band2-band3 color index. The filter
                 names must correspond to filters that are part of the first
                 chosen photometric system in photo_sys. Default to
                 '{DEFAULT_CMD}'
-
+            
             fsample : float
                 Sampling rate from 0 to 1 for the resulting synthetic star
                 survey. 1 returns a full sample while any value under returns
                 partial surveys. Default to 1.
-
+            
             n_jobs : int
                 Number of independent catalog generations ran in parallel.
                 Default to 1.
@@ -130,7 +132,7 @@ class Survey:
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
                 to stdout. Default to True.
-
+            
             parfile : string
                 Name of file where Input should save the parameters for
                 Galaxia. Default to '{DEFAULT_PARFILE}'
@@ -149,26 +151,33 @@ class Survey:
                 diagram box selection (lo for lower and hi for upper). app_mag,
                 abs_mag and color represent respectively limits in apparent
                 magnitudes, absolute magnitudes and color index. Default values
-                follow those set in the dictionary: {DEFAULT_CMD_BOX} 
-
+                follow those set in the dictionary::
+                {DEFAULT_CMD_BOX} 
+            
             rSun0 : float
             rSun1 : float
             rSun2 : float
                 Coordinates for the observer position in kpc. Respectively
-                default to {TTAGS_rSun0}, {TTAGS_rSun1} & {TTAGS_rSun2}
+                default to::
 
+                    {TTAGS_rSun0}, {TTAGS_rSun1} & {TTAGS_rSun2}
+            
             vSun0 : float
             vSun1 : float
             vSun2 : float
                 Coordinates for the observer velocity in km/s. Respectively
-                default to {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
+                default to::
+
+                    {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
             
             r_max : float
             r_min : float
                 Extent of the shell of radii from observer location within
                 which particles should be considered by Galaxia. Respectively
-                default to {TTAGS_r_max} & {TTAGS_r_min}
+                default to::
 
+                    {TTAGS_r_max} & {TTAGS_r_min}
+            
             rand_seed : int
                 Seed to be used by Galaxia's pseudorandom number generator.
                 Default to {TTAGS_rand_seed}
@@ -179,9 +188,10 @@ class Survey:
 
             longitude : float
             latitude : float
-                Currently not implemented. Respectively default to
-                {TTAGS_longitude} & {TTAGS_latitude}
-
+                Currently not implemented. Respectively default to::
+                
+                    {TTAGS_longitude} & {TTAGS_latitude}
+            
             star_type : int
                 Currently not implemented. Default to {TTAGS_star_type}
 

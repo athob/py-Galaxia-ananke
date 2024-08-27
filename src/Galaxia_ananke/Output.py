@@ -72,16 +72,14 @@ class Output:
     def __init__(self, survey: Survey, parameters: dict) -> None:
         """
             Driver to exploit the output of Galaxia.
-
+            
             Call signature::
-
                 output = Output(survey, parameters)
-
+            
             Parameters
             ----------
             survey : :obj:`Survey`
                 Survey object that returned this output.
-            
             parameters : dict
                 Dictionary all of parameters passed by Survey that were used
                 to generate this output.
@@ -90,19 +88,22 @@ class Output:
             -----
             An Output object almost behaves as a vaex DataFrame, also please
             consult vaex online tutorials for more hands-on information:
+            
                 https://vaex.io/docs/tutorial.html
-
+            
             The DataFrame represents the catalogue with columns corresponding
             to properties of the synthetic stars. Those include the photometric
             magnitudes per filter, with each filter identified by a key in the
             lowercase format "photosys_filtername" where photo_sys corresponds
             to the photometric system and filtername corresponds to a filter
             name of that system. With those are also always included the
-            following properties: {_output_properties}
+            following properties:
+            {_output_properties}
             
             Additionally, depending on what optional properties were provided
             with the input particle data, the output can also include the
-            following properties: {_optional_properties}
+            following properties:
+            {_optional_properties}
         """
         self.__survey = survey
         self.__parameters = parameters
@@ -703,10 +704,10 @@ class Output:
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(
-                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                [f"\n            * {desc} via key `{str(key)}`"
                                                     for key, desc in Output._export_properties.union(Output._postprocess_properties)]),
                                                          _optional_properties=''.join(
-                                                [f"\n                 -{desc} via key `{str(key)}`"
+                                                [f"\n            * {desc} via key `{str(key)}`"
                                                     for key, desc in Output._all_optional_properties]))
 
 
