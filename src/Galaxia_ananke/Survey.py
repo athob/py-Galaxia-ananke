@@ -141,37 +141,27 @@ class Survey:
                 Path to directory where to save the input/output files of
                 Galaxia. Default to '{TTAGS_output_dir}'
             
-            app_mag_lim_lo : float
-            app_mag_lim_hi : float
-            abs_mag_lim_lo : float
-            abs_mag_lim_hi : float
-            color_lim_lo : float
-            color_lim_hi : float
+            app_mag_lim_lo, app_mag_lim_hi, abs_mag_lim_lo, abs_mag_lim_hi, color_lim_lo, color_lim_hi : float
                 These allow to specify the limits of the chosen color-magnitude
-                diagram box selection (lo for lower and hi for upper). app_mag,
-                abs_mag and color represent respectively limits in apparent
-                magnitudes, absolute magnitudes and color index. Default values
-                follow those set in the dictionary::
+                diagram box selection (``lo`` for lower and ``hi`` for upper).
+                ``app_mag``, ``abs_mag`` and ``color`` represent respectively
+                limits in apparent magnitudes, absolute magnitudes and color
+                index. Default values follow those set in the dictionary::
                 {DEFAULT_CMD_BOX} 
             
-            rSun0 : float
-            rSun1 : float
-            rSun2 : float
+            rSun0, rSun1, rSun2 : float
                 Coordinates for the observer position in kpc. Respectively
                 default to::
 
                     {TTAGS_rSun0}, {TTAGS_rSun1} & {TTAGS_rSun2}
             
-            vSun0 : float
-            vSun1 : float
-            vSun2 : float
+            vSun0, vSun1, vSun2 : float
                 Coordinates for the observer velocity in km/s. Respectively
                 default to::
 
                     {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
             
-            r_max : float
-            r_min : float
+            r_maxm, r_min : float
                 Extent of the shell of radii from observer location within
                 which particles should be considered by Galaxia. Respectively
                 default to::
@@ -186,8 +176,7 @@ class Survey:
                 Index at which to start indexing synthetic stars. Default
                 to {TTAGS_nstart}
 
-            longitude : float
-            latitude : float
+            longitude, latitude : float
                 Currently not implemented. Respectively default to::
                 
                     {TTAGS_longitude} & {TTAGS_latitude}
