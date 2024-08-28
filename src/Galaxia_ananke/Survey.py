@@ -161,7 +161,7 @@ class Survey:
 
                     {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
             
-            r_maxm, r_min : float
+            r_max, r_min : float
                 Extent of the shell of radii from observer location within
                 which particles should be considered by Galaxia. Respectively
                 default to::
