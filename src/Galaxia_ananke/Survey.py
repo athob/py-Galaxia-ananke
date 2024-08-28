@@ -118,7 +118,7 @@ class Survey:
                 are the filters that define the ``band2-band3`` color index.
                 The filter names must correspond to filters that are part of
                 the first chosen photometric system in photo_sys. Default to
-                '{DEFAULT_CMD}'
+                ``'{DEFAULT_CMD}'``
             
             fsample : float
                 Sampling rate from 0 to 1 for the resulting synthetic star
