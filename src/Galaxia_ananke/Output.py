@@ -47,18 +47,18 @@ def _decorate_post_processing(pp: CallableDFtoNone) -> CallableDFtoNone:
 
 
 class Output:
-    _position_prop = (('px', 'py', 'pz'), "Position coordinates in kpc")
-    _velocity_prop = (('vx', 'vy', 'vz'), "Velocity coordinates in km/s")
-    _celestial_prop = (('ra', 'dec'), "Celestial equatorial coordinates in degrees")
-    _galactic_prop = (('glon', 'glat'), "Celestial galactic coordinates in degrees")
-    _distance_prop = ('rad', "Distance in kpc")
+    _position_prop = (('px', 'py', 'pz'), "Position coordinates in $kpc$")
+    _velocity_prop = (('vx', 'vy', 'vz'), "Velocity coordinates in $km/s$")
+    _celestial_prop = (('ra', 'dec'), "Celestial equatorial coordinates in $degrees$")
+    _galactic_prop = (('glon', 'glat'), "Celestial galactic coordinates in $degrees$")
+    _distance_prop = ('rad', "Distance in $kpc$")
     _modulus_prop = ('dmod', "Distance modulus in magnitude units")
     _trgbmass_prop = ('mtip', "Tip of the Red Giant Branch stellar mass in solar masses")
     _currentmass_prop = ('mact', "Current stellar mass in solar masses")
     _zamsmass_prop = ('smass', "Zero Age Main Sequence stellar mass in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _surfacegravity_prop = ('grav', "Surface gravity in CGS units and decimal logarithmic scale")
-    _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
+    _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in $dex$ relative to solar")
     _temperature_prop = ('teff', "Surface temperature in Kelvin and decimal logarithmic scale")
     _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
     _parentindex_prop = Input._parentindex_prop
@@ -67,7 +67,7 @@ class Output:
     _parallax_prop = ('pi', "Parallax in milliarcseconds")
     _propermotion_prop = (('mura', 'mudec'), "Equatorial proper motions in milliarcseconds per year")
     _galacticpropermotion_prop = (('mul', 'mub'), "Galactic proper motions in milliarcseconds per year")
-    _radialvelocity_prop = ('vr', "Radial velocity in km/s")
+    _radialvelocity_prop = ('vr', "Radial velocity in $km/s$")
     _vaex_under_list = ['_repr_html_']
     def __init__(self, survey: Survey, parameters: dict) -> None:
         """
@@ -704,10 +704,10 @@ class Output:
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(
-                                                [f"\n            * {desc} via key `{str(key)}`"
+                                                [f"\n            * {desc} via key{'' if isinstance(key, str) else 's'} ``{str(key).replace(chr(39),'')}``"
                                                     for key, desc in Output._export_properties.union(Output._postprocess_properties)]),
                                                          _optional_properties=''.join(
-                                                [f"\n            * {desc} via key `{str(key)}`"
+                                                [f"\n            * {desc} via key{'' if isinstance(key, str) else 's'} ``{str(key).replace(chr(39),'')}``"
                                                     for key, desc in Output._all_optional_properties]))
 
 

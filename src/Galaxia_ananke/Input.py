@@ -24,29 +24,29 @@ __all__ = ['Input']
 FOURTHIRDPI = 4*np.pi/3
 
 class Input:
-    _position_prop = ('pos3', "Position coordinates in kpc (Nx3)")
-    _velocity_prop = ('vel3', "Velocity coordinates in km/s (Nx3)")
+    _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
+    _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
     _mass_prop = ('mass', "Stellar masses in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
-    _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
+    _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
     _populationindex_prop = ('id', "Index of parent particle population")
     _partitionindex_prop = ('partitionid', "Index of the data partition that contains the particle")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
-    _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
-    _carbonabundance_prop = ('carbon', "Carbon abundance [C/H] in dex")
-    _nitrogenabundance_prop = ('nitrogen', "Nitrogen abundance [N/H] in dex")
-    _oxygenabundance_prop = ('oxygen', "Oxygen abundance [O/H] in dex")
-    _neonabundance_prop = ('neon', "Neon abundance [Ne/H] in dex")
-    _magnesiumabundance_prop = ('magnesium', "Magnesium abundance [Mg/H] in dex")
-    _siliconabundance_prop = ('silicon', "Silicon abundance [Si/H] in dex")
-    _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
-    _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
-    _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
+    _heliumabundance_prop = ('helium', "Helium abundance $[He/H]$ in $dex$")
+    _carbonabundance_prop = ('carbon', "Carbon abundance $[C/H]$ in $dex$")
+    _nitrogenabundance_prop = ('nitrogen', "Nitrogen abundance $[N/H]$ in $dex$")
+    _oxygenabundance_prop = ('oxygen', "Oxygen abundance $[O/H]$ in $dex$")
+    _neonabundance_prop = ('neon', "Neon abundance $[Ne/H]$ in $dex$")
+    _magnesiumabundance_prop = ('magnesium', "Magnesium abundance $[Mg/H]$ in $dex$")
+    _siliconabundance_prop = ('silicon', "Silicon abundance $[Si/H]$ in $dex$")
+    _sulphurabundance_prop = ('sulphur', "Sulphur abundance $[S/H]$ in $dex$")
+    _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
+    _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
     _kernels = 'h_cubic'
     _density = 'density'
-    _positiondensity_prop = ('rho_pos', 'Position space density in kpc^-3')
-    _velocitydensity_prop = ('rho_vel', 'Velocity space density in [km/s]^-3')
+    _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
+    _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
     def __init__(self, *args, **kwargs) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
@@ -172,10 +172,10 @@ class Input:
             include the following: 
             {_optional_properties}
         """.format(_required_properties=''.join(
-                       [f"\n            * {desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key ``{str(key)}``"
                         for key, desc in Input._required_properties]),
                    _optional_properties=''.join(
-                       [f"\n            * {desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key ``{str(key)}``"
                         for key, desc in Input._optional_properties]))
         return description
 
