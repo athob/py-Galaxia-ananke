@@ -172,10 +172,10 @@ class Input:
                 synthetic star, those include the following: 
                 {_optional_properties}
         """.format(_required_properties=''.join(
-                       [f"\n                 -{desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key `{str(key)}`"
                         for key, desc in Input._required_properties]),
                    _optional_properties=''.join(
-                       [f"\n                 -{desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key `{str(key)}`"
                         for key, desc in Input._optional_properties]))
         return description
 
