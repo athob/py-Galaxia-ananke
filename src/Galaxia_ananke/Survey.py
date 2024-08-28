@@ -110,14 +110,14 @@ class Survey:
             cmd_magnames : string
                 Names of the filters Galaxia should use for the color-
                 magnitude diagram box selection. The given string must meet
-                the following format:
+                the following format::
 
                     "band1,band2-band3"
                 
-                where band1 is the magnitude filter and (band2, band3) are the
-                filters that define the band2-band3 color index. The filter
-                names must correspond to filters that are part of the first
-                chosen photometric system in photo_sys. Default to
+                where ``band1`` is the magnitude filter and ``(band2, band3)``
+                are the filters that define the ``band2-band3`` color index.
+                The filter names must correspond to filters that are part of
+                the first chosen photometric system in photo_sys. Default to
                 '{DEFAULT_CMD}'
             
             fsample : float
