@@ -163,14 +163,14 @@ class Input:
     @classproperty
     def particles_dictionary_description(cls):
         description = """
-                The dictionary includes the following properties with
-                corresponding keys:
-                {_required_properties}
-                
-                Additionally, Galaxia can optionally receive particle
-                properties that will be carried over to the generated
-                synthetic star, those include the following: 
-                {_optional_properties}
+            The particle dictionary includes the following properties with
+            corresponding keys:
+            {_required_properties}
+            
+            Additionally, Galaxia can optionally receive particle properties
+            that will be carried over to the generated synthetic star, those
+            include the following: 
+            {_optional_properties}
         """.format(_required_properties=''.join(
                        [f"\n            * {desc} via key `{str(key)}`"
                         for key, desc in Input._required_properties]),
@@ -447,7 +447,10 @@ class Input:
             -------
             p : dict
                 Dummy example input particles dictionary for Input.
-                {particles_dictionary_description}
+            
+            Notes
+            -----
+            {particles_dictionary_description}
         """
         p = {}
         p[cls._pos] = 30*np.random.randn(n_parts, 3)
