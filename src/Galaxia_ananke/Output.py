@@ -63,6 +63,8 @@ class Output:
     _luminosity_prop = ('lum', "Stellar luminosity in solar luminosities and decimal logarithmic scale")
     _parentindex_prop = Input._parentindex_prop
     _partitionindex_prop = Input._partitionindex_prop
+    _satindex_prop = Input._populationindex_prop
+    _satindex = 'satid'
     _particleflag_prop = ('partid', "Flag = 1 if star not at center of its parent particle")
     _parallax_prop = ('pi', "Parallax in milliarcseconds")
     _propermotion_prop = (('mura', 'mudec'), "Equatorial proper motions in milliarcseconds per year")
@@ -87,17 +89,28 @@ class Output:
             Notes
             -----
             An Output object almost behaves as a vaex DataFrame, also please
-            consult vaex online tutorials for more hands-on information:
+            consult ``vaex`` online tutorials for more hands-on information:
             
                 https://vaex.io/docs/tutorial.html
             
             The DataFrame represents the catalogue with columns corresponding
             to properties of the synthetic stars. Those include the photometric
             magnitudes per filter, with each filter identified by a key in the
-            lowercase format "photosys_filtername" where photo_sys corresponds
-            to the photometric system and filtername corresponds to a filter
-            name of that system. With those are also always included the
-            following properties:
+            following lowercase format:
+            
+                ``photosys_filtername``
+            
+            where
+
+            * ``photo_sys`` corresponds to the chosen photometric system
+            * ``filtername`` corresponds to a filter name of that system
+            
+            As an example, the photometry in filters ``gbp``, ``grp`` and ``g``
+            of the Gaia DR2 system identified as ``GAIA__DR2`` are respectively
+            under columns ``gaia__dr2_gbp``, ``gaia__dr2_grp`` and
+            ``gaia__dr2_g``.
+
+            With those are also always included the following properties:
             {_output_properties}
             
             Additionally, depending on what optional properties were provided
@@ -145,7 +158,9 @@ class Output:
     
     @classproperty
     def _all_optional_properties(cls):
-        return Input._optional_properties - {cls._parentindex_prop, cls._partitionindex_prop}
+        return Input._optional_properties \
+              - {cls._parentindex_prop, cls._partitionindex_prop, cls._satindex_prop} \
+                | {(cls._satindex, cls._satindex_prop[1])}
     
     @classproperty
     def _export_keys(cls):
@@ -272,7 +287,7 @@ class Output:
         return cls._make_export_keys(photosystems, extra_keys=cls._postprocess_keys+extra_keys)
 
     def _make_input_optional_keys(self) -> Tuple[str]:
-        return tuple(k if k != 'id' else 'satid' for k in self.survey.input.optional_keys())
+        return tuple(k if k != self._satindex_prop[0] else self._satindex for k in self.survey.input.optional_keys())
 
     def __ebf_to_hdf5_older(self):
         warn('This method is deprecated and does nothing at this time, this will be removed in future versions', DeprecationWarning, stacklevel=2)
