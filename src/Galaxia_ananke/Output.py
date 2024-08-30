@@ -6,7 +6,7 @@ Please note that this module is private. The Output class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, List, Dict
+from typing import TYPE_CHECKING, Optional, Tuple, List, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -451,7 +451,33 @@ class Output:
         df[cls._teff] = 10**df[cls._teff]  #Galaxia returns log10(teff/K)
         df[cls._lum]  = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
 
-    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False):
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False) -> None:
+        """
+            Apply a given post processing routine to the catalogue
+
+            Parameters
+            ----------
+            post_process : callable
+                Post processing pipeline to apply to the catalogue. This must
+                be defined as a callable that returns nothing, and take only
+                positional arguments, the first of which being the DataFrame
+                representing the catalogue.
+
+            \*args : callable args
+                Any other positinoal arguments that should be passed to the
+                ``post_process`` callable pipeline, in the order they should
+                be passed.
+
+            flush_with_columns : iterable
+                If given an iterable structure of existing column keys, the
+                flushing done after application of the post-processing
+                will also overwrite those in the backend file with their
+                current in-memory values. Default to an empty tuple. 
+
+            hold_flush : bool
+                Flag to hold the flushing from being done after application of
+                the post-processing. Default to False.
+        """
         # post_process(self._vaex, *args)
         with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
@@ -493,6 +519,8 @@ class Output:
     def save(self, path):  # TODO Gotta update this
         """
             Save output to new path
+
+            .. danger:: currently not implemented
         """
         raise NotImplementedError
         old_path = self._path
@@ -702,7 +730,7 @@ class Output:
                     print(with_columns)
         self.__reload_vaex()
 
-    def __singlethread_flush_extra_columns_to_hdf5(self, vaex_df: pd.DataFrame, hdf5_file: pathlib.Path, with_columns=()):  # temporary until vaex supports it
+    def __singlethread_flush_extra_columns_to_hdf5(self, vaex_df: pd.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
         old_column_names = set(vaex.open(hdf5_file).column_names)
         extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
         with h5.File(hdf5_file, 'r+') as f5:
@@ -713,14 +741,24 @@ class Output:
                 print(extra_columns)
             for k in with_columns:
                 f5[k][...] = vaex_df[k].to_numpy()
-            if with_columns:
+            if len(with_columns):
                 print(f"Overwritten the following quantities to {hdf5_file}")
                 print(with_columns)
 
-    def flush_extra_columns_to_hdf5(self, with_columns=()):  # temporary until vaex supports it
+    def flush_extra_columns_to_hdf5(self, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
+        """
+            Flush the dataframe new columns to its backend memory-mapped file
+
+            Parameters
+            ----------
+            with_columns : iterable
+                If given an iterable structure of existing column keys, the
+                flushing will also overwrite those in the backend file with
+                their current in-memory values. Default to an empty tuple.
+        """
         with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(self.__singlethread_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns=with_columns)
+            futures = [executor.submit(self.__singlethread_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
                        for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
