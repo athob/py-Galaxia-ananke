@@ -18,22 +18,27 @@ package_data = {NAME: all_files(*for_all_files,
                                 basedir=pathlib.Path(SRC_DIR, NAME))}
 
 
-class MyBuildExt(build_ext):
-    def run(self):
-        check_galaxia_submodule(ROOT_DIR)
-        build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
+def make_cmdclass(root_dir):
+    """
+    """
+    class _build_ext(build_ext):
+        def run(self):
+            build_ext.run(self)
+            check_galaxia_submodule(root_dir)
+            build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
 
 
-class MyTest(Command):
-    description = 'run tests'
-    user_options = []
+    class _test(Command):
+        description = 'run tests'
+        user_options = []
 
-    def initialize_options(self): pass
+        def initialize_options(self): pass
 
-    def finalize_options(self): pass
+        def finalize_options(self): pass
 
-    def run(self): pass
+        def run(self): pass
 
+    return {'build_ext': _build_ext, 'test': _test}
 
 setup(name=NAME,
       version=__version__,
@@ -53,5 +58,5 @@ setup(name=NAME,
       include_package_data=True,
       install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1'],
       ext_modules=[setuptools.extension.Extension('', [])],
-      cmdclass={'build_ext': MyBuildExt, 'test': MyTest},
+      cmdclass=make_cmdclass(ROOT_DIR),
       )
