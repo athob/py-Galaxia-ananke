@@ -16,7 +16,7 @@ from setuptools import Command
 from ._constants import *
 from .__metadata__ import *
 
-__all__ = ['say', 'all_files', 'make_cmdclass']
+__all__ = ['make_package_data', 'make_cmdclass']
 
 ROOT_DIR = pathlib.Path(__file__).parent.parent
 
@@ -138,6 +138,12 @@ def build_and_install_galaxia(galaxia_dir):
     say("\n\tCleaning temporary")
     clean_up_temporary(temp_photocat)
     say("\n")
+
+
+def make_package_data():
+    for_all_files = ('__license__', )
+    return {NAME: all_files(*for_all_files,
+                            basedir=pathlib.Path(SRC_DIR, NAME))}
 
 
 def make_cmdclass():
