@@ -10,11 +10,13 @@ import subprocess
 import urllib.request
 import tempfile
 from distutils.errors import CompileError
+from setuptools.command.build_ext import build_ext
+from setuptools import Command
 
 from ._constants import *
 from .__metadata__ import *
 
-__all__ = ['say', 'all_files', 'download_galaxia', 'check_galaxia_submodule', 'build_and_install_galaxia']
+__all__ = ['say', 'all_files', 'make_cmdclass']
 
 ROOT_DIR = pathlib.Path(__file__).parent.parent
 
@@ -136,3 +138,26 @@ def build_and_install_galaxia(galaxia_dir):
     say("\n\tCleaning temporary")
     clean_up_temporary(temp_photocat)
     say("\n")
+
+
+def make_cmdclass(root_dir):
+    """
+    """
+    class _build_ext(build_ext):
+        def run(self):
+            build_ext.run(self)
+            check_galaxia_submodule(root_dir)
+            build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
+
+
+    class _test(Command):
+        description = 'run tests'
+        user_options = []
+
+        def initialize_options(self): pass
+
+        def finalize_options(self): pass
+
+        def run(self): pass
+
+    return {'build_ext': _build_ext, 'test': _test}

@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 import pathlib
 import setuptools
-from setuptools.command.build_ext import build_ext
-from setuptools import setup, Command
+from setuptools import setup
 
 from src._build_utils import *
-from src._constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
+from src._constants import NAME, SRC_DIR
 from src.__metadata__ import *
 
 ROOT_DIR = pathlib.Path(__file__).parent
@@ -16,29 +15,6 @@ long_description = ""
 
 package_data = {NAME: all_files(*for_all_files,
                                 basedir=pathlib.Path(SRC_DIR, NAME))}
-
-
-def make_cmdclass(root_dir):
-    """
-    """
-    class _build_ext(build_ext):
-        def run(self):
-            build_ext.run(self)
-            check_galaxia_submodule(root_dir)
-            build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
-
-
-    class _test(Command):
-        description = 'run tests'
-        user_options = []
-
-        def initialize_options(self): pass
-
-        def finalize_options(self): pass
-
-        def run(self): pass
-
-    return {'build_ext': _build_ext, 'test': _test}
 
 setup(name=NAME,
       version=__version__,
