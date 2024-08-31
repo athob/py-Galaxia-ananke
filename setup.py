@@ -7,8 +7,6 @@ from src._build_utils import *
 from src._constants import NAME, SRC_DIR
 from src.__metadata__ import *
 
-ROOT_DIR = pathlib.Path(__file__).parent
-
 for_all_files = ('__license__', )
 
 long_description = ""
@@ -34,5 +32,5 @@ setup(name=NAME,
       include_package_data=True,
       install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1'],
       ext_modules=[setuptools.extension.Extension('', [])],
-      cmdclass=make_cmdclass(ROOT_DIR),
+      cmdclass=make_cmdclass(),
       )

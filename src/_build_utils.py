@@ -140,13 +140,13 @@ def build_and_install_galaxia(galaxia_dir):
     say("\n")
 
 
-def make_cmdclass(root_dir):
+def make_cmdclass():
     """
     """
     class _build_ext(build_ext):
         def run(self):
             build_ext.run(self)
-            check_galaxia_submodule(root_dir)
+            check_galaxia_submodule(ROOT_DIR)
             build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
 
 
