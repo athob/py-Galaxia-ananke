@@ -12,7 +12,9 @@ import tempfile
 from distutils.errors import CompileError
 from setuptools.command.build_ext import build_ext
 from setuptools import Command
+from packaging.version import Version
 
+from ._builtin_utils import get_version_of_command
 from ._constants import *
 from .__metadata__ import *
 from . import versioneer
@@ -20,6 +22,8 @@ from . import versioneer
 __all__ = ['make_package_data', 'make_cmdclass']
 
 ROOT_DIR = pathlib.Path(__file__).parent.parent
+MIN_GPP_VERSION = Version("8.5")
+MIN_MAKE_VERSION = Version("4.2")
 
 
 # force printing to the terminal even if stdout was redirected
@@ -46,6 +50,25 @@ def all_files(*paths, basedir='.'):
             for path in paths
             for dirpath, dirnames, files in pathlib.os.walk(basedir / path)
             for f in files]
+
+
+def verify_system_dependencies():
+    try:
+        git_version = Version(get_version_of_command("git"))
+    except FileNotFoundError:
+        raise OSError("Your system does not have git installed. Please install git before proceeding")
+    try:
+        make_version = Version(get_version_of_command("make"))
+    except FileNotFoundError:
+        raise OSError("Your system does not have the utility gnumake installed. Please install one before proceeding")
+    if make_version < MIN_MAKE_VERSION:
+        raise OSError(f"Your system has gnumake v{make_version} installed, but Galaxia_ananke requires v{MIN_MAKE_VERSION}")
+    try:
+        gpp_version = Version(get_version_of_command("g++"))
+    except FileNotFoundError:
+        raise OSError("Your system does not have a C++ compiler installed. Please install one before proceeding")
+    if gpp_version < MIN_GPP_VERSION:
+        raise OSError(f"Your system has g++ v{gpp_version} installed, but Galaxia_ananke requires v{MIN_GPP_VERSION}")
 
 
 def download_galaxia(galaxia_dir):
@@ -153,6 +176,7 @@ def make_cmdclass():
     class _build_ext(build_ext):
         def run(self):
             build_ext.run(self)
+            verify_system_dependencies()
             check_galaxia_submodule(ROOT_DIR)
             build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
 

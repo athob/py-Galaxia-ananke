@@ -6,9 +6,10 @@ from typing import Union, List, Dict
 from itertools import zip_longest
 import subprocess
 import pathlib
+import re
 
 
-__all__ = ['Singleton', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
+__all__ = ['Singleton', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command']
 
 
 class Singleton(type):
@@ -106,6 +107,11 @@ def common_entries(*dcts: Dict):
         return
     for i in set(dcts[0]).intersection(*dcts[1:]):
         yield (i,) + tuple(d[i] for d in dcts)
+
+
+def get_version_of_command(cmd):
+    return re.findall("((?:[0-9]+\.)+[0-9]+)",
+                      str(subprocess.check_output([cmd, '--version'])))[0]
 
 
 if __name__ == '__main__':
