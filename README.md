@@ -1,6 +1,6 @@
 # py-Galaxia-ananke
 
-[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)[![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
 
 Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://ascl.net/1101.007)).
 
