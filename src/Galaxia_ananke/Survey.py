@@ -7,6 +7,7 @@ available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Dict
+from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from pprint import PrettyPrinter
 
@@ -75,8 +76,8 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, n_jobs: int = 1, verbose: bool = True, **kwargs) -> None:
-        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_jobs: int = 1, verbose: bool = True, **kwargs) -> None:
+        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)
         cmds = [RUN_TEMPLATE.substitute(**{
@@ -124,6 +125,9 @@ class Survey:
                 Sampling rate from 0 to 1 for the resulting synthetic star
                 survey. 1 returns a full sample while any value under returns
                 partial surveys. Default to 1.
+
+            input_sorter : array_like
+                TODO
             
             n_jobs : int
                 Number of independent catalog generations ran in parallel.

@@ -6,6 +6,7 @@ Please note that this module is private. The Input class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from typing import Union, Tuple, Dict
+from numpy.typing import NDArray, ArrayLike
 import re
 import pathlib
 import numpy as np
@@ -370,12 +371,15 @@ class Input:
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike[int] = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
-        sorter = np.lexsort((self.particles[self._partitionid],))
-        kname = self._write_kernels(sorter)
-        pname = self._write_particles(sorter)
+        if input_sorter is None:
+            input_sorter = np.lexsort((self.particles[self._partitionid],))
+        else:
+            pass # TODO check validity of input_sorter?
+        kname = self._write_kernels(input_sorter)
+        pname = self._write_particles(input_sorter)
         temp_filename = self._prepare_nbody1(kname, pname)
         return self.name, parfile, for_parfile
 
