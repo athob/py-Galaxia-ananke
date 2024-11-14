@@ -371,7 +371,7 @@ class Input:
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike[int] = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
         if input_sorter is None:
