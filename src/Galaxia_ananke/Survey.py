@@ -13,7 +13,7 @@ from pprint import PrettyPrinter
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import execute
+from .utils import CallableDFtoInt, execute
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -96,7 +96,7 @@ class Survey:
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = 1, verbose: bool = True, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = 1, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -132,6 +132,9 @@ class Survey:
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
                 to stdout. Default to True.
+            
+            partitioning_rule : TODO
+                TODO
             
             parfile : string
                 Name of file where Input should save the parameters for
@@ -208,6 +211,8 @@ class Survey:
         self._run_survey(cmd_magnames, fsample, n_jobs=n_jobs, verbose=verbose, **kwargs)
         for photosystem in self.photosystems[1:]:
             self._append_survey(photosystem, verbose=verbose)
+        if partitioning_rule is not None:
+            self.output._redefine_partitions_in_ebfs(partitioning_rule)
         self.output._ebf_to_hdf5()
         self.output._post_process()
         return self.output

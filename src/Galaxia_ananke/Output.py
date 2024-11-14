@@ -25,7 +25,7 @@ from astropy.utils import classproperty
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import CallableDFtoNone, common_entries
+from .utils import CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -337,6 +337,24 @@ class Output:
                 print(list(f5.keys()))
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
+    def _redefine_partitions_in_ebfs(self, partitioning_rule: CallableDFtoInt) -> None:
+        ebfs: List[pathlib.Path] = self._ebfs
+        export_keys: Tuple[str] = self.export_keys
+        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+            # Submit tasks to the executor
+            futures = [executor.submit(self.__singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
+                       for ebf_file in ebfs]
+            # Collect the results
+            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+    @classmethod
+    def __singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str]) -> None:
+        dummy_df = RecordingDataFrame([], columns=export_keys, dtype=float)
+        _ = partitioning_rule(dummy_df)
+        ebf_df = pd.DataFrame({key: ebf.read(str(ebf_file), f"/{key}") for key in dummy_df.record_of_all_used_keys})
+        new_partition_id = partitioning_rule(ebf_df)
+        ebf.update_ind(str(ebf_file), f'/{cls._partitionid}', new_partition_id)
+        
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
