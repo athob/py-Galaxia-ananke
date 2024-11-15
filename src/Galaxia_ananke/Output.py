@@ -138,6 +138,7 @@ class Output:
         self.__vaex_per_partition = None
         self.__path = None
         self.__clear_ebfs(force=True)
+        self._max_pp_workers = 1
 
     @classproperty
     def _export_properties(cls):
@@ -340,7 +341,7 @@ class Output:
     def _redefine_partitions_in_ebfs(self, partitioning_rule: CallableDFtoInt) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
-        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
             futures = [executor.submit(self.__singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
                        for ebf_file in ebfs]
@@ -362,7 +363,7 @@ class Output:
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
-        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
             futures = [executor.submit(self.__singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
@@ -473,6 +474,14 @@ class Output:
         df[cls._teff] = 10**df[cls._teff]  #Galaxia returns log10(teff/K)
         df[cls._lum]  = 10**df[cls._lum]  #Galaxia returns log10(lum/lsun)
 
+    @property
+    def _max_pp_workers(self) -> int:
+        return self.__max_pp_workers
+    
+    @_max_pp_workers.setter
+    def _max_pp_workers(self, value) -> None:
+        self.__max_pp_workers = value
+
     def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False) -> None:
         """
             Apply a given post processing routine to the catalogue
@@ -501,7 +510,7 @@ class Output:
                 the post-processing. Default to False.
         """
         # post_process(self._vaex, *args)
-        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
             futures = [executor.submit(_decorate_post_processing(post_process), vaex_df, *args) for vaex_df in self._vaex_per_partition.values()]
             # Collect the results
@@ -778,7 +787,7 @@ class Output:
                 flushing will also overwrite those in the backend file with
                 their current in-memory values. Default to an empty tuple.
         """
-        with concurrent.futures.ThreadPoolExecutor() as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
             futures = [executor.submit(self.__singlethread_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
                        for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]

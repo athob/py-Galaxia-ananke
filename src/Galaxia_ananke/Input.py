@@ -433,8 +433,8 @@ class Input:
             particles[cls._parentid] = np.arange(particles[cls._mass].shape[0])
         if cls._partitionid not in particles:
             particles[cls._partitionid] = np.zeros(particles[cls._mass].shape[0], dtype='int')
-        if cls._dform not in particles:
-            particles[cls._dform] = 0*particles[cls._mass]
+        # if cls._dform not in particles:
+        #     particles[cls._dform] = 0*particles[cls._mass]
 
     @classmethod
     def make_dummy_particles_input(cls, n_parts=10**5):

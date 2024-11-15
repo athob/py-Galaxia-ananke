@@ -76,7 +76,7 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_jobs: int = 1, verbose: bool = True, **kwargs) -> None:
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: int = 1, verbose: bool = True, **kwargs) -> None:
         inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)
@@ -86,7 +86,7 @@ class Survey:
             CTTAGS.nfile      : self.inputname,
             CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
-        }) for ngen in range(n_jobs)]
+        }) for ngen in range(n_gens)]
         execute(cmds, verbose=verbose)
 
     def _append_survey(self, photosystem: PhotoSystem, verbose: bool = True) -> None:
@@ -97,7 +97,7 @@ class Survey:
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = 1, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: int = 1, max_pp_workers: int = 1, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -129,9 +129,13 @@ class Survey:
             input_sorter : array_like
                 TODO
             
-            n_jobs : int
+            n_gens, n_jobs : int
                 Number of independent catalog generations ran in parallel.
-                Default to 1.
+                Default to 1. Usage of n_jobs is deprecated and will be removed.
+            
+            max_pp_workers : int
+                Maximum number of workers to parallelize the post-processing
+                pipelines after the initial catalog generation.
             
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
@@ -212,9 +216,12 @@ class Survey:
                 Handler with utilities to utilize the output survey and its
                 data.
         """
-        self._run_survey(cmd_magnames, fsample, n_jobs=n_jobs, verbose=verbose, **kwargs)
+        if isinstance(n_jobs, int):
+            warn('Keyword argument n_jobs will be deprecated, please use instead keyword argument n_gens. Consider also reading doc regarding keyword argument max_pp_workers.', DeprecationWarning, stacklevel=2)
+        self._run_survey(cmd_magnames, fsample, n_gens=n_gens, verbose=verbose, **kwargs)
         for photosystem in self.photosystems[1:]:
             self._append_survey(photosystem, verbose=verbose)
+        self.output._max_pp_workers = max_pp_workers
         if partitioning_rule is not None:
             self.output._redefine_partitions_in_ebfs(partitioning_rule)
         self.output._ebf_to_hdf5()
