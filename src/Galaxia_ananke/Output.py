@@ -39,9 +39,35 @@ def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
     return -((-lon+180)%360-180)
 
 
-def _decorate_post_processing(pp: CallableDFtoNone) -> CallableDFtoNone:
+def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
+    _temp = vaex.open(hdf5_file)
+    old_column_names = set(_temp.column_names)
+    _temp.close()
+    extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
+    with h5.File(hdf5_file, 'r+') as f5:
+        for k in extra_columns:
+            f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
+        if extra_columns:
+            print(f"Exported the following quantities to {hdf5_file}")
+            print(extra_columns)
+        for k in with_columns:
+            f5[k][...] = vaex_df[k].to_numpy()
+        if len(with_columns):
+            print(f"Overwritten the following quantities to {hdf5_file}")
+            print(with_columns)
+
+
+def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = ()) -> CallableDFtoNone:
     def new_pp(*args) -> None:
-        pp(*args)
+        if hdf5_path_input:
+            hdf5_file: pathlib.Path = args[0]
+            vaex_df: vaex.DataFrame = vaex.open(hdf5_file)
+        else:
+            vaex_df: vaex.DataFrame = args[0]
+        pp(vaex_df, *args[1:])
+        if hdf5_path_input:
+            _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns)
+            vaex_df.close()
         gc.collect()
     return new_pp
 
@@ -139,6 +165,7 @@ class Output:
         self.__path = None
         self.__clear_ebfs(force=True)
         self._max_pp_workers = 1
+        self._pp_auto_flush = False
 
     @classproperty
     def _export_properties(cls):
@@ -479,10 +506,18 @@ class Output:
         return self.__max_pp_workers
     
     @_max_pp_workers.setter
-    def _max_pp_workers(self, value) -> None:
-        self.__max_pp_workers = value
+    def _max_pp_workers(self, value: int) -> None:
+        self.__max_pp_workers: int = value
 
-    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False) -> None:
+    @property
+    def _pp_auto_flush(self) -> bool:
+        return self.__pp_auto_flush
+    
+    @_pp_auto_flush.setter
+    def _pp_auto_flush(self, value: bool) -> None:
+        self.__pp_auto_flush: bool = value
+
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False, hold_reload: bool = False) -> None:
         """
             Apply a given post processing routine to the catalogue
 
@@ -508,40 +543,50 @@ class Output:
             hold_flush : bool
                 Flag to hold the flushing from being done after application of
                 the post-processing. Default to False.
+
+            hold_reload : bool
+                Flag to hold the reload from being done after application of
+                the post-processing and flushing. Default to False.
         """
         # post_process(self._vaex, *args)
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(_decorate_post_processing(post_process), vaex_df, *args) for vaex_df in self._vaex_per_partition.values()]
+            futures = [executor.submit(_decorate_post_processing(post_process,
+                                                                 self._pp_auto_flush,
+                                                                 flush_with_columns=flush_with_columns),
+                                       vaex_df_or_hdf5, *args)
+                       for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        if not(hold_flush):
+        if not(hold_flush) and not(self._pp_auto_flush):
             self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
+        if not(hold_reload):
+            self.__reload_vaex()
 
     def _post_process(self) -> None:
-        self._pp_convert_cartesian_to_galactic()
-        self._pp_convert_galactic_to_icrs()
+        self._pp_convert_cartesian_to_galactic(hold_reload=True)
+        self._pp_convert_galactic_to_icrs(hold_reload=True)
         self._pp_last_conversions()
 
-    def _pp_convert_cartesian_to_galactic(self) -> None:
+    def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
         print(f"Running {pipeline_name} post-processing pipeline")
-        self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,))
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,), **kwargs)
 
-    def _pp_convert_galactic_to_icrs(self) -> None:
+    def _pp_convert_galactic_to_icrs(self, **kwargs) -> None:
         pipeline_name = "convert_galactic_to_icrs"
         print(f"Running {pipeline_name} post-processing pipeline")
-        self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel)
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel, **kwargs)
     
-    def _pp_convert_icrs_to_galactic(self) -> None:
+    def _pp_convert_icrs_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_icrs_to_galactic"
         print(f"Running {pipeline_name} post-processing pipeline")
-        self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal)
+        self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal, **kwargs)
 
-    def _pp_last_conversions(self) -> None:
+    def _pp_last_conversions(self, **kwargs) -> None:
         pipeline_name = "last_conversions"
         print(f"Running {pipeline_name} post-processing pipeline")
-        self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum))
+        self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum), **kwargs)
 
     def __name_with_ext(self, ext):
         name_base = self._file_base
@@ -761,8 +806,11 @@ class Output:
                     print(with_columns)
         self.__reload_vaex()
 
-    def __singlethread_flush_extra_columns_to_hdf5(self, vaex_df: pd.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
-        old_column_names = set(vaex.open(hdf5_file).column_names)
+    @classmethod
+    def __singlethread_flush_extra_columns_to_hdf5(cls, vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
+        _temp = vaex.open(hdf5_file)
+        old_column_names = set(_temp.column_names)
+        _temp.close()
         extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
         with h5.File(hdf5_file, 'r+') as f5:
             for k in extra_columns:
@@ -789,16 +837,22 @@ class Output:
         """
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(self.__singlethread_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
+            futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
                        for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        self.__reload_vaex()
-        gc.collect()
+        # self.__reload_vaex()
+        # gc.collect()
 
     def __reload_vaex(self) -> None:
+        if self.__vaex is not None:
+            self.__vaex.close()
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+        if self.__vaex_per_partition is not None:
+            for i in self.__vaex_per_partition:
+                self.__vaex_per_partition[i].close()
         self.__vaex_per_partition = {i: vaex.open(str(hdf5_file)) for i, hdf5_file in self._hdf5s.items()}
+        gc.collect()
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(

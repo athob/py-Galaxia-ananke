@@ -97,7 +97,7 @@ class Survey:
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: int = 1, max_pp_workers: int = 1, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: int = 1, max_pp_workers: int = 1, pp_auto_flush: bool = False, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -135,7 +135,10 @@ class Survey:
             
             max_pp_workers : int
                 Maximum number of workers to parallelize the post-processing
-                pipelines after the initial catalog generation.
+                pipelines after the initial catalog generation. Default to 1.
+            
+            pp_auto_flush : bool
+                TODO
             
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
@@ -222,6 +225,7 @@ class Survey:
         for photosystem in self.photosystems[1:]:
             self._append_survey(photosystem, verbose=verbose)
         self.output._max_pp_workers = max_pp_workers
+        self.output._pp_auto_flush = pp_auto_flush
         if partitioning_rule is not None:
             self.output._redefine_partitions_in_ebfs(partitioning_rule)
         self.output._ebf_to_hdf5()
