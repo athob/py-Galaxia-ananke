@@ -172,8 +172,6 @@ class Output:
         return {
             cls._position_prop,
             cls._velocity_prop,
-            cls._celestial_prop,
-            cls._galactic_prop,
             cls._distance_prop,
             cls._modulus_prop,
             cls._trgbmass_prop,
@@ -192,6 +190,8 @@ class Output:
     @classproperty
     def _postprocess_properties(cls):
         return {
+            cls._celestial_prop,
+            cls._galactic_prop,
             cls._parallax_prop,
             cls._propermotion_prop,
             cls._galacticpropermotion_prop,
