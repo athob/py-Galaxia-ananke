@@ -658,7 +658,12 @@ class Output:
             if ebf_path.exists():
                 ebf_name: str = ebf_path.name
                 ebf_str: str = str(ebf_path.resolve())
-                for i, ind in pd.DataFrame(ebf.read(ebf_str, f"/{self._partitionid}")).groupby([0]).indices.items():
+                indices_generator = (item
+                                     for item in pd.DataFrame(
+                                         ebf.read(ebf_str, f"/{self._partitionid}")
+                                         ).groupby([0]).indices.items()
+                                     if item[0]>=0)
+                for i, ind in indices_generator:
                     if i in return_dict:
                         return_dict[i][ebf_name] = ind
                     else:
