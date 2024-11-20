@@ -6,7 +6,7 @@ Please note that this module is private. The Survey class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union, Dict
+from typing import TYPE_CHECKING, Union, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from pprint import PrettyPrinter
@@ -76,7 +76,11 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: int = 1, verbose: bool = True, **kwargs) -> None:
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: Iterable[int] = (1,), max_gen_workers: int = None, verbose: bool = True, **kwargs) -> None:
+        if max_gen_workers is None:
+            max_gen_workers = len(n_gens)
+        else:
+            warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
         inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)
@@ -86,18 +90,20 @@ class Survey:
             CTTAGS.nfile      : self.inputname,
             CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
-        }) for ngen in range(n_gens)]
-        execute(cmds, verbose=verbose)
+        }) for ngen in n_gens]
+        execute(cmds, max_workers=max_gen_workers, verbose=verbose)
 
-    def _append_survey(self, photosystem: PhotoSystem, verbose: bool = True) -> None:
+    def _append_survey(self, photosystem: PhotoSystem, max_gen_workers: int = None, verbose: bool = True) -> None:
+        if max_gen_workers is None:
+            max_gen_workers = len(list(self.__ebf_output_files_glob))
         cmds = [APPEND_TEMPLATE.substitute(**{
             CTTAGS.pcat     : photosystem.category,
             CTTAGS.psys     : photosystem.name,
             CTTAGS.filename : filename
         }) for filename in self.__ebf_output_files_glob]
-        execute(cmds, verbose=verbose)
+        execute(cmds, max_workers=max_gen_workers, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: int = 1, max_pp_workers: int = 1, pp_auto_flush: bool = False, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: Union[int, Iterable[int]] = 1, max_gen_workers: int = None, max_pp_workers: int = 1, pp_auto_flush: bool = False, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -129,9 +135,17 @@ class Survey:
             input_sorter : array_like
                 TODO
             
-            n_gens, n_jobs : int
-                Number of independent catalog generations ran in parallel.
-                Default to 1. Usage of n_jobs is deprecated and will be removed.
+            n_gens, n_jobs : int or iterable of int
+                Number of independent catalog generations ran in parallel. Can
+                also receive an iterable containing each generation number to
+                run in parallel. Default to 1. Usage of n_jobs is deprecated
+                and will be removed.
+
+            max_gen_workers : int
+                CURRENTLY NOT PROPERLY IMPLEMENTED
+                Maximum number of workers to parallelize the initial catalog
+                generations. Default to the number of independent generations
+                in n_gens.
             
             max_pp_workers : int
                 Maximum number of workers to parallelize the post-processing
@@ -220,10 +234,15 @@ class Survey:
                 data.
         """
         if isinstance(n_jobs, int):
+            n_gens = n_jobs
             warn('Keyword argument n_jobs will be deprecated, please use instead keyword argument n_gens. Consider also reading doc regarding keyword argument max_pp_workers.', DeprecationWarning, stacklevel=2)
-        self._run_survey(cmd_magnames, fsample, n_gens=n_gens, verbose=verbose, **kwargs)
+        if isinstance(n_gens, int):
+            n_gens = range(n_gens)
+        if max_gen_workers is None:
+            max_gen_workers = len(n_gens)
+        self._run_survey(cmd_magnames, fsample, n_gens=n_gens, max_gen_workers=max_gen_workers, verbose=verbose, **kwargs)
         for photosystem in self.photosystems[1:]:
-            self._append_survey(photosystem, verbose=verbose)
+            self._append_survey(photosystem, max_gen_workers=max_gen_workers, verbose=verbose)
         self.output._max_pp_workers = max_pp_workers
         self.output._pp_auto_flush = pp_auto_flush
         if partitioning_rule is not None:

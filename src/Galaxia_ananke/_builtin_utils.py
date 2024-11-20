@@ -33,7 +33,7 @@ class Singleton(type):
 #         return cls._instances[index]
 
 
-def _execute_generator(cmds: List[str], **kwargs):
+def _execute_generator(cmds: List[str], max_workers: int = None, **kwargs):
     popens = [subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
               for cmd in cmds]
@@ -47,7 +47,7 @@ def _execute_generator(cmds: List[str], **kwargs):
             raise subprocess.CalledProcessError(return_code, cmd)
 
 
-def execute(cmds: Union[str, List[str]], verbose: bool = True, **kwargs):
+def execute(cmds: Union[str, List[str]], max_workers: int = None, verbose: bool = True, **kwargs):
     """
     Run the commands described by cmds, and use
     verbose kwarg to redirect output/error stream
@@ -61,7 +61,7 @@ def execute(cmds: Union[str, List[str]], verbose: bool = True, **kwargs):
     if verbose:
         for proc_id, cmd in enumerate(cmds, start=1):
             print(f"Executing JOB{proc_id: {len_tags}d}/{n_cmds} = {cmd}")
-    for proc_id, stdout_line in _execute_generator(cmds, **kwargs):
+    for proc_id, stdout_line in _execute_generator(cmds, max_workers=max_workers, **kwargs):
         print(f"JOB{proc_id: {len_tags}d}/{n_cmds} | {stdout_line}", end="") if verbose else None
 
 
