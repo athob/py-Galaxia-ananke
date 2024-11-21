@@ -403,9 +403,10 @@ class Output:
                                    part_slices_in_ebfs: Dict[str, List[slice]],
                                    part_lengths_in_ebfs: Dict[str, int],
                                    ebfs: List[pathlib.Path], export_keys: Tuple[str]) -> None:
+        ebfs: List[pathlib.Path] = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
         n_ebfs: int              = len(ebfs)
         data_length: int         = sum(part_lengths_in_ebfs.values())
-        ebfs_slices: Dict[slice] = {ebf_path.name: slice(bounds[0],bounds[1])
+        ebfs_slices: Dict[str, slice] = {ebf_path.name: slice(bounds[0],bounds[1])
                                     for ebf_path, bounds in zip(ebfs, 
                                                                 np.repeat(np.cumsum(
                                                                     [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]

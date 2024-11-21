@@ -165,7 +165,7 @@ class Survey:
                 Name of file where Input should save the parameters for
                 Galaxia. Default to '{DEFAULT_PARFILE}'
             
-            output_dir : string
+            output_dir : string or pathlib.Path
                 Path to directory where to save the input/output files of
                 Galaxia. Default to '{TTAGS_output_dir}'
             
