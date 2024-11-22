@@ -381,8 +381,11 @@ class Output:
         _ = partitioning_rule(dummy_df)
         ebf_df = pd.DataFrame({key: ebf.read(str(ebf_file), f"/{key}") for key in dummy_df.record_of_all_used_keys})
         new_partition_id = partitioning_rule(ebf_df)
+        del ebf_df
         ebf.update_ind(str(ebf_file), f'/{cls._partitionid}', new_partition_id)
         partition_id_sorter = np.argsort(new_partition_id)
+        del new_partition_id
+        gc.collect()
         for key in ebf._EbfMap.keys(str(ebf_file)):
             if key not in [b'/log', b'/center'] and not key.startswith(b'/.'):
                 ebf.update_ind(str(ebf_file), key, ebf.read(str(ebf_file), key)[partition_id_sorter])
