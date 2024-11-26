@@ -25,7 +25,7 @@ setup(name=NAME,
       package_dir={'': SRC_DIR},
       package_data=make_package_data(),
       include_package_data=True,
-      install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1'],
+      install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1', 'pathos>=0.3.3,<1'],
       ext_modules=[setuptools.extension.Extension('', [])],
       cmdclass=make_cmdclass(),
       )
