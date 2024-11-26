@@ -103,7 +103,7 @@ class Survey:
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, max_workers=max_gen_workers, verbose=verbose)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: Union[int, Iterable[int]] = 1, max_gen_workers: int = None, max_pp_workers: int = 1, pp_auto_flush: bool = False, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: Union[int, Iterable[int]] = 1, max_gen_workers: int = None, max_pp_workers: int = 1, pp_auto_flush: bool = True, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
