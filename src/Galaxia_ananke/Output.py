@@ -11,6 +11,7 @@ from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
 import concurrent.futures
+import pathos
 import gc
 import pathlib
 import itertools
@@ -165,7 +166,7 @@ class Output:
         self.__path = None
         self.__clear_ebfs(force=True)
         self._max_pp_workers = 1
-        self._pp_auto_flush = False
+        self._pp_auto_flush = True
 
     @classproperty
     def _export_properties(cls):
@@ -368,15 +369,21 @@ class Output:
     def _redefine_partitions_in_ebfs(self, partitioning_rule: CallableDFtoInt) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        #     # Submit tasks to the executor
+        #     futures = [executor.submit(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
+        #                for ebf_file in ebfs]
+        #     # Collect the results
+        #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+        with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.submit(self.__singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
+            futures = [executor.apipe(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
                        for ebf_file in ebfs]
             # Collect the results
-            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+            _ = [future.get() for future in futures]
 
     @classmethod
-    def __singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str]) -> None:
+    def _singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str]) -> None:
         dummy_df = RecordingDataFrame([], columns=export_keys, dtype=float)
         _ = partitioning_rule(dummy_df)
         ebf_df = pd.DataFrame({key: ebf.read(str(ebf_file), f"/{key}") for key in dummy_df.record_of_all_used_keys})
@@ -393,16 +400,22 @@ class Output:
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
         export_keys: Tuple[str] = self.export_keys
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+        #     # Submit tasks to the executor
+        #     futures = [executor.submit(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
+        #                for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
+        #     # Collect the results
+        #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+        with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.submit(self.__singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
+            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
-            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+            _ = [future.get() for future in futures]
         self.__reload_vaex()
 
     @classmethod
-    def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
+    def _singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
                                    part_slices_in_ebfs: Dict[str, List[slice]],
                                    part_lengths_in_ebfs: Dict[str, int],
                                    ebfs: List[pathlib.Path], export_keys: Tuple[str]) -> None:
@@ -553,15 +566,26 @@ class Output:
                 the post-processing and flushing. Default to False.
         """
         # post_process(self._vaex, *args)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
-            # Submit tasks to the executor
-            futures = [executor.submit(_decorate_post_processing(post_process,
-                                                                 self._pp_auto_flush,
-                                                                 flush_with_columns=flush_with_columns),
-                                       vaex_df_or_hdf5, *args)
-                       for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
-            # Collect the results
-            _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+        if self._pp_auto_flush:
+            with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+                # Submit tasks to the executor
+                futures = [executor.apipe(_decorate_post_processing(post_process,
+                                                                    self._pp_auto_flush,
+                                                                    flush_with_columns=flush_with_columns),
+                                        vaex_df_or_hdf5, *args)
+                        for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
+                # Collect the results
+                _ = [future.get() for future in futures]
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+                # Submit tasks to the executor
+                futures = [executor.submit(_decorate_post_processing(post_process,
+                                                                    self._pp_auto_flush,
+                                                                    flush_with_columns=flush_with_columns),
+                                        vaex_df_or_hdf5, *args)
+                        for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
+                # Collect the results
+                _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush) and not(self._pp_auto_flush):
             self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
         if not(hold_reload):
@@ -844,6 +868,12 @@ class Output:
                 flushing will also overwrite those in the backend file with
                 their current in-memory values. Default to an empty tuple.
         """
+        # with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+        #     # Submit tasks to the executor
+        #     futures = [executor.apipe(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
+        #                for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
+        #     # Collect the results
+        #     _ = [future.get() for future in futures]
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
             futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
