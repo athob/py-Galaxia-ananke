@@ -9,7 +9,7 @@ import pathlib
 import re
 
 
-__all__ = ['Singleton', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command']
+__all__ = ['Singleton', 'classproperty', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command']
 
 
 class Singleton(type):
@@ -31,6 +31,16 @@ class Singleton(type):
 #         if index not in cls._instances:
 #             cls._instances[index] = super(CachedInstance, cls).__call__(*args, **kwargs)
 #         return cls._instances[index]
+
+
+class classproperty(object):
+    """
+    Credit https://stackoverflow.com/a/5192374
+    """
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, _, owner):
+        return self.f(owner)
 
 
 def _execute_generator(cmds: List[str], max_workers: int = None, **kwargs):

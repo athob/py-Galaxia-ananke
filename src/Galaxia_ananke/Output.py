@@ -20,12 +20,12 @@ import ebf
 import vaex
 import pandas as pd
 from astropy import units, coordinates
-from astropy.utils import classproperty
+# from astropy.utils import classproperty
 
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, common_entries
+from .utils import classproperty, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, common_entries
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
