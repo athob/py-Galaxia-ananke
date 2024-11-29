@@ -13,6 +13,7 @@ from functools import cached_property
 import concurrent.futures
 import pathos
 import gc
+import os
 import pathlib
 import itertools
 import numpy as np
@@ -21,6 +22,7 @@ import ebf
 import vaex
 import pandas as pd
 from astropy import units, coordinates
+import vaex.dataframe
 # from astropy.utils import classproperty
 
 from ._constants import *
@@ -58,10 +60,12 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
             print(with_columns)
 
 
-def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = ()) -> CallableDFtoNone:
+def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = (), max_thread_workers: int = None) -> CallableDFtoNone:
     def new_pp(*args) -> None:
         if hdf5_path_input:
             hdf5_file: pathlib.Path = args[0]
+            old_vaex_main_executor = vaex.dataframe.main_executor
+            vaex.dataframe.main_executor = vaex.execution.ExecutorLocal(vaex.multithreading.ThreadPoolIndex(max_workers=max_thread_workers))
             vaex_df: vaex.DataFrame = vaex.open(hdf5_file)
         else:
             vaex_df: vaex.DataFrame = args[0]
@@ -69,6 +73,7 @@ def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = Fals
         if hdf5_path_input:
             _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns)
             vaex_df.close()
+            vaex.dataframe.main_executor = old_vaex_main_executor
         gc.collect()
     return new_pp
 
@@ -572,7 +577,8 @@ class Output:
                 # Submit tasks to the executor
                 futures = [executor.apipe(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
-                                                                    flush_with_columns=flush_with_columns),
+                                                                    flush_with_columns=flush_with_columns,
+                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self.__max_pp_workers))),
                                         vaex_df_or_hdf5, *args)
                         for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
                 # Collect the results
