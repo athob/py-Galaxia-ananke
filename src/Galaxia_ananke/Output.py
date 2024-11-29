@@ -857,7 +857,7 @@ class Output:
         if self.__vaex is not None:
             self.__vaex.close()
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
-        if self.__vaex_per_partition is not None:
+        if self.__vaex_per_partition is not None and not self._pp_auto_flush:
             for i in self.__vaex_per_partition:
                 self.__vaex_per_partition[i].close()
         self.__vaex_per_partition = {i: vaex.open(str(hdf5_file)) for i, hdf5_file in self._hdf5s.items()}
