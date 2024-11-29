@@ -399,7 +399,8 @@ class Output:
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        self.__reload_vaex()
+        if not(self._pp_auto_flush):
+            self.__reload_vaex()
 
     @classmethod
     def __singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
