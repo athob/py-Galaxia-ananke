@@ -412,7 +412,8 @@ class Output:
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
             _ = [future.get() for future in futures]
-        self.__reload_vaex()
+        if not(self._pp_auto_flush):
+            self.__reload_vaex()
 
     @classmethod
     def _singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
@@ -887,7 +888,7 @@ class Output:
         if self.__vaex is not None:
             self.__vaex.close()
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
-        if self.__vaex_per_partition is not None:
+        if self.__vaex_per_partition is not None and not self._pp_auto_flush:
             for i in self.__vaex_per_partition:
                 self.__vaex_per_partition[i].close()
         self.__vaex_per_partition = {i: vaex.open(str(hdf5_file)) for i, hdf5_file in self._hdf5s.items()}
