@@ -62,19 +62,23 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
 
 def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = (), max_thread_workers: int = None) -> CallableDFtoNone:
     def new_pp(*args) -> None:
-        if hdf5_path_input:
-            hdf5_file: pathlib.Path = args[0]
-            old_vaex_main_executor = vaex.dataframe.main_executor
-            vaex.dataframe.main_executor = vaex.execution.ExecutorLocal(vaex.multithreading.ThreadPoolIndex(max_workers=max_thread_workers))
-            vaex_df: vaex.DataFrame = vaex.open(hdf5_file)
-        else:
-            vaex_df: vaex.DataFrame = args[0]
-        pp(vaex_df, *args[1:])
-        if hdf5_path_input:
-            _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns)
-            vaex_df.close()
-            vaex.dataframe.main_executor = old_vaex_main_executor
-        gc.collect()
+        first_arg = args[0]
+        if not isinstance(first_arg, list):
+            first_arg = [first_arg]
+        for _temp in first_arg:
+            if hdf5_path_input:
+                hdf5_file: pathlib.Path = _temp
+                old_vaex_main_executor = vaex.dataframe.main_executor
+                vaex.dataframe.main_executor = vaex.execution.ExecutorLocal(vaex.multithreading.ThreadPoolIndex(max_workers=max_thread_workers))
+                vaex_df: vaex.DataFrame = vaex.open(hdf5_file)
+            else:
+                vaex_df: vaex.DataFrame = _temp
+            pp(vaex_df, *args[1:])
+            if hdf5_path_input:
+                _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns)
+                vaex_df.close()
+                vaex.dataframe.main_executor = old_vaex_main_executor
+            gc.collect()
     return new_pp
 
 
@@ -380,7 +384,7 @@ class Output:
         #                for ebf_file in ebfs]
         #     # Collect the results
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+        with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
             futures = [executor.apipe(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
                        for ebf_file in ebfs]
@@ -411,7 +415,7 @@ class Output:
         #                for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
         #     # Collect the results
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+        with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
             futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
@@ -540,7 +544,22 @@ class Output:
     def _pp_auto_flush(self, value: bool) -> None:
         self.__pp_auto_flush: bool = value
 
-    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False, hold_reload: bool = False) -> None:
+    @staticmethod
+    def __consolidate_partitions_per_process(partitions: NDArray, lengths: NDArray, max_workers: int) -> Dict[int, List[int]]:
+        df = pd.DataFrame({'partition': partitions, 'length': lengths, 'process_id': 0*lengths})
+        df.set_index('partition', drop=True, inplace=True)
+        df.sort_values('length', inplace=True)
+        df['length_cumsum'] = df.length.cumsum()
+        df['length_cumsum_norm'] = df.length_cumsum/df.length_cumsum.iloc[-1]
+        # df['length_norm'] = df.length/df.length.sum()
+        df['process_id'] = np.ceil(df.length_cumsum_norm*max_workers).astype('int')-1
+        unique = df.process_id.unique()
+        df['process_id'] = df.process_id.map(dict(zip(unique, range(len(unique)))))
+        df['temp'] = df.length * (-1)**(df.process_id)
+        df.sort_values(['process_id','temp'], inplace=True)
+        return df.groupby('process_id').groups
+
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args, flush_with_columns=(), hold_flush: bool = False, hold_reload: bool = False, consolidate_partitions_per_process: bool = False) -> None:
         """
             Apply a given post processing routine to the catalogue
 
@@ -572,15 +591,24 @@ class Output:
                 the post-processing and flushing. Default to False.
         """
         # post_process(self._vaex, *args)
+        vaex_df_or_hdf5_or_list_s = self._hdf5s if self._pp_auto_flush else self._vaex_per_partition
+        if consolidate_partitions_per_process:
+            partitions_per_process: Dict[int, List[int]] = self.__consolidate_partitions_per_process(
+                np.array(list(self.__partitions_lengths.keys())),
+                np.array(list(self.__partitions_lengths.values())),
+                self._max_pp_workers
+                )
+            vaex_df_or_hdf5_or_list_s = {process: [vaex_df_or_hdf5_or_list_s[i] for i in partitions]
+                                         for process, partitions in partitions_per_process.items()}
         if self._pp_auto_flush:
-            with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+            with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
                 # Submit tasks to the executor
                 futures = [executor.apipe(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
-                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self.__max_pp_workers))),
-                                        vaex_df_or_hdf5, *args)
-                        for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
+                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self._max_pp_workers))),
+                                        vaex_df_or_hdf5_or_list, *args)
+                        for vaex_df_or_hdf5_or_list in vaex_df_or_hdf5_or_list_s.values()]
                 # Collect the results
                 _ = [future.get() for future in futures]
         else:
@@ -590,7 +618,7 @@ class Output:
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns),
                                         vaex_df_or_hdf5, *args)
-                        for vaex_df_or_hdf5 in (self._hdf5s if self._pp_auto_flush else self._vaex_per_partition).values()]
+                        for vaex_df_or_hdf5 in vaex_df_or_hdf5_or_list_s]
                 # Collect the results
                 _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush) and not(self._pp_auto_flush):
@@ -707,11 +735,15 @@ class Output:
                 raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
         return return_dict
 
-    @property
+    @cached_property
     def __ebfs_part_lengths(self) -> Dict[int, Dict[str, int]]:
         return {i: {ebf_name: len(indices)
                     for ebf_name,indices in indices_per_ebf.items()}
                 for i,indices_per_ebf in self.__ebfs_partitions.items()}
+
+    @cached_property
+    def __partitions_lengths(self) -> Dict[int, int]:
+        return {i: sum(part_lengths_in_ebfs.values()) for i, part_lengths_in_ebfs in self.__ebfs_part_lengths.items()}
 
     @cached_property
     def __ebf_part_slices(self) -> Dict[int, List[slice]]:
