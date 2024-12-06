@@ -47,6 +47,7 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
     old_column_names = set(_temp.column_names)
     _temp.close()
     extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
+    with_columns = list(set(with_columns) - set(extra_columns))
     with h5.File(hdf5_file, 'r+') as f5:
         for k in extra_columns:
             f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
