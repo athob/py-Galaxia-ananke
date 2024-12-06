@@ -23,7 +23,6 @@ import vaex
 import pandas as pd
 from astropy import units, coordinates
 import vaex.dataframe
-# from astropy.utils import classproperty
 
 from ._constants import *
 from ._templates import *
@@ -42,7 +41,7 @@ def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
     return -((-lon+180)%360-180)
 
 
-def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
+def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = (), verbose: bool = True) -> None:  # temporary until vaex supports it
     _temp = vaex.open(hdf5_file)
     old_column_names = set(_temp.column_names)
     _temp.close()
@@ -51,17 +50,17 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
     with h5.File(hdf5_file, 'r+') as f5:
         for k in extra_columns:
             f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
-        if extra_columns:
+        if verbose and extra_columns:
             print(f"Exported the following quantities to {hdf5_file}")
             print(extra_columns)
         for k in with_columns:
             f5[k][...] = vaex_df[k].to_numpy()
-        if len(with_columns):
+        if verbose and len(with_columns):
             print(f"Overwritten the following quantities to {hdf5_file}")
             print(with_columns)
 
 
-def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = (), max_thread_workers: int = None) -> CallableDFtoNone:
+def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = (), max_thread_workers: int = None, verbose: bool = True) -> CallableDFtoNone:
     def new_pp(*args) -> None:
         first_arg = args[0]
         if not isinstance(first_arg, list):
@@ -76,7 +75,7 @@ def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = Fals
                 vaex_df: vaex.DataFrame = _temp
             pp(vaex_df, *args[1:])
             if hdf5_path_input:
-                _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns)
+                _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns, verbose=verbose)
                 vaex_df.close()
                 vaex.dataframe.main_executor = old_vaex_main_executor
             gc.collect()
@@ -177,6 +176,7 @@ class Output:
         self.__clear_ebfs(force=True)
         self._max_pp_workers = 1
         self._pp_auto_flush = True
+        self._verbose = True
 
     @classproperty
     def _export_properties(cls):
@@ -418,7 +418,7 @@ class Output:
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
+            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self._verbose)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
             _ = [future.get() for future in futures]
@@ -429,7 +429,8 @@ class Output:
     def _singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
                                    part_slices_in_ebfs: Dict[str, List[slice]],
                                    part_lengths_in_ebfs: Dict[str, int],
-                                   ebfs: List[pathlib.Path], export_keys: Tuple[str]) -> None:
+                                   ebfs: List[pathlib.Path], export_keys: Tuple[str],
+                                   verbose: bool = True) -> None:
         ebfs: List[pathlib.Path] = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
         n_ebfs: int              = len(ebfs)
         data_length: int         = sum(part_lengths_in_ebfs.values())
@@ -459,8 +460,9 @@ class Output:
                         f5datasets[name][head:(head:=head+p_slice.stop-p_slice.start)] = ebf.read(
                             ebf_str, f"/{name}", begin=p_slice.start, end=p_slice.stop
                             )
-                print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
-                print(list(f5.keys()))
+                if verbose:
+                    print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
+                    print(list(f5.keys()))
 
     ### DEFINING POST PROCESSING PIPELINES BELOW # TODO consider a PostProcess class that runs postprocess pipeline at __call__ and holds flush_with_columns
 
@@ -607,7 +609,8 @@ class Output:
                 futures = [executor.apipe(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
-                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self._max_pp_workers))),
+                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self._max_pp_workers)),
+                                                                    verbose=self._verbose),
                                         vaex_df_or_hdf5_or_list, *args)
                         for vaex_df_or_hdf5_or_list in vaex_df_or_hdf5_or_list_s.values()]
                 # Collect the results
@@ -617,7 +620,8 @@ class Output:
                 # Submit tasks to the executor
                 futures = [executor.submit(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
-                                                                    flush_with_columns=flush_with_columns),
+                                                                    flush_with_columns=flush_with_columns,
+                                                                    verbose=self._verbose),
                                         vaex_df_or_hdf5, *args)
                         for vaex_df_or_hdf5 in vaex_df_or_hdf5_or_list_s]
                 # Collect the results
@@ -634,22 +638,26 @@ class Output:
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
-        print(f"Running {pipeline_name} post-processing pipeline")
+        if self._verbose:
+            print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,), **kwargs)
 
     def _pp_convert_galactic_to_icrs(self, **kwargs) -> None:
         pipeline_name = "convert_galactic_to_icrs"
-        print(f"Running {pipeline_name} post-processing pipeline")
+        if self._verbose:
+            print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel, **kwargs)
     
     def _pp_convert_icrs_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_icrs_to_galactic"
-        print(f"Running {pipeline_name} post-processing pipeline")
+        if self._verbose:
+            print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal, **kwargs)
 
     def _pp_last_conversions(self, **kwargs) -> None:
         pipeline_name = "last_conversions"
-        print(f"Running {pipeline_name} post-processing pipeline")
+        if self._verbose:
+            print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum), **kwargs)
 
     def __name_with_ext(self, ext):
@@ -880,22 +888,8 @@ class Output:
         self.__reload_vaex()
 
     @classmethod
-    def __singlethread_flush_extra_columns_to_hdf5(cls, vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
-        _temp = vaex.open(hdf5_file)
-        old_column_names = set(_temp.column_names)
-        _temp.close()
-        extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
-        with h5.File(hdf5_file, 'r+') as f5:
-            for k in extra_columns:
-                f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
-            if extra_columns:
-                print(f"Exported the following quantities to {hdf5_file}")
-                print(extra_columns)
-            for k in with_columns:
-                f5[k][...] = vaex_df[k].to_numpy()
-            if len(with_columns):
-                print(f"Overwritten the following quantities to {hdf5_file}")
-                print(with_columns)
+    def __singlethread_flush_extra_columns_to_hdf5(cls, vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path, with_columns: Optional[Iterable] = (), verbose: bool = True) -> None:  # temporary until vaex supports it
+        _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns, verbose)
 
     def flush_extra_columns_to_hdf5(self, with_columns: Optional[Iterable] = ()) -> None:  # temporary until vaex supports it
         """
@@ -910,13 +904,13 @@ class Output:
         """
         # with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
         #     # Submit tasks to the executor
-        #     futures = [executor.apipe(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
+        #     futures = [executor.apipe(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self._verbose)
         #                for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
         #     # Collect the results
         #     _ = [future.get() for future in futures]
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns)
+            futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self._verbose)
                        for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]

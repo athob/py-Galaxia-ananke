@@ -245,6 +245,7 @@ class Survey:
             self._append_survey(photosystem, max_gen_workers=max_gen_workers, verbose=verbose)
         self.output._max_pp_workers = max_pp_workers
         self.output._pp_auto_flush = pp_auto_flush
+        self.output._verbose = verbose
         if partitioning_rule is not None:
             self.output._redefine_partitions_in_ebfs(partitioning_rule)
         self.output._ebf_to_hdf5()
