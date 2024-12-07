@@ -387,7 +387,7 @@ class Input:
     def _base_inputfile(self) -> pathlib.Path:
         return self._input_dir / self.name_hash
 
-    @cached_property
+    @property
     def _hashname(self) -> pathlib.Path:
         return self._base_inputfile.with_suffix(f".{HASH_EXT}")
 
@@ -413,16 +413,8 @@ class Input:
 
     def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
+        self._input_sorter = input_sorter
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
-        # TODO MUST INTEGRATE THIS NEWER INPUT_SORTER
-        #  if input_sorter is None:
-        #     input_sorter = np.lexsort((self.particles[self._partitionid],))
-        # else:
-        #     pass # TODO check validity of input_sorter?
-        # kname = self._write_kernels(input_sorter)
-        # pname = self._write_particles(input_sorter)
-        # temp_filename = self._prepare_nbody1(kname, pname)
-        # return self.name, parfile, for_parfile
         temp_filename = self._write_ebf_files()
         return self.name_hash, parfile, for_parfile
 
@@ -451,17 +443,30 @@ class Input:
                 inputhashfile.exists())              # and inputhashfile exists,
             else True)                               # otherwise proceed if both don't exist
             if self.caching else True):              # -> proceed anyway if caching is False
-            sorter: NDArray[np.int_] = self.__lex_partitionid_sorter
-            self.__write_particles(particlefile, sorter)
-            self.__write_kernels(kernelfile, sorter)
+            self.__write_particles(particlefile)
+            self.__write_kernels(kernelfile)
             inputhashfile.write_bytes(inputhash)
         temp_filename = self.__prepare_nbody1(kernelfile, particlefile)
         return temp_filename
 
+    @property
+    def _input_sorter(self) -> NDArray[np.int_]:
+        return self.__input_sorter
+    
+    @_input_sorter.setter
+    def _input_sorter(self, value: Optional[NDArray[np.int_]]) -> None:
+        if value is None:
+            value: NDArray[np.int_] = self.__lex_partitionid_sorter
+        else:
+            pass # TODO check validity of input_sorter?
+        self.__input_sorter: NDArray[np.int_] = value
+        if '_inputhash' in self.__dict__:
+            del self._inputhash
+
     @cached_property
     def _inputhash(self) -> bytes:
         return bytes(hashlib.sha256(
-            bytes('\n'.join([hashlib.sha256(array.copy(order='C')).hexdigest()
+            bytes('\n'.join([hashlib.sha256(array[self._input_sorter].copy(order='C')).hexdigest()
                              for array in list(self.particles.values())+[self.rho]]),
                   HASH_ENCODING)
             ).hexdigest(), HASH_ENCODING)
@@ -470,20 +475,20 @@ class Input:
     def __lex_partitionid_sorter(self) -> NDArray[np.int_]:
         return np.lexsort((self.particles[self._partitionid],))
 
-    def __write_particles(self, pname: pathlib.Path, sorter: NDArray[np.int_]):
+    def __write_particles(self, pname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(pname)
             for key in self._required_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key][sorter], 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][self._input_sorter], 'a')
             for key in self._optional_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key][sorter] if key in self.keys() else np.zeros(self.length), 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][self._input_sorter] if key in self.keys() else np.zeros(self.length), 'a')
    
-    def __write_kernels(self, kname: pathlib.Path, sorter: NDArray[np.int_]):
+    def __write_kernels(self, kname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
-            ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
-            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
+            ebf.write(kname, f"/{self._density}", self.rho_pos[self._input_sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.kernels[self._input_sorter], "a")
+            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self._input_sorter], "a")
  
     def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
         temp_dir = GALAXIA_NBODY1 / self.name_hash
