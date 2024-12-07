@@ -6,15 +6,16 @@ Please note that this module is private. The Survey class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, List, Set, Dict
+from typing import TYPE_CHECKING, Optional, Union, List, Set, Dict, Iterable
+from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 import pathlib
 from pprint import PrettyPrinter
 
-from .constants import *
-from .templates import *
-from .defaults import *
-from .utils import execute
+from ._constants import *
+from ._templates import *
+from ._defaults import *
+from .utils import CallableDFtoInt, execute
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -77,23 +78,32 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, parfile: pathlib.Path, n_jobs: int = 1) -> None:
+    def _run_survey(self, parfile: pathlib.Path, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: Iterable[int] = (1,), max_gen_workers: int = None, verbose: bool = True, **kwargs) -> None:
+        if max_gen_workers is None:
+            max_gen_workers = len(n_gens)
+        else:
+            warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
+        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
+                                                                   output_file=self.surveyname, fsample=fsample, **kwargs)
+        self.__output = Output(self, for_parfile)
         cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
             CTTAGS.nfile      : self.inputname,
             CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
-        }) for ngen in range(n_jobs)]
-        execute(cmds, verbose=self.verbose)
+        }) for ngen in n_gens]
+        execute(cmds, max_workers=max_gen_workers, verbose=verbose)  # , verbose=self.verbose)
 
-    def _append_survey(self, photosystem: PhotoSystem) -> None:
+    def _append_survey(self, photosystem: PhotoSystem, max_gen_workers: int = None, verbose: bool = True) -> None:
+        if max_gen_workers is None:
+            max_gen_workers = len(list(self.__ebf_output_files_glob))
         cmds = [APPEND_TEMPLATE.substitute(**{
             CTTAGS.pcat     : photosystem.category,
             CTTAGS.psys     : photosystem.name,
             CTTAGS.filename : filename
         }) for filename in self.__ebf_output_files_glob]
-        execute(cmds, verbose=self.verbose)
+        execute(cmds, max_workers=max_gen_workers, verbose=verbose)  # , verbose=self.verbose)
 
     def _vanilla_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD,
                               fsample: float = 1, n_jobs: int = 1, **kwargs) -> None:
@@ -104,79 +114,99 @@ class Survey:
         for photosystem in self.photosystems[1:]:
             self.check_state_before_running(description=f'append_{photosystem.name}_complete', level=1)(self._append_survey)(photosystem)
 
-    def make_survey(self, *, verbose: bool = None, **kwargs) -> Output:
+    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: Union[int, Iterable[int]] = 1, max_gen_workers: int = None, max_pp_workers: int = 1, pp_auto_flush: bool = True, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
-
+            
             Call signature::
-
-                output = self.make_survey(cmd_magnames='{DEFAULT_CMD}',
+            
+                output = self.make_survey(cmd_magnames= '{DEFAULT_CMD}' ,
                                           fsample=1, verbose=True, **kwargs)
-
+            
             Parameters
             ----------
             cmd_magnames : string
                 Names of the filters Galaxia should use for the color-
                 magnitude diagram box selection. The given string must meet
-                the following format:
-                        "band1,band2-band3"
-                where band1 is the magnitude filter and (band2, band3) are the
-                filters that define the band2-band3 color index. The filter
-                names must correspond to filters that are part of the first
-                chosen photometric system in photo_sys. Default to
-                '{DEFAULT_CMD}'
+                the following format::
 
+                    "band1,band2-band3"
+                
+                where ``band1`` is the magnitude filter and ``(band2, band3)``
+                are the filters that define the ``band2-band3`` color index.
+                The filter names must correspond to filters that are part of
+                the first chosen photometric system in photo_sys. Default to
+                ``'{DEFAULT_CMD}'``
+            
             fsample : float
                 Sampling rate from 0 to 1 for the resulting synthetic star
                 survey. 1 returns a full sample while any value under returns
                 partial surveys. Default to 1.
 
-            n_jobs : int
-                Number of independent catalog generations ran in parallel.
-                Default to 1.
+            input_sorter : array_like
+                TODO
+            
+            n_gens, n_jobs : int or iterable of int
+                Number of independent catalog generations ran in parallel. Can
+                also receive an iterable containing each generation number to
+                run in parallel. Default to 1. Usage of n_jobs is deprecated
+                and will be removed.
+
+            max_gen_workers : int
+                CURRENTLY NOT PROPERLY IMPLEMENTED
+                Maximum number of workers to parallelize the initial catalog
+                generations. Default to the number of independent generations
+                in n_gens.
+            
+            max_pp_workers : int
+                Maximum number of workers to parallelize the post-processing
+                pipelines after the initial catalog generation. Default to 1.
+            
+            pp_auto_flush : bool
+                TODO
             
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
                 to stdout. Default to True.
-
+            
+            partitioning_rule : TODO
+                TODO
+            
             parfile : string
                 Name of file where Input should save the parameters for
                 Galaxia. Default to '{DEFAULT_PARFILE}'
             
-            output_dir : string
+            output_dir : string or pathlib.Path
                 Path to directory where to save the input/output files of
                 Galaxia. Default to '{TTAGS_output_dir}'
             
-            app_mag_lim_lo : float
-            app_mag_lim_hi : float
-            abs_mag_lim_lo : float
-            abs_mag_lim_hi : float
-            color_lim_lo : float
-            color_lim_hi : float
+            app_mag_lim_lo, app_mag_lim_hi, abs_mag_lim_lo, abs_mag_lim_hi, color_lim_lo, color_lim_hi : float
                 These allow to specify the limits of the chosen color-magnitude
-                diagram box selection (lo for lower and hi for upper). app_mag,
-                abs_mag and color represent respectively limits in apparent
-                magnitudes, absolute magnitudes and color index. Default values
-                follow those set in the dictionary: {DEFAULT_CMD_BOX} 
-
-            rSun0 : float
-            rSun1 : float
-            rSun2 : float
-                Coordinates for the observer position in kpc. Respectively
-                default to {TTAGS_rSun0}, {TTAGS_rSun1} & {TTAGS_rSun2}
-
-            vSun0 : float
-            vSun1 : float
-            vSun2 : float
-                Coordinates for the observer velocity in km/s. Respectively
-                default to {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
+                diagram box selection (``lo`` for lower and ``hi`` for upper).
+                ``app_mag``, ``abs_mag`` and ``color`` represent respectively
+                limits in apparent magnitudes, absolute magnitudes and color
+                index. Default values follow those set in the dictionary::
+                {DEFAULT_CMD_BOX} 
             
-            r_max : float
-            r_min : float
+            rSun0, rSun1, rSun2 : float
+                Coordinates for the observer position in kpc. Respectively
+                default to::
+
+                    {TTAGS_rSun0}, {TTAGS_rSun1} & {TTAGS_rSun2}
+            
+            vSun0, vSun1, vSun2 : float
+                Coordinates for the observer velocity in km/s. Respectively
+                default to::
+
+                    {TTAGS_vSun0}, {TTAGS_vSun1} & {TTAGS_vSun2}
+            
+            r_max, r_min : float
                 Extent of the shell of radii from observer location within
                 which particles should be considered by Galaxia. Respectively
-                default to {TTAGS_r_max} & {TTAGS_r_min}
+                default to::
 
+                    {TTAGS_r_max} & {TTAGS_r_min}
+            
             rand_seed : int
                 Seed to be used by Galaxia's pseudorandom number generator.
                 Default to {TTAGS_rand_seed}
@@ -185,11 +215,11 @@ class Survey:
                 Index at which to start indexing synthetic stars. Default
                 to {TTAGS_nstart}
 
-            longitude : float
-            latitude : float
-                Currently not implemented. Respectively default to
-                {TTAGS_longitude} & {TTAGS_latitude}
-
+            longitude, latitude : float
+                Currently not implemented. Respectively default to::
+                
+                    {TTAGS_longitude} & {TTAGS_latitude}
+            
             star_type : int
                 Currently not implemented. Default to {TTAGS_star_type}
 
@@ -209,15 +239,33 @@ class Survey:
                 Currently not implemented. Default to {TTAGS_photo_error}
 
             Returns
-            ----------
+            -------
             output : :obj:`Output`
                 Handler with utilities to utilize the output survey and its
                 data.
         """
-        self.verbose = verbose
-        self._vanilla_survey(**kwargs)
-        self.output.read_galaxia_output()
-        self.output.post_process_output()
+        if isinstance(n_jobs, int):
+            n_gens = n_jobs
+            warn('Keyword argument n_jobs will be deprecated, please use instead keyword argument n_gens. Consider also reading doc regarding keyword argument max_pp_workers.', DeprecationWarning, stacklevel=2)
+        if isinstance(n_gens, int):
+            n_gens = range(n_gens)
+        if max_gen_workers is None:
+            max_gen_workers = len(n_gens)
+        self._run_survey(cmd_magnames, fsample, n_gens=n_gens, max_gen_workers=max_gen_workers, verbose=verbose, **kwargs)
+        for photosystem in self.photosystems[1:]:
+            self._append_survey(photosystem, max_gen_workers=max_gen_workers, verbose=verbose)
+        self.output._max_pp_workers = max_pp_workers
+        self.output._pp_auto_flush = pp_auto_flush
+        self.output._verbose = verbose
+        if partitioning_rule is not None:
+            self.output._redefine_partitions_in_ebfs(partitioning_rule)
+        self.output._ebf_to_hdf5()
+        self.output._post_process()
+        # TODO INTEGRATE BELOW
+        # self.verbose = verbose
+        # self._vanilla_survey(**kwargs)
+        # self.output.read_galaxia_output()
+        # self.output.post_process_output()
         return self.output
 
     make_survey.__doc__ = make_survey.__doc__.format(DEFAULT_CMD=DEFAULT_CMD,

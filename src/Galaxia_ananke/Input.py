@@ -10,17 +10,18 @@ from numpy.typing import NDArray
 from collections import OrderedDict as ODict
 from warnings import warn
 from functools import cached_property
+from numpy.typing import NDArray, ArrayLike
 import re
 import pathlib
 import hashlib
 import numpy as np
 import ebf
-from astropy.utils import classproperty
+# from astropy.utils import classproperty
 
-from .constants import *
-from .templates import *
-from .defaults import *
-from .utils import make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
+from ._constants import *
+from ._templates import *
+from ._defaults import *
+from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
 from .photometry.PhotoSystem import PhotoSystem
 
 __all__ = ['Input']
@@ -29,29 +30,29 @@ __all__ = ['Input']
 FOURTHIRDPI = 4*np.pi/3
 
 class Input:
-    _position_prop = ('pos3', "Position coordinates in kpc (Nx3)")
-    _velocity_prop = ('vel3', "Velocity coordinates in km/s (Nx3)")
+    _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
+    _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
     _mass_prop = ('mass', "Stellar masses in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
-    _metallicity_prop = ('feh', "Stellar metallicity [Fe/H] in dex relative to solar")
+    _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
     _populationindex_prop = ('id', "Index of parent particle population")
     _partitionindex_prop = ('partitionid', "Index of the data partition that contains the particle")
     _formationdistance_prop = ('dform', "Formation distance of parent particle in kpc")
-    _heliumabundance_prop = ('helium', "Helium abundance [He/H] in dex")
-    _carbonabundance_prop = ('carbon', "Carbon abundance [C/H] in dex")
-    _nitrogenabundance_prop = ('nitrogen', "Nitrogen abundance [N/H] in dex")
-    _oxygenabundance_prop = ('oxygen', "Oxygen abundance [O/H] in dex")
-    _neonabundance_prop = ('neon', "Neon abundance [Ne/H] in dex")
-    _magnesiumabundance_prop = ('magnesium', "Magnesium abundance [Mg/H] in dex")
-    _siliconabundance_prop = ('silicon', "Silicon abundance [Si/H] in dex")
-    _sulphurabundance_prop = ('sulphur', "Sulphur abundance [S/H] in dex")
-    _calciumabundance_prop = ('calcium', "Calcium abundance [Ca/H] in dex")
-    _alphaabundance_prop = ('alpha', "Alpha abundance [Mg/Fe] in dex")
+    _heliumabundance_prop = ('helium', "Helium abundance $[He/H]$ in $dex$")
+    _carbonabundance_prop = ('carbon', "Carbon abundance $[C/H]$ in $dex$")
+    _nitrogenabundance_prop = ('nitrogen', "Nitrogen abundance $[N/H]$ in $dex$")
+    _oxygenabundance_prop = ('oxygen', "Oxygen abundance $[O/H]$ in $dex$")
+    _neonabundance_prop = ('neon', "Neon abundance $[Ne/H]$ in $dex$")
+    _magnesiumabundance_prop = ('magnesium', "Magnesium abundance $[Mg/H]$ in $dex$")
+    _siliconabundance_prop = ('silicon', "Silicon abundance $[Si/H]$ in $dex$")
+    _sulphurabundance_prop = ('sulphur', "Sulphur abundance $[S/H]$ in $dex$")
+    _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
+    _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
     _kernels = 'h_cubic'
     _density = 'density'
-    _positiondensity_prop = ('rho_pos', 'Position space density in kpc^-3')
-    _velocitydensity_prop = ('rho_vel', 'Velocity space density in [km/s]^-3')
+    _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
+    _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
     def __init__(self, *args, **kwargs) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
@@ -175,19 +176,19 @@ class Input:
     @classproperty
     def particles_dictionary_description(cls):
         description = """
-                The dictionary includes the following properties with
-                corresponding keys:
-                {_required_properties}
-                
-                Additionally, Galaxia can optionally receive particle
-                properties that will be carried over to the generated
-                synthetic star, those include the following: 
-                {_optional_properties}
+            The particle dictionary includes the following properties with
+            corresponding keys:
+            {_required_properties}
+            
+            Additionally, Galaxia can optionally receive particle properties
+            that will be carried over to the generated synthetic star, those
+            include the following: 
+            {_optional_properties}
         """.format(_required_properties=''.join(
-                       [f"\n                 -{desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key ``{str(key)}``"
                         for key, desc in Input._required_properties]),
                    _optional_properties=''.join(
-                       [f"\n                 -{desc} via key `{str(key)}`"
+                       [f"\n            * {desc} via key ``{str(key)}``"
                         for key, desc in Input._optional_properties]))
         return description
 
@@ -410,9 +411,18 @@ class Input:
     def optional_keys(self):
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
+        # TODO MUST INTEGRATE THIS NEWER INPUT_SORTER
+        #  if input_sorter is None:
+        #     input_sorter = np.lexsort((self.particles[self._partitionid],))
+        # else:
+        #     pass # TODO check validity of input_sorter?
+        # kname = self._write_kernels(input_sorter)
+        # pname = self._write_particles(input_sorter)
+        # temp_filename = self._prepare_nbody1(kname, pname)
+        # return self.name, parfile, for_parfile
         temp_filename = self._write_ebf_files()
         return self.name_hash, parfile, for_parfile
 
@@ -501,8 +511,8 @@ class Input:
             particles[cls._parentid] = np.arange(particles[cls._mass].shape[0])
         if cls._partitionid not in particles:
             particles[cls._partitionid] = np.zeros(particles[cls._mass].shape[0], dtype='int')
-        if cls._dform not in particles:
-            particles[cls._dform] = 0*particles[cls._mass]
+        # if cls._dform not in particles:
+        #     particles[cls._dform] = 0*particles[cls._mass]
 
     @classmethod
     def make_dummy_particles_input(cls, n_parts=10**5):
@@ -519,7 +529,10 @@ class Input:
             -------
             p : dict
                 Dummy example input particles dictionary for Input.
-                {particles_dictionary_description}
+            
+            Notes
+            -----
+            {particles_dictionary_description}
         """
         p = {}
         p[cls._pos] = 30*np.random.randn(n_parts, 3)

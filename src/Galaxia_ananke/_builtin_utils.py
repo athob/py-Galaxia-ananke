@@ -11,9 +11,10 @@ import dataclasses as dc
 import subprocess
 import pathlib
 import json
+import re
 
 
-__all__ = ['Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command']
 
 
 class Singleton(type):
@@ -111,7 +112,17 @@ class State(_BaseState):
         return decorator
 
 
-def _execute_generator(cmds: List[str], **kwargs):
+class classproperty(object):
+    """
+    Credit https://stackoverflow.com/a/5192374
+    """
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, _, owner):
+        return self.f(owner)
+
+
+def _execute_generator(cmds: List[str], max_workers: int = None, **kwargs):
     popens = [subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
               for cmd in cmds]
@@ -125,7 +136,7 @@ def _execute_generator(cmds: List[str], **kwargs):
             raise subprocess.CalledProcessError(return_code, cmd)
 
 
-def execute(cmds: Union[str, List[str]], verbose: bool = True, **kwargs):
+def execute(cmds: Union[str, List[str]], max_workers: int = None, verbose: bool = True, **kwargs):
     """
     Run the commands described by cmds, and use
     verbose kwarg to redirect output/error stream
@@ -139,7 +150,7 @@ def execute(cmds: Union[str, List[str]], verbose: bool = True, **kwargs):
     if verbose:
         for proc_id, cmd in enumerate(cmds, start=1):
             print(f"Executing JOB{proc_id: {len_tags}d}/{n_cmds} = {cmd}")
-    for proc_id, stdout_line in _execute_generator(cmds, **kwargs):
+    for proc_id, stdout_line in _execute_generator(cmds, max_workers=max_workers, **kwargs):
         print(f"JOB{proc_id: {len_tags}d}/{n_cmds} | {stdout_line}", end="") if verbose else None
 
 
@@ -185,6 +196,11 @@ def common_entries(*dcts: Dict):
         return
     for i in set(dcts[0]).intersection(*dcts[1:]):
         yield (i,) + tuple(d[i] for d in dcts)
+
+
+def get_version_of_command(cmd):
+    return re.findall("((?:[0-9]+\.)+[0-9]+)",
+                      str(subprocess.check_output([cmd, '--version'])))[0]
 
 
 if __name__ == '__main__':

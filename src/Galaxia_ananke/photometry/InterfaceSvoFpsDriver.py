@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Dict
 from functools import cached_property
 
-from ..constants import *
+from .._constants import *
 from .SvoFpsDriver import SvoFpsDriver
 
 if TYPE_CHECKING:

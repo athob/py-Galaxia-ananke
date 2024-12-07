@@ -1,0 +1,22 @@
+{
+    "access_right": "open",
+    "title": "py-Galaxia-ananke: a python wrapper for a modified version of Galaxia dedicated to ananke",
+    "creators": [
+        {
+            "affiliation": "University of Pennsylvania",
+            "name": "Thob, Adrien C. R.",
+            "orcid": "0000-0001-7928-1973"
+        }
+    ],
+    "contributors": [
+        {
+            "affiliation": "University of Pennsylvania",
+            "name": "Sanderson, Robyn E.",
+            "orcid": "0000-0003-3939-3297",
+            "type": "Supervisor"
+        }
+    ],
+    "license": "GPL-3.0-or-later",
+    "upload_type": "software",
+    "description": "Python wrapper for a modified version of Galaxia (<a href='http://ascl.net/1101.007' target='_blank' rel='noopener'>Sharma et al. 2011</a>) called <a href='http://github.com/athob/galaxia-ananke' target='_blank' rel='noopener'>galaxia-ananke</a>"
+}

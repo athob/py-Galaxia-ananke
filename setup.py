@@ -1,39 +1,13 @@
 #!/usr/bin/env python
-import pathlib
 import setuptools
-from setuptools.command.build_ext import build_ext
-from setuptools import setup, Command
+from setuptools import setup
 
 from src._build_utils import *
-from src.constants import NAME, GALAXIA_SUBMODULE_NAME, SRC_DIR
+from src._constants import NAME, SRC_DIR
 from src.__metadata__ import *
 
-ROOT_DIR = pathlib.Path(__file__).parent
-
-for_all_files = ('__license__', )
-
-long_description = ""
-
-package_data = {NAME: all_files(*for_all_files,
-                                basedir=pathlib.Path(SRC_DIR, NAME))}
-
-
-class MyBuildExt(build_ext):
-    def run(self):
-        check_galaxia_submodule(ROOT_DIR)
-        build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
-
-
-class MyTest(Command):
-    description = 'run tests'
-    user_options = []
-
-    def initialize_options(self): pass
-
-    def finalize_options(self): pass
-
-    def run(self): pass
-
+with open("README.md") as readme:
+    long_description = readme.read()
 
 setup(name=NAME,
       version=__version__,
@@ -49,9 +23,9 @@ setup(name=NAME,
       python_requires='>=3.8,<3.11',
       packages=[NAME, f"{NAME}.photometry"],
       package_dir={'': SRC_DIR},
-      package_data=package_data,
+      package_data=make_package_data(),
       include_package_data=True,
-      install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1'],
+      install_requires=['numpy>=1.22,<2', 'pandas>=2,<3', 'vaex>=4.17,<5', 'astropy>=5,<7', 'h5py>=3.6,<4', 'ebfpy>=0.0.20,<1', 'astroquery>=0.4.2,<1', 'pathos>=0.3.3,<1'],
       ext_modules=[setuptools.extension.Extension('', [])],
-      cmdclass={'build_ext': MyBuildExt, 'test': MyTest},
+      cmdclass=make_cmdclass(),
       )

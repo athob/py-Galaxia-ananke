@@ -6,7 +6,7 @@ from string import Template
 from dataclasses import dataclass
 
 from .utils import Singleton
-from .constants import *
+from ._constants import *
 
 
 __all__ = ['FTTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'CTTAGS', 'RUN_TEMPLATE', 'HDIMBLOCK_TEMPLATE', 'APPEND_TEMPLATE']
