@@ -178,7 +178,6 @@ class Output:
             self.__clear_ebfs(force=True)
         self._max_pp_workers = 1
         self._pp_auto_flush = True
-        self._verbose = True
 
     class _State(State):
         pass
@@ -423,7 +422,7 @@ class Output:
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self._verbose)
+            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self.verbose)
                        for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
             # Collect the results
             _ = [future.get() for future in futures]
@@ -619,7 +618,7 @@ class Output:
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
                                                                     max_thread_workers=int(np.ceil(os.cpu_count()/self._max_pp_workers)),
-                                                                    verbose=self._verbose),
+                                                                    verbose=self.verbose),
                                         vaex_df_or_hdf5_or_list, *args)
                         for vaex_df_or_hdf5_or_list in vaex_df_or_hdf5_or_list_s.values()]
                 # Collect the results
@@ -630,7 +629,7 @@ class Output:
                 futures = [executor.submit(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
-                                                                    verbose=self._verbose),
+                                                                    verbose=self.verbose),
                                         vaex_df_or_hdf5, *args)
                         for vaex_df_or_hdf5 in vaex_df_or_hdf5_or_list_s]
                 # Collect the results
@@ -647,25 +646,25 @@ class Output:
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
-        if self._verbose:
+        if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,), **kwargs)
 
     def _pp_convert_galactic_to_icrs(self, **kwargs) -> None:
         pipeline_name = "convert_galactic_to_icrs"
-        if self._verbose:
+        if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel, **kwargs)
     
     def _pp_convert_icrs_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_icrs_to_galactic"
-        if self._verbose:
+        if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal, **kwargs)
 
     def _pp_last_conversions(self, **kwargs) -> None:
         pipeline_name = "last_conversions"
-        if self._verbose:
+        if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum), **kwargs)
 
@@ -932,13 +931,13 @@ class Output:
         """
         # with pathos.pools.ProcessPool(self.__max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
         #     # Submit tasks to the executor
-        #     futures = [executor.apipe(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self._verbose)
+        #     futures = [executor.apipe(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self.verbose)
         #                for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
         #     # Collect the results
         #     _ = [future.get() for future in futures]
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             # Submit tasks to the executor
-            futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self._verbose)
+            futures = [executor.submit(_flush_extra_columns_to_hdf5, vaex_df, hdf5_file, with_columns, self.verbose)
                        for _, hdf5_file, vaex_df in common_entries(self._hdf5s, self._vaex_per_partition)]
             # Collect the results
             _ = [future.result() for future in concurrent.futures.as_completed(futures)]
