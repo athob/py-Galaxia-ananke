@@ -412,6 +412,9 @@ class Input:
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
     def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+        """
+            TODO
+        """
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         self._input_sorter = input_sorter
         parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
@@ -419,6 +422,9 @@ class Input:
         return self.name_hash, parfile, for_parfile
 
     def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:  # TODO add survey object as kwarg, hash for_parfile, and append survey.name with hash[:7]? How do I add hash to survey name...
+        """
+            TODO
+        """
         parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
         if not parfile.is_absolute():
             parfile = self._input_dir / parfile
