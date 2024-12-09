@@ -380,21 +380,22 @@ class Output:
                 print(list(f5.keys()))
         self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
 
-    def _redefine_partitions_in_ebfs(self, partitioning_rule: CallableDFtoInt) -> None:
-        ebfs: List[pathlib.Path] = self._ebfs
-        export_keys: Tuple[str] = self.export_keys
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
-        #     # Submit tasks to the executor
-        #     futures = [executor.submit(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
-        #                for ebf_file in ebfs]
-        #     # Collect the results
-        #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
-        with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
-            # Submit tasks to the executor
-            futures = [executor.apipe(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
-                       for ebf_file in ebfs]
-            # Collect the results
-            _ = [future.get() for future in futures]
+    def _redefine_partitions_in_ebfs(self, partitioning_rule: Optional[CallableDFtoInt]) -> None:
+        if partitioning_rule is not None:  # TODO test instead partitioning_rule?
+            ebfs: List[pathlib.Path] = self._ebfs
+            export_keys: Tuple[str] = self.export_keys
+            # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
+            #     # Submit tasks to the executor
+            #     futures = [executor.submit(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
+            #                for ebf_file in ebfs]
+            #     # Collect the results
+            #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
+            with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
+                # Submit tasks to the executor
+                futures = [executor.apipe(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
+                        for ebf_file in ebfs]
+                # Collect the results
+                _ = [future.get() for future in futures]
 
     @classmethod
     def _singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str]) -> None:
@@ -468,9 +469,11 @@ class Output:
                     print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
                     print(list(f5.keys()))
 
-    def read_galaxia_output(self) -> None:
-        self.check_state_before_running(description="convert_ebf_to_hdf5")(self._ebf_to_hdf5)()
-        self.__reload_vaex()
+    def read_galaxia_output(self, partitioning_rule: Optional[CallableDFtoInt], max_pp_workers: int, pp_auto_flush: bool) -> None:
+        self._max_pp_workers = max_pp_workers
+        self._pp_auto_flush = pp_auto_flush
+        self.check_state_before_running(description="redefine_partitions_in_ebfs")(self._redefine_partitions_in_ebfs)(partitioning_rule)
+        self.check_state_before_running(description="convert_ebf_to_hdf5", level=1)(self._ebf_to_hdf5)()
 
     ### DEFINING POST PROCESSING PIPELINES BELOW # TODO consider a PostProcess class that runs postprocess pipeline at __call__ and holds flush_with_columns
 
