@@ -78,14 +78,7 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, parfile: pathlib.Path, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: Iterable[int] = (1,), max_gen_workers: int = None, verbose: bool = True, **kwargs) -> None:
-        if max_gen_workers is None:
-            max_gen_workers = len(n_gens)
-        else:
-            warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
-        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
-                                                                   output_file=self.surveyname, fsample=fsample, **kwargs)
-        self.__output = Output(self, for_parfile)
+    def _run_survey(self, parfile: pathlib.Path, n_gens: Iterable[int], max_gen_workers: int) -> None:
         cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
@@ -93,9 +86,9 @@ class Survey:
             CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
         }) for ngen in n_gens]
-        execute(cmds, max_workers=max_gen_workers, verbose=verbose)  # , verbose=self.verbose)
+        execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
-    def _append_survey(self, photosystem: PhotoSystem, max_gen_workers: int = None, verbose: bool = True) -> None:
+    def _append_survey(self, photosystem: PhotoSystem, max_gen_workers: Optional[int]) -> None:
         if max_gen_workers is None:
             max_gen_workers = len(list(self.__ebf_output_files_glob))
         cmds = [APPEND_TEMPLATE.substitute(**{
@@ -103,18 +96,33 @@ class Survey:
             CTTAGS.psys     : photosystem.name,
             CTTAGS.filename : filename
         }) for filename in self.__ebf_output_files_glob]
-        execute(cmds, max_workers=max_gen_workers, verbose=verbose)  # , verbose=self.verbose)
+        execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
     def _vanilla_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD,
-                              fsample: float = 1, n_jobs: int = 1, **kwargs) -> None:
-        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames,
+                              fsample: float = 1, input_sorter: ArrayLike = None,
+                              n_jobs: int = None, n_gens: Union[int, Iterable[int]] = (1,),
+                              max_gen_workers: int = None, **kwargs) -> None:
+        """
+            TODO
+        """
+        if isinstance(n_jobs, int):
+            n_gens = n_jobs
+            warn('Keyword argument n_jobs will be deprecated, please use instead keyword argument n_gens. Consider also reading doc regarding keyword argument max_pp_workers.', DeprecationWarning, stacklevel=2)
+        if isinstance(n_gens, int):
+            n_gens = range(n_gens)
+        if max_gen_workers is None:
+            max_gen_workers = len(n_gens)
+        else:
+            warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
+        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
                                                                    output_file=self.surveyname, fsample=fsample, **kwargs)
         self.__output = Output(self, for_parfile)  # TODO caching? YES, have named-state stored in dedicated file
-        self.check_state_before_running(description='run_survey_complete')(self._run_survey)(parfile, n_jobs=n_jobs)
+        self.check_state_before_running(description='run_survey_complete')(self._run_survey)(parfile, n_gens=n_gens, max_gen_workers=max_gen_workers)
         for photosystem in self.photosystems[1:]:
-            self.check_state_before_running(description=f'append_{photosystem.name}_complete', level=1)(self._append_survey)(photosystem)
+            self.check_state_before_running(description=f'append_{photosystem.name}_complete', level=1)(self._append_survey)(photosystem, max_gen_workers=max_gen_workers)
 
-    def make_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD, fsample: float = 1, n_jobs: int = None, n_gens: Union[int, Iterable[int]] = 1, max_gen_workers: int = None, max_pp_workers: int = 1, pp_auto_flush: bool = True, verbose: bool = True, partitioning_rule: CallableDFtoInt = None, **kwargs) -> Output:
+    def make_survey(self, *, verbose: bool = True, partitioning_rule: CallableDFtoInt = None,
+                             max_pp_workers: int = 1, pp_auto_flush: bool = True, **kwargs) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -243,29 +251,11 @@ class Survey:
             output : :obj:`Output`
                 Handler with utilities to utilize the output survey and its
                 data.
-        """
-        if isinstance(n_jobs, int):
-            n_gens = n_jobs
-            warn('Keyword argument n_jobs will be deprecated, please use instead keyword argument n_gens. Consider also reading doc regarding keyword argument max_pp_workers.', DeprecationWarning, stacklevel=2)
-        if isinstance(n_gens, int):
-            n_gens = range(n_gens)
-        if max_gen_workers is None:
-            max_gen_workers = len(n_gens)
-        self._run_survey(cmd_magnames, fsample, n_gens=n_gens, max_gen_workers=max_gen_workers, verbose=verbose, **kwargs)
-        for photosystem in self.photosystems[1:]:
-            self._append_survey(photosystem, max_gen_workers=max_gen_workers, verbose=verbose)
-        self.output._max_pp_workers = max_pp_workers
-        self.output._pp_auto_flush = pp_auto_flush
-        self.output._verbose = verbose
-        if partitioning_rule is not None:
-            self.output._redefine_partitions_in_ebfs(partitioning_rule)
-        self.output._ebf_to_hdf5()
-        self.output._post_process()
-        # TODO INTEGRATE BELOW
-        # self.verbose = verbose
-        # self._vanilla_survey(**kwargs)
-        # self.output.read_galaxia_output()
-        # self.output.post_process_output()
+        """  # TODO Move documentation around to the subroutines where they should go
+        self.verbose = verbose
+        self._vanilla_survey(**kwargs)
+        self.output.read_galaxia_output(partitioning_rule, max_pp_workers, pp_auto_flush)
+        self.output.post_process_output()
         return self.output
 
     make_survey.__doc__ = make_survey.__doc__.format(DEFAULT_CMD=DEFAULT_CMD,
