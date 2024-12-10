@@ -634,7 +634,8 @@ class Output:
     def _post_process(self) -> None:
         self._pp_convert_cartesian_to_galactic(hold_reload=True)
         self._pp_convert_galactic_to_icrs(hold_reload=True)
-        self._pp_last_conversions()
+        self._pp_last_conversions(hold_reload=True)
+        self.__reload_vaex()
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
