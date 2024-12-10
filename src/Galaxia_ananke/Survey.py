@@ -76,7 +76,7 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: Iterable[int] = (1,), max_gen_workers: int = None, verbose: bool = True, **kwargs) -> None:
+    def _run_survey(self, cmd_magnames: Union[str,Dict[str,str]], fsample: float, input_sorter: ArrayLike = None, n_gens: Iterable[int] = (0,), max_gen_workers: int = None, verbose: bool = True, **kwargs) -> None:
         if max_gen_workers is None:
             max_gen_workers = len(n_gens)
         else:
