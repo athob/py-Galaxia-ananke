@@ -100,7 +100,7 @@ class Survey:
 
     def _vanilla_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD,
                               fsample: float = 1, input_sorter: ArrayLike = None,
-                              n_jobs: int = None, n_gens: Union[int, Iterable[int]] = (1,),
+                              n_jobs: int = None, n_gens: Union[int, Iterable[int]] = (0,),
                               max_gen_workers: int = None, **kwargs) -> None:
         """
             TODO
