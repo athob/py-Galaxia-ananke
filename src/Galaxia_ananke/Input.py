@@ -26,7 +26,7 @@ FOURTHIRDPI = 4*np.pi/3
 class Input:
     _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
     _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
-    _mass_prop = ('mass', "Stellar masses in solar masses")
+    _massinitial_prop = ('massinit', "Initial stellar masses in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in dex relative to solar")
     _parentindex_prop = ('parentid', "Index of parent particle")
@@ -130,7 +130,7 @@ class Input:
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
             _k =  ebf.read(_kname)
-            _mass = _k[self._mass]  # dummy line to check format
+            _mass = _k[self._massinit]  # dummy line to check format
             kwargs[self._rho_pos] = _k[self._density]
             _k_factor = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
             if kwargs.get('former_kernel', False):
@@ -184,7 +184,7 @@ class Input:
         return {
             cls._position_prop,
             cls._velocity_prop,
-            cls._mass_prop,
+            cls._massinitial_prop,
             cls._age_prop,
             cls._metallicity_prop
             }
@@ -229,8 +229,8 @@ class Input:
         return cls._velocity_prop[0]
 
     @classproperty
-    def _mass(cls):
-        return cls._mass_prop[0]
+    def _massinit(cls):
+        return cls._massinitial_prop[0]
 
     @classproperty
     def _age(cls):
@@ -314,7 +314,7 @@ class Input:
     
     @property
     def length(self):
-        return len(self.particles[self._mass])
+        return len(self.particles[self._massinit])
     
     @property
     def rho_pos(self):
@@ -394,7 +394,7 @@ class Input:
             ebf.initialize(self.kname)
             ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
             ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
-            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
+            ebf.write(kname, f"/{self._massinit}", self.particles[self._massinit][sorter], "a")
         return kname
 
     def _write_particles(self, sorter):
@@ -420,17 +420,17 @@ class Input:
     def __verify_particles(cls, particles):
         compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
-        confirm_equal_length_arrays_in_dict(particles, cls._mass, error_message_dict_name='particles')
+        confirm_equal_length_arrays_in_dict(particles, cls._massinit, error_message_dict_name='particles')
         # TODO check format, if dataframe-like
     
     @classmethod
     def __complete_particles(cls, particles):
         if cls._parentid not in particles:
-            particles[cls._parentid] = np.arange(particles[cls._mass].shape[0])
+            particles[cls._parentid] = np.arange(particles[cls._massinit].shape[0])
         if cls._partitionid not in particles:
-            particles[cls._partitionid] = np.zeros(particles[cls._mass].shape[0], dtype='int')
+            particles[cls._partitionid] = np.zeros(particles[cls._massinit].shape[0], dtype='int')
         if cls._dform not in particles:
-            particles[cls._dform] = 0*particles[cls._mass]
+            particles[cls._dform] = 0*particles[cls._massinit]
 
     @classmethod
     def make_dummy_particles_input(cls, n_parts=10**5):
@@ -455,7 +455,7 @@ class Input:
         p = {}
         p[cls._pos] = 30*np.random.randn(n_parts, 3)
         p[cls._vel] = 50*np.random.randn(n_parts, 3)
-        p[cls._mass] = 5500 + 700*np.random.randn(n_parts)
+        p[cls._massinit] = 5500 + 700*np.random.randn(n_parts)
         p[cls._age] = 9.7 + 0.4*np.random.randn(n_parts)
         p[cls._feh] = -0.7 + 0.4*np.random.randn(n_parts)
         for el in cls._elem_list:
