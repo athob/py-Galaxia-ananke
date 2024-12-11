@@ -55,7 +55,7 @@ class Output:
     _modulus_prop = ('dmod', "Distance modulus in magnitude units")
     _trgbmass_prop = ('mtip', "Tip of the Red Giant Branch stellar mass in solar masses")
     _currentmass_prop = ('mact', "Current stellar mass in solar masses")
-    _zamsmass_prop = ('smass', "Zero Age Main Sequence stellar mass in solar masses")
+    _initialmass_prop = ('minit', "Zero Age Main Sequence stellar mass in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _surfacegravity_prop = ('grav', "Surface gravity in CGS units and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in $dex$ relative to solar")
@@ -150,7 +150,7 @@ class Output:
             cls._modulus_prop,
             cls._trgbmass_prop,
             cls._currentmass_prop,
-            cls._zamsmass_prop,
+            cls._initialmass_prop,
             cls._age_prop,
             cls._surfacegravity_prop,
             cls._metallicity_prop,
@@ -217,8 +217,8 @@ class Output:
         return cls._currentmass_prop[0]
     
     @classproperty
-    def _mini(cls):
-        return cls._zamsmass_prop[0]
+    def _minit(cls):
+        return cls._initialmass_prop[0]
     
     @classproperty
     def _age(cls):
