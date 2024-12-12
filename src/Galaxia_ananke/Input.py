@@ -466,6 +466,7 @@ class Input:
         p[cls._pos] = 30*np.random.randn(n_parts, 3)
         p[cls._vel] = 50*np.random.randn(n_parts, 3)
         p[cls._massinit] = 5500 + 700*np.random.randn(n_parts)
+        p[cls._mass] = np.clip(0.7 + 0.05*np.random.randn(n_parts), 0, 1)*p[cls._massinit]
         p[cls._age] = 9.7 + 0.4*np.random.randn(n_parts)
         p[cls._feh] = -0.7 + 0.4*np.random.randn(n_parts)
         for el in cls._elem_list:
