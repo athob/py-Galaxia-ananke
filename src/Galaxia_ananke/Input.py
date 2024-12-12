@@ -6,6 +6,7 @@ Please note that this module is private. The Input class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from typing import Union, Tuple, Dict
+from numpy.typing import NDArray
 import re
 import pathlib
 import numpy as np
@@ -26,6 +27,7 @@ FOURTHIRDPI = 4*np.pi/3
 class Input:
     _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
     _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
+    _masscurrent_prop = ('mass', "Present-day stellar masses in solar masses")
     _massinitial_prop = ('massinit', "Initial stellar masses in solar masses")
     _age_prop = ('age', "Stellar ages in years and decimal logarithmic scale")
     _metallicity_prop = ('feh', "Stellar metallicity $[Fe/H]$ in dex relative to solar")
@@ -130,7 +132,7 @@ class Input:
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
             _k =  ebf.read(_kname)
-            _mass = _k[self._massinit]  # dummy line to check format
+            _mass = _k[self._mass]  # dummy line to check format
             kwargs[self._rho_pos] = _k[self._density]
             _k_factor = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
             if kwargs.get('former_kernel', False):
@@ -184,6 +186,7 @@ class Input:
         return {
             cls._position_prop,
             cls._velocity_prop,
+            cls._masscurrent_prop,
             cls._massinitial_prop,
             cls._age_prop,
             cls._metallicity_prop
@@ -228,6 +231,10 @@ class Input:
     def _vel(cls):
         return cls._velocity_prop[0]
 
+    @classproperty
+    def _mass(cls):
+        return cls._masscurrent_prop[0]
+    
     @classproperty
     def _massinit(cls):
         return cls._massinitial_prop[0]
@@ -394,7 +401,7 @@ class Input:
             ebf.initialize(self.kname)
             ebf.write(kname, f"/{self._density}", self.rho_pos[sorter], "a")
             ebf.write(kname, f"/{self._kernels}", self.kernels[sorter], "a")
-            ebf.write(kname, f"/{self._massinit}", self.particles[self._massinit][sorter], "a")
+            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][sorter], "a")
         return kname
 
     def _write_particles(self, sorter):
@@ -417,14 +424,17 @@ class Input:
         return temp_filename
     
     @classmethod
-    def __verify_particles(cls, particles):
+    def __verify_particles(cls, particles: Dict[str, NDArray]):
+        if cls._mass in particles and cls._massinit not in particles:
+            from __metadata__ import __email__
+            raise KeyError(f"BACKWARD INCOMPATIBILITY: please note of recent changes in the py-Galaxia-ananke implementation.\nFrom now on, the input must include the initial mass as well as the present-day mass of the parent particles. Also this quantity should be stored in the input dictionary under key '{cls._massinit}', while keeping the present-day mass under key '{cls._mass}'.\nPlease contact {__email__} if you have any question regarding that change.")
         compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
         confirm_equal_length_arrays_in_dict(particles, cls._massinit, error_message_dict_name='particles')
         # TODO check format, if dataframe-like
     
     @classmethod
-    def __complete_particles(cls, particles):
+    def __complete_particles(cls, particles: Dict[str, NDArray]):
         if cls._parentid not in particles:
             particles[cls._parentid] = np.arange(particles[cls._massinit].shape[0])
         if cls._partitionid not in particles:
