@@ -2,14 +2,16 @@
 """
 Module miscellaneous utilities
 """
-from typing import Any, Protocol
+from typing import Any, Protocol, Iterable
+import hashlib
 
 import pandas as pd
 
 from ._builtin_utils import *
+from ._constants import HASH_ENCODING
 
 
-__all__ = ['classproperty', 'CallableDFtoNone', 'CallableDFtoInt', 'RecordingDataFrame', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries']
+__all__ = ['classproperty', 'CallableDFtoNone', 'CallableDFtoInt', 'RecordingDataFrame', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'lexicalorder_dict', 'hash_iterable']
 
 
 class CallableDFtoNone(Protocol):
@@ -46,6 +48,14 @@ class RecordingDataFrame(pd.DataFrame):
     @property
     def record_of_all_used_keys(self):
         return self._record_of_all_used_keys
+
+
+def hash_iterable(iterable: Iterable) -> bytes:
+    return bytes(hashlib.sha256(
+        bytes('\n'.join([hashlib.sha256(element).hexdigest()
+                         for element in iterable]),
+                HASH_ENCODING)
+        ).hexdigest(), HASH_ENCODING)
 
 
 if __name__ == '__main__':

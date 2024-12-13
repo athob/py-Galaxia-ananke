@@ -39,7 +39,7 @@ rSun = heliocentric_center.galactocentric.cartesian.xyz.to(DEF_UNIT.position).va
 vSun = heliocentric_center.galactocentric.frame.galcen_v_sun.get_d_xyz().to(DEF_UNIT.velocity).value
 
 DEFAULTS_FOR_PARFILE = {
-    # TTAGS.output_file: ,  # TODO use temporary file
+    # FTTAGS.output_file: ,  # TODO use temporary file
     FTTAGS.output_dir: GALAXIA_TMP,
     FTTAGS.app_mag_lim_lo: DEFAULT_CMD_BOX['app_mag'][0],
     FTTAGS.app_mag_lim_hi: DEFAULT_CMD_BOX['app_mag'][1],

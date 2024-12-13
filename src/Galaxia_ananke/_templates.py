@@ -2,6 +2,7 @@
 """
 Package templates
 """
+from typing import List
 from string import Template
 from dataclasses import dataclass
 
@@ -9,7 +10,7 @@ from .utils import Singleton
 from ._constants import *
 
 
-__all__ = ['FTTAGS', 'FILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'CTTAGS', 'RUN_TEMPLATE', 'HDIMBLOCK_TEMPLATE', 'APPEND_TEMPLATE']
+__all__ = ['FTTAGS', 'FILENAME_TEMPLATE', 'PARFILENAME_TEMPLATE', 'PARFILE_TEMPLATE', 'CTTAGS', 'RUN_TEMPLATE', 'HDIMBLOCK_TEMPLATE', 'APPEND_TEMPLATE']
 
 @dataclass(frozen=True)
 class FileTemplateTags(metaclass=Singleton):
@@ -48,16 +49,27 @@ class FileTemplateTags(metaclass=Singleton):
     vSun2: str           = 'vSun2'
     
     @property
-    def rSun(self):
+    def rSun(self) -> List[str]:
         return [self.rSun0, self.rSun1, self.rSun2]
     
     @property
-    def vSun(self):
+    def vSun(self) -> List[str]:
         return [self.vSun0, self.vSun1, self.vSun2]
+    
+    def append_photo_categ(self, n: int) -> str:
+        return f"{self.photo_categ}_{n}"
+    
+    def append_photo_sys(self, n: int) -> str:
+        return f"{self.photo_sys}_{n}"
+    
+    def append_photo(self, n: int) -> List[str]:
+        return [self.append_photo_categ(n), self.append_photo_sys(n)]
+
 
 FTTAGS = FileTemplateTags()
 
 FILENAME_TEMPLATE = Template(NBODY1+f"/${{{FTTAGS.name}}}/\n\t1\t1\n${{{FTTAGS.pname}}}\n")  # TODO Template can't work for N>1 files
+PARFILENAME_TEMPLATE = Template(f"${{{FTTAGS.name}}}_params")
 PARFILE_TEMPLATE = Template(f"""outputFile\t${{{FTTAGS.output_file}}}\t#don't fiddle
 outputDir\t${{{FTTAGS.output_dir}}}\t#where to output the survey
 photoCateg\t${{{FTTAGS.photo_categ}}}\t#name of folder where to select magnitude system

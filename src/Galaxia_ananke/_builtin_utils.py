@@ -2,11 +2,11 @@
 """
 Module utilities using built-in implementation
 """
-from typing import Type, TypeVar, Any, Union, List, Dict, Callable
+from typing import Type, TypeVar, Any, Union, List, Dict, OrderedDict, Callable
 from typing_extensions import Self, ParamSpec
+from collections import OrderedDict as ODict
 from functools import total_ordering
 from itertools import zip_longest
-import contextlib as cl
 import dataclasses as dc
 import subprocess
 import pathlib
@@ -14,7 +14,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict']
 
 
 class Singleton(type):
@@ -201,6 +201,10 @@ def common_entries(*dcts: Dict):
 def get_version_of_command(cmd):
     return re.findall("((?:[0-9]+\.)+[0-9]+)",
                       str(subprocess.check_output([cmd, '--version'])))[0]
+
+
+def lexicalorder_dict(dictionary: Dict[str, Any]) -> OrderedDict[str, Any]:
+    return ODict({k: dictionary[k] for k in sorted(dictionary)})
 
 
 if __name__ == '__main__':

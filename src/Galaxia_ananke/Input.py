@@ -5,15 +5,14 @@ Contains the Input class definition
 Please note that this module is private. The Input class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
-from typing import Any, Optional, Union, Tuple, Dict, OrderedDict
-from numpy.typing import NDArray
-from collections import OrderedDict as ODict
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, OrderedDict
+from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
-from numpy.typing import NDArray, ArrayLike
+import itertools
 import re
 import pathlib
-import hashlib
 import numpy as np
 import ebf
 # from astropy.utils import classproperty
@@ -21,8 +20,11 @@ import ebf
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict
+from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, hash_iterable
 from .photometry.PhotoSystem import PhotoSystem
+
+if TYPE_CHECKING:
+    from . import Survey
 
 __all__ = ['Input']
 
@@ -158,7 +160,7 @@ class Input:
             self.__input_files_exist: bool = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
-        self.__particles: OrderedDict[str, NDArray] = self.__lexicalorder_particles(kwargs['particles'].copy())
+        self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
         self.__pos_density: NDArray = kwargs[self._rho_pos]
@@ -364,10 +366,6 @@ class Input:
         return f"{self.name}_{self.hash[:7]}"
 
     @property
-    def hash(self) -> str:
-        return self._inputhash.decode()
-
-    @property
     def ngb(self) -> int:
         return self.__ngb
     
@@ -384,7 +382,7 @@ class Input:
         return self.k_factor/np.cbrt(FOURTHIRDPI*self.rho)
     
     @property
-    def _base_inputfile(self) -> pathlib.Path:
+    def _base_inputfile(self) -> pathlib.Path:  # TODO what if pname and kname already exist (case where input args are pname and kname)?
         return self._input_dir / self.name_hash
 
     @property
@@ -394,49 +392,57 @@ class Input:
     @property
     def pname(self) -> pathlib.Path:
         if self.__pname is None:
-            # self.__pname = self._input_dir / f"{self.name}.ebf"
             self.__pname = self._base_inputfile.with_suffix(".ebf")
         return self.__pname
 
     @property
     def kname(self) -> pathlib.Path:
         if self.__kname is None:
-            # self.__kname = self._input_dir / f"{self.name}_d{self.hdim}n{self.ngb}_den.ebf"
             self.__kname = self.pname.with_name(f"{self.pname.stem}_d{self.hdim}n{self.ngb}_den.ebf")
         return self.__kname
 
     def keys(self):
         return self.particles.keys()
     
-    def optional_keys(self):
+    def optional_keys(self) -> List[str]:
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+    # def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
+    #     """
+    #         TODO
+    #     """
+    #     self._input_sorter = input_sorter
+    #     cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
+    #     parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
+    #     temp_filename = self._write_ebf_files()
+    #     return self.name_hash, parfile, for_parfile
+
+    def prepare_input(self, survey: Survey) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         """
             TODO
         """
-        cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
-        self._input_sorter = input_sorter
-        parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
+        parfile, for_parfile = survey._write_parameter_file()
         temp_filename = self._write_ebf_files()
         return self.name_hash, parfile, for_parfile
 
-    def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:  # TODO add survey object as kwarg, hash for_parfile, and append survey.name with hash[:7]? How do I add hash to survey name...
-        """
-            TODO
-        """
-        parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
-        if not parfile.is_absolute():
-            parfile = self._input_dir / parfile
-        for_parfile = DEFAULTS_FOR_PARFILE.copy()
-        for_parfile.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
-        parfile_text = PARFILE_TEMPLATE.substitute(for_parfile)
-        if ((parfile.read_text() != parfile_text # proceed if parfile_text is not in parfile,
-            if parfile.exists()                  # only if parfile exist,
-            else True)                           # otherwise proceed if doesn't exist
-            if self.caching else True):          # -> proceed anyway if self.caching is False
-            parfile.write_text(parfile_text)
-        return parfile, for_parfile
+    # # def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:  # TODO add survey object as kwarg, hash for_parfile, and append survey.name with hash[:7]? How do I add hash to survey name...
+    # def _write_parameter_file(self, for_parfile: Dict[str, Union[str,float,int]], parfile: Union[str, pathlib.Path] = DEFAULT_PARFILE) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
+    #     """
+    #         TODO
+    #     """
+    #     parfile = pathlib.Path(parfile)  # TODO make temporary? create a global record of temporary files?
+    #     # parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
+    #     if not parfile.is_absolute():
+    #         parfile = self._input_dir / parfile
+    #     # for_parfile = DEFAULTS_FOR_PARFILE.copy()
+    #     # for_parfile.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
+    #     parfile_text = PARFILE_TEMPLATE.substitute(for_parfile)
+    #     if ((parfile.read_text() != parfile_text # proceed if parfile_text is not in parfile,
+    #         if parfile.exists()                  # only if parfile exist,
+    #         else True)                           # otherwise proceed if doesn't exist
+    #         if self.caching else True):          # -> proceed anyway if self.caching is False
+    #         parfile.write_text(parfile_text)
+    #     return parfile, for_parfile
 
     def _write_ebf_files(self):
         particlefile: pathlib.Path = self.pname
@@ -456,26 +462,27 @@ class Input:
         return temp_filename
 
     @property
-    def _input_sorter(self) -> NDArray[np.int_]:
-        return self.__input_sorter
+    def input_sorter(self) -> NDArray[np.int_]:
+        return self._input_sorter
     
-    @_input_sorter.setter
-    def _input_sorter(self, value: Optional[NDArray[np.int_]]) -> None:
+    @input_sorter.setter
+    def input_sorter(self, value: Optional[NDArray[np.int_]]) -> None:
         if value is None:
             value: NDArray[np.int_] = self.__lex_partitionid_sorter
         else:
             pass # TODO check validity of input_sorter?
-        self.__input_sorter: NDArray[np.int_] = value
+        self._input_sorter: NDArray[np.int_] = value
         if '_inputhash' in self.__dict__:
             del self._inputhash
 
     @cached_property
     def _inputhash(self) -> bytes:
-        return bytes(hashlib.sha256(
-            bytes('\n'.join([hashlib.sha256(array[self._input_sorter].copy(order='C')).hexdigest()
-                             for array in list(self.particles.values())+[self.rho]]),
-                  HASH_ENCODING)
-            ).hexdigest(), HASH_ENCODING)
+        return hash_iterable(map(lambda array: array[self.input_sorter].copy(order='C'),
+                                 itertools.chain(self.particles.values(),[self.rho])))
+
+    @property
+    def hash(self) -> str:
+        return self._inputhash.decode()
 
     @property
     def __lex_partitionid_sorter(self) -> NDArray[np.int_]:
@@ -485,16 +492,16 @@ class Input:
         if not self.__input_files_exist:
             ebf.initialize(pname)
             for key in self._required_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key][self._input_sorter], 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][self.input_sorter], 'a')
             for key in self._optional_keys_in_particles:
-                ebf.write(pname, f"/{key}", self.particles[key][self._input_sorter] if key in self.keys() else np.zeros(self.length), 'a')
+                ebf.write(pname, f"/{key}", self.particles[key][self.input_sorter] if key in self.keys() else np.zeros(self.length), 'a')
    
     def __write_kernels(self, kname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._density}", self.rho_pos[self._input_sorter], "a")
-            ebf.write(kname, f"/{self._kernels}", self.kernels[self._input_sorter], "a")
-            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self._input_sorter], "a")
+            ebf.write(kname, f"/{self._density}", self.rho_pos[self.input_sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.kernels[self.input_sorter], "a")
+            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self.input_sorter], "a")
  
     def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
         temp_dir = GALAXIA_NBODY1 / self.name_hash
@@ -505,10 +512,6 @@ class Input:
         temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name_hash, pname=pname.name))
         return temp_filename
     
-    @classmethod
-    def __lexicalorder_particles(cls, particles: Dict[str, Any]) -> OrderedDict[str, Any]:
-        return ODict({k: particles[k] for k in sorted(particles)})
-
     @classmethod
     def __verify_particles(cls, particles: Dict[str, NDArray]):
         compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,

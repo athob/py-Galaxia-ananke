@@ -6,7 +6,7 @@ Please note that this module is private. The Output class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Tuple, List, Dict, Iterable
+from typing import TYPE_CHECKING, Optional, Union, Tuple, List, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -107,20 +107,17 @@ class Output:
     _galacticpropermotion_prop = (('mul', 'mub'), "Galactic proper motions in milliarcseconds per year")
     _radialvelocity_prop = ('vr', "Radial velocity in $km/s$")
     _vaex_under_list = ['_repr_html_']
-    def __init__(self, survey: Survey, parameters: dict) -> None:
+    def __init__(self, survey: Survey) -> None:
         """
             Driver to exploit the output of Galaxia.
             
             Call signature::
-                output = Output(survey, parameters)
+                output = Output(survey)
             
             Parameters
             ----------
             survey : :obj:`Survey`
                 Survey object that returned this output.
-            parameters : dict
-                Dictionary all of parameters passed by Survey that were used
-                to generate this output.
             
             Notes
             -----
@@ -168,8 +165,7 @@ class Output:
             following properties:
             {_optional_properties}
         """
-        self.__survey = survey
-        self.__parameters = parameters
+        self.__survey: Survey = survey
         self.__vaex = None
         self.__vaex_per_partition = None
         self.__path = None
@@ -319,13 +315,13 @@ class Output:
     def __repr__(self) -> str:
         return repr(self._vaex)
     
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         return self._vaex[item]
     
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: str, value):
         self._vaex[item] = value
     
-    def __getattr__(self, item):
+    def __getattr__(self, item: str):
         if (item in self.__vaex.__dir__() and not item.startswith('_')) or (item in self._vaex_under_list and self.__vaex is not None):
             return getattr(self.__vaex, item)
         else:
@@ -731,20 +727,20 @@ class Output:
     
     @property
     def output_dir(self):
-        return pathlib.Path(self._parameters[FTTAGS.output_dir])
+        return pathlib.Path(self.parameters[FTTAGS.output_dir])
 
     @property
     def output_name(self):
-        return f"{self.survey.surveyname}.{self.survey.inputname}"
+        return f"{self.survey.surveyname_hash}.{self.survey.inputname_hash}"
 
     @property
     def rsun_skycoord(self):
-        _temp = [self._parameters[k] for k in FTTAGS.rSun]
+        _temp = [self.parameters[k] for k in FTTAGS.rSun]
         return coordinates.SkyCoord(u=_temp[0], v=_temp[1], w=_temp[2], unit='kpc', representation_type='cartesian', frame='galactic')
 
     @property
-    def _parameters(self):
-        return self.__parameters
+    def parameters(self) -> Dict[str, Union[str,float,int]]:
+        return self.survey.parameters
     
     @cached_property
     def __ebf_partitions(self) -> Dict[int, NDArray]:

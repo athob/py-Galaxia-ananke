@@ -6,16 +6,18 @@ Please note that this module is private. The Survey class is
 available in the main ``Galaxia`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, List, Set, Dict, Iterable
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Optional, Union, Tuple, List, Set, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
+from functools import cached_property
 import pathlib
 from pprint import PrettyPrinter
 
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import CallableDFtoInt, execute
+from .utils import CallableDFtoInt, execute, lexicalorder_dict, hash_iterable
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -57,6 +59,8 @@ class Survey:
         self.__input: Input = input
         self.__photosystems: List[PhotoSystem] = self.prepare_photosystems(photo_sys)
         self.__verbose: bool = verbose
+        self.__parameters: MappingProxyType[str, Union[str,float,int]] = None
+        self.__extraparam: MappingProxyType[str, Union[str,float,int]] = None
         self.__output: Output = None
 
     __init__.__doc__ = __init__.__doc__.format(DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME,
@@ -78,11 +82,33 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
+    def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> None:
+        photosys = self.photosystems[0]
+        cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
+        parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()
+        parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
+        self.__parameters = MappingProxyType(parameters)
+        self.__extraparam = MappingProxyType({k: v for n,PS in enumerate(self.photosystems[1:], start=1)
+                                                   for k,v in zip(FTTAGS.append_photo(n), PS.categ_and_name)})
+        self.__output = Output(self)
+
+    def _write_parameter_file(self) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
+        parameters: Dict[str, Union[str,float,int]] = self.parameters
+        surveyname_hash: str = self.surveyname_hash
+        parfile: pathlib.Path = self.inputdir / PARFILENAME_TEMPLATE.substitute({FTTAGS.name: surveyname_hash})  # TODO make temporary? create a global record of temporary files?
+        parfile_text: str = PARFILE_TEMPLATE.substitute({FTTAGS.output_file: surveyname_hash, **parameters})
+        if ((parfile.read_text() != parfile_text # proceed if parfile_text is not in parfile,
+            if parfile.exists()                  # only if parfile exist,
+            else True)                           # otherwise proceed if doesn't exist
+            if self.caching else True):          # -> proceed anyway if self.caching is False
+            parfile.write_text(parfile_text)
+        return parfile, parameters
+
     def _run_survey(self, parfile: pathlib.Path, n_gens: Iterable[int], max_gen_workers: int) -> None:
         cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
-            CTTAGS.nfile      : self.inputname,
+            CTTAGS.nfile      : self.inputname_hash,
             CTTAGS.ngen       : ngen,
             CTTAGS.parfile    : parfile
         }) for ngen in n_gens]
@@ -114,9 +140,10 @@ class Survey:
             max_gen_workers = len(n_gens)
         else:
             warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
-        inputname, parfile, for_parfile = self.input.prepare_input(self.photosystems[0], cmd_magnames, input_sorter=input_sorter,
-                                                                   output_file=self.surveyname, fsample=fsample, **kwargs)
-        self.__output = Output(self, for_parfile)  # TODO caching? YES, have named-state stored in dedicated file
+        self.input.input_sorter = input_sorter
+        self._prepare_survey_parameters_and_output(cmd_magnames, fsample=fsample, **kwargs)
+        inputname, parfile, for_parfile = self.input.prepare_input(self)
+        #
         self.check_state_before_running(description='run_survey_complete')(self._run_survey)(parfile, n_gens=n_gens, max_gen_workers=max_gen_workers)
         for photosystem in self.photosystems[1:]:
             self.check_state_before_running(description=f'append_{photosystem.name}_complete', level=1)(self._append_survey)(photosystem, max_gen_workers=max_gen_workers)
@@ -267,12 +294,36 @@ class Survey:
                                                         for key,val in DEFAULTS_FOR_PARFILE.items()})
 
     @property
-    def caching(self) -> bool:
-        return self.input.caching
+    def has_no_parameters(self) -> bool:
+        return self.__parameters is None
+
+    @property
+    def parameters(self) -> Dict[str, Union[str,float,int]]:
+        if self.has_no_parameters:
+            raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
+        else:
+            return dict(self.__parameters)
+
+    @property
+    def _extraparam(self) -> Dict[str, Union[str,float,int]]:
+        return self.__extraparam
+
+    @cached_property
+    def _surveyhash(self) -> bytes:
+        return hash_iterable(map(lambda el: str(el).encode(HASH_ENCODING),
+                                 lexicalorder_dict({**self.parameters, **self._extraparam}).values()))
+
+    @property
+    def hash(self) -> str:
+        return self._surveyhash.decode()
 
     @property
     def surveyname(self) -> str:
         return self.__surveyname
+    
+    @property
+    def surveyname_hash(self) -> str:
+        return f"{self.surveyname}_{self.hash[:7]}"
     
     @property
     def input(self) -> Input:
@@ -301,20 +352,36 @@ class Survey:
             self.__verbose = value
 
     @property
+    def has_no_output(self) -> bool:
+        return self.__output is None
+
+    @property
     def output(self):
-        if self.__output is None:
+        if self.has_no_output:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
             return self.__output
     
     @property
+    def caching(self) -> bool:
+        return self.input.caching
+
+    @property
     def hdim(self) -> int:
         return self.input.hdim
     
     @property
-    def inputname(self) -> str:
+    def inputname_hash(self) -> str:
         return self.input.name_hash
     
+    @property
+    def inputdir(self) -> pathlib.Path:
+        return self.input._input_dir
+    
+    @property
+    def ngb(self) -> int:
+        return self.input.ngb
+
     @property
     def check_state_before_running(self):
         return self.output.check_state_before_running

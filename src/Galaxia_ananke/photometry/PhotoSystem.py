@@ -74,6 +74,10 @@ class PhotoSystem:
         return self._isochrone.name
 
     @property
+    def categ_and_name(self):
+        return [self.category, self.name]
+
+    @property
     def key(self):
         return f"{self.category}/{self.name}"
 
