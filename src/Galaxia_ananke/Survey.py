@@ -82,14 +82,18 @@ class Survey:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], **kwargs) -> None:
+    def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], n_gens: Iterable[int], **kwargs) -> None:
         photosys = self.photosystems[0]
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()
         parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
+        n_gen_tag_length = len(str(max(n_gens)))
         self.__parameters = MappingProxyType(parameters)
-        self.__extraparam = MappingProxyType({k: v for n,PS in enumerate(self.photosystems[1:], start=1)
-                                                   for k,v in zip(FTTAGS.append_photo(n), PS.categ_and_name)})
+        self.__extraparam = MappingProxyType({
+            **{f"n_gen_{i:0{n_gen_tag_length}d}": n for i,n in enumerate(n_gens)},
+            **{k: v for n,PS in enumerate(self.photosystems[1:], start=1)
+                    for k,v in zip(FTTAGS.append_photo(n), PS.categ_and_name)}
+                    })
         self.__output = Output(self)
 
     def _write_parameter_file(self) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
@@ -141,7 +145,7 @@ class Survey:
         else:
             warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
         self.input.input_sorter = input_sorter
-        self._prepare_survey_parameters_and_output(cmd_magnames, fsample=fsample, **kwargs)
+        self._prepare_survey_parameters_and_output(cmd_magnames, n_gens, fsample=fsample, **kwargs)
         inputname, parfile, for_parfile = self.input.prepare_input(self)
         #
         self.check_state_before_running(description='run_survey_complete')(self._run_survey)(parfile, n_gens=n_gens, max_gen_workers=max_gen_workers)
