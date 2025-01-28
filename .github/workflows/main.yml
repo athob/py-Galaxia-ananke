@@ -29,9 +29,12 @@ jobs:
     - name: Update conda to latest
       run: |
         conda update conda
-    - name: Change conda python version
+    # - name: Change conda python version
+    #   run: |
+    #     conda install python=${{ matrix.python-version }}
+    - name: List conda info
       run: |
-        conda install python=${{ matrix.python-version }}
+        conda info
     - name: Install pip
       run: |
         conda install pip
