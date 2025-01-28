@@ -100,6 +100,9 @@ class Input:
             caching : bool
                 TODO
 
+            append_hash : bool
+                TODO
+
             ngb : int
                 Number of neighbouring particles Galaxia should consider.
                 Default to {TTAGS_nres}. ONLY SUPPORT 8, 32, 64 & 128.
@@ -129,6 +132,7 @@ class Input:
                 if True, knorm defaults to 0.596831.
         """
         self.caching: bool = kwargs.get('caching', False)
+        self.__append_hash: bool = kwargs.get('append_hash', self.caching)
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             kwargs['particles'] = args[0]
@@ -362,8 +366,12 @@ class Input:
         return self.__name
     
     @property
+    def append_hash(self) -> bool:
+        return self.__append_hash
+
+    @property
     def name_hash(self) -> str:
-        return f"{self.name}_{self.hash[:7]}"
+        return self.name + (f"_{self.hash[:7]}" if self.append_hash else "")
 
     @property
     def ngb(self) -> int:

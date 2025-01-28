@@ -326,8 +326,12 @@ class Survey:
         return self.__surveyname
     
     @property
+    def append_hash(self) -> bool:
+        return self.input.append_hash
+
+    @property
     def surveyname_hash(self) -> str:
-        return f"{self.surveyname}_{self.hash[:7]}"
+        return self.surveyname + (f"_{self.hash[:7]}" if self.append_hash else "")
     
     @property
     def input(self) -> Input:
