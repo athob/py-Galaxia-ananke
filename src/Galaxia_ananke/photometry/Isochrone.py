@@ -2,13 +2,16 @@
 """
 Docstring
 """
+from typing import List
+from functools import cached_property
+from operator import itemgetter
 import pathlib
 import shutil
-from glob import glob
 
 from .._constants import *
 from ..utils import compare_given_and_required
 from .IsochroneFile import IsochroneFile
+from .Formatting import *
 
 __all__ = ['Isochrone']
 
@@ -17,13 +20,13 @@ class Isochrone:
     """
     Ages need to be in log scale
     """
-    _Age = 'Age'
-    _M_ini = 'M_ini'
-    _M_act = 'M_act'
-    _Lum = 'Lum'
-    _T_eff = 'T_eff'
-    _Grav = 'Grav'
-    _required_keys = [_Age, _M_ini, _M_act, _Lum, _T_eff, _Grav]
+    _age = default_formatting._age
+    _mini = default_formatting._mini
+    _mact = default_formatting._mact
+    _lum = default_formatting._lum
+    _teff = default_formatting._teff
+    _grav = default_formatting._grav
+    _required_keys = [_age, _mini, _mact, _lum, _teff, _grav]
     _required_metallicities = {0.0001, 0.0002, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0022, 0.0024, 0.0026, 0.003, 0.0034, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.024, 0.028, 0.03}
     _file_descriptor = "IsoFileDescriptor.txt"
     def __init__(self, *args, overwrite=False) -> None:
@@ -41,7 +44,6 @@ class Isochrone:
             self._write_isochrone_files(args[1])
         else:
             raise TypeError(f"Too many arguments ({len(args)} given)")
-        self._isochrone_files = None
     
     def __repr__(self) -> str:
         cls = self.__class__.__name__
@@ -75,10 +77,6 @@ class Isochrone:
             f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}\n\n")
         return iso_column_order
 
-    def _prepare_isochrone_files(self):
-        self._isochrone_files = list(map(lambda path: IsochroneFile(path, isochrone=self),
-                                         glob(str(self._path / IsochroneFile._file_format.format('*')))))
-    
     @property
     def path(self):
         return self._path
@@ -99,18 +97,57 @@ class Isochrone:
     def has_file_descriptor(self):
         return self.file_descriptor_path.exists()
 
-    @property
+    @cached_property
     def isochrone_files(self):
-        if self._isochrone_files is None:
-            self._prepare_isochrone_files()
-        return self._isochrone_files
+        return list(map(lambda path: IsochroneFile(path, isochrone=self),
+                        sorted(self._path.glob(IsochroneFile._file_format.format('*')))))
     
-    @property
-    def mag_names(self):
+    @cached_property
+    def file_descriptor_content(self) -> List[str]:
         if self.has_file_descriptor:
-            with open(self.file_descriptor_path,'r') as f: return f.readline().strip('\n').split()[4:]
+            with open(self.file_descriptor_path,'r') as f: return f.readline().strip('\n').split()
         else:
             raise NotImplementedError("Photometric system doesn't have an IsoFileDescriptor.txt file")
+    
+    @cached_property
+    def __fd_photosysname(self) -> str:
+        return self.file_descriptor_content[0]
+    
+    @cached_property
+    def __fd_fields(self) -> int:
+        return int(self.file_descriptor_content[1])
+    
+    @cached_property
+    def _fd_startid(self) -> int:
+        return int(self.file_descriptor_content[2])
+    
+    @cached_property
+    def _fd_nmags(self) -> int:
+        return int(self.file_descriptor_content[3])
+    
+    @cached_property
+    def magnitude_itemgetter(self) -> itemgetter:
+        return itemgetter(*range(self._fd_startid, self._fd_startid+self._fd_nmags))
+
+    @cached_property
+    def mag_names(self) -> List[str]:
+        return self.file_descriptor_content[4:]
+
+    @cached_property
+    def formatting(self):
+        match self.name:
+            case 'WFIRST+HST__WFC3' if self.category == 'padova':
+                return oldpadova_fomatting_withlogage
+            case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2') if self.category == 'padova':
+                return oldpadova_fomatting
+            case 'CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST':
+                return padova_formatting
+            case _:
+                return default_formatting
+
+    @cached_property
+    def qtables_dictionary(self):
+        {iso_file.metallicity: self.formatting.qtable_from_isochronefile(iso_file) for iso_file in self.isochrone_files}
 
 
 if __name__ == '__main__':
