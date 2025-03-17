@@ -9,6 +9,7 @@ from operator import itemgetter
 import dataclasses as dc
 
 import numpy as np
+import pandas as pd
 from astropy import table, units
 
 from .._constants import *
@@ -72,21 +73,24 @@ class Formatting(_BaseFormatting):
     def physical_itemgetter(self) -> itemgetter:
         return itemgetter(*self.format_mapper.keys())
 
-    def qtable_from_isochronefile(self, iso_file: IsochroneFile) -> table.QTable:
+    def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> table.QTable:
         isochrone: Isochrone = iso_file._isochrone
         units_mapper = self.units_mapper
         column_names: Tuple[str] = self.physical_itemgetter(iso_file.data.keys()) + isochrone.magnitude_itemgetter(iso_file.data.keys())
         final_names: List[str] = list(self.format_mapper.values()) + isochrone.mag_names
         column_mapper: Dict[str,str] = dict(zip(column_names, final_names))
-        reduced_data = iso_file.data[column_names].to_pandas().rename(columns=column_mapper)
+        reduced_data: pd.DataFrame = iso_file.data[column_names].to_pandas().rename(columns=column_mapper).reset_index().sort_values([self._age, self._mini, 'index']).drop('index', axis=1)
         if self.lin_age:
             reduced_data[self._age] = np.log10(reduced_data[self._age])
-        return table.QTable({
-            key: units.Magnitude(value)
-            if key in isochrone.mag_names
-            else value*units_mapper[key]
-            for key,value in reduced_data.to_dict(orient='list').items()
-            })
+        return {
+            age: table.QTable({
+                key: units.Magnitude(value)
+                if key in isochrone.mag_names
+                else value*units_mapper[key]
+                for key,value in df.to_dict(orient='list').items()
+                })
+            for age,df in reduced_data.groupby(self._age)
+            }
 
 
 default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python and others

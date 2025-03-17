@@ -8,6 +8,8 @@ from operator import itemgetter
 import pathlib
 import shutil
 
+import numpy as np
+
 from .._constants import *
 from ..utils import compare_given_and_required
 from .IsochroneFile import IsochroneFile
@@ -147,7 +149,11 @@ class Isochrone:
 
     @cached_property
     def qtables_dictionary(self):
-        {iso_file.metallicity: self.formatting.qtable_from_isochronefile(iso_file) for iso_file in self.isochrone_files}
+        return {iso_file.metallicity: self.formatting.qtable_per_age_from_isochronefile(iso_file) for iso_file in self.isochrone_files}
+    
+    @cached_property
+    def qtables_unique_ages_dictionary(self):
+        return {metallicity: qtables_per_age_dict.keys() for metallicity, qtables_per_age_dict in self.qtables_dictionary.items()}
 
 
 if __name__ == '__main__':
