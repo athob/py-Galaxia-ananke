@@ -2,6 +2,7 @@
 """
 Docstring
 """
+import sys
 from typing import List
 from functools import cached_property
 from operator import itemgetter
@@ -137,14 +138,24 @@ class Isochrone:
 
     @cached_property
     def formatting(self):
-        match self.name:
-            case 'WFIRST+HST__WFC3' if self.category == 'padova':
+        if sys.version_info >= (3,10):
+            match self.name:
+                case 'WFIRST+HST__WFC3' if self.category == 'padova':
+                    return oldpadova_fomatting_withlogage
+                case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2') if self.category == 'padova':
+                    return oldpadova_fomatting
+                case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST') if self.category == 'padova':
+                    return padova_formatting
+                case _:
+                    return default_formatting
+        else:
+            if self.name == 'WFIRST+HST__WFC3' and self.category == 'padova':
                 return oldpadova_fomatting_withlogage
-            case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2') if self.category == 'padova':
+            if self.name in ['WFIRST','LSST','GAIA__0','GAIA__DR2'] and self.category == 'padova':
                 return oldpadova_fomatting
-            case 'CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST':
+            if self.name in ['CTIO__DECam','LSST_DP0','Roman','Euclid','JWST'] and self.category == 'padova':
                 return padova_formatting
-            case _:
+            else:
                 return default_formatting
 
     @cached_property
