@@ -4,6 +4,7 @@ Docstring
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, List, Dict
+from numpy.typing import ArrayLike, NDArray
 from functools import cached_property
 from operator import itemgetter
 import dataclasses as dc
@@ -57,7 +58,8 @@ class Formatting(_BaseFormatting):
     i_teff: int
     i_grav: int
     lin_age: bool = False
-    
+    feh_sun: float = 0.0152  # TODO figure out that conversion situation
+
     @cached_property
     def format_mapper(self) -> Dict[int,str]:
         return {
@@ -68,10 +70,13 @@ class Formatting(_BaseFormatting):
             self.i_teff: self._teff,
             self.i_grav: self._grav
             }
-    
+
     @cached_property
     def physical_itemgetter(self) -> itemgetter:
         return itemgetter(*self.format_mapper.keys())
+
+    def metallicity_converter(self, metallicity: ArrayLike) -> NDArray:
+        return np.log10(metallicity/np.array(self.feh_sun))
 
     def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> table.QTable:
         isochrone: Isochrone = iso_file._isochrone

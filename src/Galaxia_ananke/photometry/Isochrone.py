@@ -160,8 +160,9 @@ class Isochrone:
                 return default_formatting
 
     @cached_property
-    def qtables_dictionary(self):
-        return {iso_file.metallicity: self.formatting.qtable_per_age_from_isochronefile(iso_file) for iso_file in self.isochrone_files}
+    def qtables_dictionary(self):  # log10(fe[i]/0.0152
+        return {self.formatting.metallicity_converter(iso_file.metallicity): self.formatting.qtable_per_age_from_isochronefile(iso_file)
+                for iso_file in self.isochrone_files}
     
     @cached_property
     def qtables_unique_ages_dictionary(self):
