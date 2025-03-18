@@ -77,7 +77,7 @@ class IsochroneFile:
         return header.split(' ')
 
     @cached_property
-    def data(self):
+    def data(self) -> ascii.core.Table:
         return ascii.read(self._path, names=self.column_names)
     
     @property

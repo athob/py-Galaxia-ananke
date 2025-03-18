@@ -23,7 +23,12 @@ if TYPE_CHECKING:
 __all__ = ['default_formatting', 'padova_formatting', 'oldpadova_fomatting', 'oldpadova_fomatting_withlogage']
 
 
+units.Zsun = units.def_unit('Zsun') # TODO could define PhysicalType "abundance" ?
+
+
 class _BaseFormatting:
+    _zini = 'Z_ini'
+    _unit_zini = units.LogUnit(units.Zsun)
     _age = 'Age'
     _unit_age = units.LogUnit(units.yr)
     _mini = 'M_ini'
@@ -38,6 +43,7 @@ class _BaseFormatting:
     @classproperty
     def units_mapper(cls):
         return {
+            cls._zini: cls._unit_zini,
             cls._age: cls._unit_age,
             cls._mini: cls._unit_mass,
             cls._mact: cls._unit_mass,
@@ -85,6 +91,7 @@ class Formatting(_BaseFormatting):
         final_names: List[str] = list(self.format_mapper.values()) + isochrone.mag_names
         column_mapper: Dict[str,str] = dict(zip(column_names, final_names))
         reduced_data: pd.DataFrame = iso_file.data[column_names].to_pandas().rename(columns=column_mapper).reset_index().sort_values([self._age, self._mini, 'index']).drop('index', axis=1)
+        reduced_data.insert(0, self._zini, self.metallicity_converter(iso_file.metallicity))
         if self.lin_age:
             reduced_data[self._age] = np.log10(reduced_data[self._age])
         return {
