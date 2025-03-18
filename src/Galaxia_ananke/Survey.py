@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Optional, Union, Tuple, List, Set, Dict, Itera
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
+import re
 import pathlib
 from pprint import PrettyPrinter
 
@@ -59,7 +60,7 @@ class Survey:
         self.__input: Input = input
         self.__photosystems: List[PhotoSystem] = self.prepare_photosystems(photo_sys)
         self.__verbose: bool = verbose
-        self.__parameters: MappingProxyType[str, Union[str,float,int]] = None
+        self.__fileparam: MappingProxyType[str, Union[str,float,int]] = None
         self.__extraparam: MappingProxyType[str, Union[str,float,int]] = None
         self.__output: Output = None
 
@@ -88,7 +89,7 @@ class Survey:
         parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()
         parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
         n_gen_tag_length = len(str(max(n_gens)))
-        self.__parameters = MappingProxyType(parameters)
+        self.__fileparam = MappingProxyType(parameters)
         self.__extraparam = MappingProxyType({
             **{f"n_gen_{i:0{n_gen_tag_length}d}": n for i,n in enumerate(n_gens)},
             **{k: v for n,PS in enumerate(self.photosystems[1:], start=1)
@@ -97,7 +98,7 @@ class Survey:
         self.__output = Output(self)
 
     def _write_parameter_file(self) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
-        parameters: Dict[str, Union[str,float,int]] = self.parameters
+        parameters: Dict[str, Union[str,float,int]] = self.fileparam
         surveyname_hash: str = self.surveyname_hash
         parfile: pathlib.Path = self.inputdir / PARFILENAME_TEMPLATE.substitute({FTTAGS.name: surveyname_hash})  # TODO make temporary? create a global record of temporary files?
         parfile_text: str = PARFILE_TEMPLATE.substitute({FTTAGS.output_file: surveyname_hash, **parameters})
@@ -298,24 +299,40 @@ class Survey:
                                                         for key,val in DEFAULTS_FOR_PARFILE.items()})
 
     @property
-    def has_no_parameters(self) -> bool:
-        return self.__parameters is None
+    def has_no_fileparam(self) -> bool:
+        return self.__fileparam is None
 
     @property
-    def parameters(self) -> Dict[str, Union[str,float,int]]:
-        if self.has_no_parameters:
+    def fileparam(self) -> Dict[str, Union[str,float,int]]:
+        if self.has_no_fileparam:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
-            return dict(self.__parameters)
+            return dict(self.__fileparam)
 
     @property
     def _extraparam(self) -> Dict[str, Union[str,float,int]]:
         return self.__extraparam
 
+    @property
+    def parameters(self) -> Dict[str, Union[str,float,int]]:
+        return {**self.fileparam, **self._extraparam}
+
+    @property
+    def n_gens(self) -> List[int]:
+        return list(lexicalorder_dict({
+            int(n_gen[0]): value
+            for key, value in self._extraparam.items()
+            if (n_gen:=re.findall("n_gen_(\d*)", key))
+            }).values())
+
+    @property
+    def fsample(self) -> float:
+        return len(self.n_gens)*self.fileparam[FTTAGS.fsample]
+
     @cached_property
     def _surveyhash(self) -> bytes:
         return hash_iterable(map(lambda el: str(el).encode(HASH_ENCODING),
-                                 lexicalorder_dict({**self.parameters, **self._extraparam}).values()))
+                                 lexicalorder_dict(self.parameters).values()))
 
     @property
     def hash(self) -> str:
