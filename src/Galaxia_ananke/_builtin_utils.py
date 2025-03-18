@@ -208,4 +208,4 @@ def lexicalorder_dict(dictionary: Dict[str, Any]) -> OrderedDict[str, Any]:
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

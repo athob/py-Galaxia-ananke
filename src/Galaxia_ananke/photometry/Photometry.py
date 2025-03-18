@@ -75,4 +75,4 @@ class Photometry(nested_dict, metaclass=Singleton):
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

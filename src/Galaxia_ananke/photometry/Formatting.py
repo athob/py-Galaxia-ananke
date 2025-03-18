@@ -109,3 +109,7 @@ default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python and others
 padova_formatting = Formatting(2, 3, 5, 6, 7, 8, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
 oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
 oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, False)  # WFIRST+HST__WFC3
+
+
+if __name__ == '__main__':
+    raise NotImplementedError()

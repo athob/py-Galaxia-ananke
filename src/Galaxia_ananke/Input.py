@@ -607,4 +607,4 @@ Input.make_dummy_particles_input.__func__.__doc__ = Input.make_dummy_particles_i
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

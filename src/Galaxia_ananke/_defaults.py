@@ -67,3 +67,7 @@ DEFAULTS_FOR_PARFILE = {
     FTTAGS.vSun0: vSun[0],
     FTTAGS.vSun1: vSun[1],
     FTTAGS.vSun2: vSun[2]}
+
+
+if __name__ == '__main__':
+    raise NotImplementedError()

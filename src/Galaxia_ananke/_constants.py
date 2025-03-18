@@ -43,3 +43,7 @@ GALAXIA_LOG = CACHE / LOG_DIR
 GALAXIA = CACHE / BIN_DIR / GALAXIA_EXEC
 
 ISOCHRONES_PATH = GALAXIA_DATA / 'Isochrones'
+
+
+if __name__ == '__main__':
+    raise NotImplementedError()

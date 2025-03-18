@@ -139,4 +139,4 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

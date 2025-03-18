@@ -417,4 +417,4 @@ class Survey:
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

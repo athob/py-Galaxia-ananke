@@ -119,3 +119,7 @@ CTTAGS = CommandTemplateTags()
 RUN_TEMPLATE = Template(f"{GALAXIA} -r${{{CTTAGS.hdim_block}}} --nfile=${{{CTTAGS.nfile}}} --ngen=${{{CTTAGS.ngen}}} ${{{CTTAGS.parfile}}}")
 HDIMBLOCK_TEMPLATE = Template(f" --hdim=${{{CTTAGS.hdim}}}")
 APPEND_TEMPLATE = Template(f"{GALAXIA} -a --pcat=${{{CTTAGS.pcat}}} --psys=${{{CTTAGS.psys}}} ${{{CTTAGS.filename}}}")
+
+
+if __name__ == '__main__':
+    raise NotImplementedError()

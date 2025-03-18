@@ -59,4 +59,4 @@ def hash_iterable(iterable: Iterable) -> bytes:
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()

@@ -964,4 +964,4 @@ Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.j
 
 
 if __name__ == '__main__':
-    pass
+    raise NotImplementedError()
