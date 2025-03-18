@@ -4,6 +4,7 @@ Docstring
 """
 from typing import Union, List, Dict
 from numpy.typing import ArrayLike
+from functools import cached_property
 from operator import itemgetter
 import re
 
@@ -83,21 +84,21 @@ class PhotoSystem:
     def key(self):
         return f"{self.category}/{self.name}"
 
-    @property
+    @cached_property
     def mag_names(self):
         return self._isochrone.mag_names
     
-    @property
+    @cached_property
     def effective_wavelengths(self):
         return self._extract_from_svo_filter_list('WavelengthEff', unit=DEF_UNIT.wavelength)
 
-    @property
+    @cached_property
     def zeropoints(self):
         return self._extract_from_svo_filter_list('ZeroPoint').to(
             DEF_UNIT.spectral, equivalencies=units.spectral_density(self.effective_wavelengths)
             )
 
-    @property
+    @cached_property
     def to_export_keys(self):
         return [f"{self.name.lower()}_{mag_name.lower()}" for mag_name in self.mag_names]
 
