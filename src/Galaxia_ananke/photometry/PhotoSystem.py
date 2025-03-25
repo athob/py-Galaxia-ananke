@@ -61,46 +61,50 @@ class PhotoSystem:
         return aggregate(stack)
 
     @property
-    def _isochrone(self):
+    def _isochrone(self) -> Isochrone:
         return self.__isochrone
 
     @property
-    def _interface_svofps(self):
+    def _interface_svofps(self) -> InterfaceSvoFpsDriver:
         return self.__interface_svofps
 
     @property
-    def category(self):
+    def category(self) -> str:
         return self._isochrone.category
     
     @property
-    def name(self):
+    def name(self) -> str:
         return self._isochrone.name
 
     @property
-    def categ_and_name(self):
+    def categ_and_name(self) -> List[str]:
         return [self.category, self.name]
 
     @property
-    def key(self):
+    def key(self) -> str:
         return f"{self.category}/{self.name}"
 
     @cached_property
-    def mag_names(self):
+    def mag_names(self) -> List[str]:
         return self._isochrone.mag_names
     
     @cached_property
-    def effective_wavelengths(self):
+    def effective_wavelengths(self) -> units.Quantity:
         return self._extract_from_svo_filter_list('WavelengthEff', unit=DEF_UNIT.wavelength)
 
     @cached_property
-    def zeropoints(self):
+    def zeropoints(self) -> units.Quantity:
         return self._extract_from_svo_filter_list('ZeroPoint').to(
             DEF_UNIT.spectral, equivalencies=units.spectral_density(self.effective_wavelengths)
             )
 
     @cached_property
-    def to_export_keys(self):
+    def to_export_keys(self) -> List[str]:
         return [f"{self.name.lower()}_{mag_name.lower()}" for mag_name in self.mag_names]
+    
+    @cached_property
+    def mag_names_to_export_keys_mapping(self) -> Dict[str,str]:
+        return dict(zip(self.mag_names, self.to_export_keys))
 
     def get_nearest_isochrone_track_for_age_and_metallicity(self, ages: ArrayLike, metallicities: ArrayLike) -> List[table.QTable]:
         z_keys = np.array(list(self._isochrone.qtables_unique_ages_dictionary.keys()))

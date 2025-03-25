@@ -742,6 +742,22 @@ class Output:
     def parameters(self) -> Dict[str, Union[str,float,int]]:
         return self.survey.parameters
     
+    @property
+    def parameter_mag_color_names(self) -> str:
+        return self.parameters[FTTAGS.mag_color_names]
+    
+    @property
+    def parameter_magnitude_name(self) -> str:
+        return self.parameter_mag_color_names.split(',')[0]
+
+    @property
+    def parameter_abs_mag_hi(self) -> str:
+        return self.parameters[FTTAGS.abs_mag_lim_hi]
+
+    @property
+    def parameter_app_mag_hi(self) -> str:
+        return self.parameters[FTTAGS.app_mag_lim_hi]
+
     @cached_property
     def __ebf_partitions(self) -> Dict[int, NDArray]:
         warn('This property is deprecated as remnant of the single ebf output implementation, this will be removed in future versions', DeprecationWarning, stacklevel=2)
