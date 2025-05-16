@@ -355,7 +355,10 @@ class Input:
 
     @property
     def rho(self) -> NDArray:
-        return np.vstack([self.rho_pos, self.rho_vel]).T  # TODO what if rho_vel is None
+        if self.rho_vel is None:
+            return self.rho_pos
+        else:
+            return np.vstack([self.rho_pos, self.rho_vel]).T
     
     @property
     def hdim(self) -> int:
