@@ -202,7 +202,6 @@ class Isochrone:
         points = np.empty((successive_indices[-1], 3))
         values = np.empty((successive_indices[-1], len(self.mag_names)))
         for first, last, sub_points, sub_values in zip(successive_indices[:-1], successive_indices[1:], list_of_points, list_of_values):
-            print(first)
             points[first:last] = sub_points
             values[first:last] = sub_values
         return points, values
