@@ -3,7 +3,8 @@
 Docstring
 """
 import sys
-from typing import List
+from typing import Tuple, List
+from numpy.typing import NDArray
 from functools import cached_property
 from operator import itemgetter
 import pathlib
@@ -23,6 +24,7 @@ class Isochrone:
     """
     Ages need to be in log scale
     """
+    _zini = default_formatting._zini
     _age = default_formatting._age
     _mini = default_formatting._mini
     _mact = default_formatting._mact
@@ -167,6 +169,43 @@ class Isochrone:
     @cached_property
     def qtables_unique_ages_dictionary(self):
         return {metallicity: qtables_per_age_dict.keys() for metallicity, qtables_per_age_dict in self.qtables_dictionary.items()}
+
+    @cached_property
+    def consolidated_points_and_values(self) -> Tuple[NDArray,NDArray]:
+        list_of_points = []
+        list_of_values = []
+        for metallicity, unique_ages in self.qtables_unique_ages_dictionary.items():
+            unique_ages = list(unique_ages)
+            qtables = self.qtables_dictionary[metallicity]
+            for i_age, age in enumerate(unique_ages):
+                qtable = qtables[age]
+                list_of_points.append(qtable[[self._zini, self._age, self._mini]].to_pandas().to_numpy())
+                list_of_values.append(qtable[self.mag_names].to_pandas().to_numpy())
+                if qtable[-1][self._lum].value == -9.999:  # bit of a stretch for white dwarf case, but that will do for now for what I need
+                    if age != unique_ages[-1]:
+                        list_of_points.append(list_of_points[-1][[-1]].copy())
+                        list_of_points[-1][:,1] = unique_ages[-1]
+                        list_of_values.append(list_of_values[-1][[-1]].copy())
+                else:  # also a stretch, no neutron star, just black holes
+                    next_age = unique_ages[i_age+1]
+                    max_mini_next_age = qtables[next_age][self._mini].max()
+                    dead_next_age_qtable = qtable[qtable[self._mini] > max_mini_next_age]
+                    list_of_points.append(dead_next_age_qtable[[self._zini, self._age, self._mini]].to_pandas().to_numpy())
+                    list_of_points[-1][:,1] = next_age
+                    list_of_values.append(dead_next_age_qtable[self.mag_names].to_pandas().to_numpy())
+                    list_of_values[-1][:,:] = 999
+                    list_of_points.append(list_of_points[-1][[-1]].copy())
+                    list_of_points[-1][:,1] = unique_ages[-1]
+                    list_of_values.append(list_of_values[-1][[-1]].copy())
+        list_of_lengths = np.array(list(map(len, list_of_points)))
+        successive_indices = np.hstack([0,np.cumsum(list_of_lengths)])
+        points = np.empty((successive_indices[-1], 3))
+        values = np.empty((successive_indices[-1], len(self.mag_names)))
+        for first, last, sub_points, sub_values in zip(successive_indices[:-1], successive_indices[1:], list_of_points, list_of_values):
+            print(first)
+            points[first:last] = sub_points
+            values[first:last] = sub_values
+        return points, values
 
 
 if __name__ == '__main__':
