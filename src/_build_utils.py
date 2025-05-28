@@ -3,6 +3,7 @@
 Contains the Galaxia_ananke module building utility tools. Credit to
 https://github.com/GalacticDynamics-Oxford/Agama/blob/master/setup.py.
 """
+import os
 import pathlib
 import shutil
 import sys
@@ -48,7 +49,7 @@ def all_files(*paths, basedir='.'):
     basedir = pathlib.Path(basedir)
     return [str(pathlib.Path(dirpath, f).relative_to(basedir))
             for path in paths
-            for dirpath, dirnames, files in pathlib.os.walk(basedir / path)
+            for dirpath, dirnames, files in os.walk(basedir / path)
             for f in files]
 
 
