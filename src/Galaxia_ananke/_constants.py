@@ -5,10 +5,10 @@ Package parameters
 import sys
 import pathlib
 
+from ._name import *
 
 __all__ = ['NAME', 'GALAXIA_SUBMODULE_NAME', 'GALAXIA_URL', 'GALAXIA_EXEC', 'SRC_DIR', 'LOG_DIR', 'NBODY1', 'LEGACY_PHOTOCAT', 'CUSTOM_PHOTOCAT', 'HASH_EXT', 'HASH_ENCODING', 'GALAXIA_DATA', 'GALAXIA_NBODY1', 'GALAXIA_FILENAMES', 'GALAXIA_LOG', 'GALAXIA', 'ISOCHRONES_PATH', 'CACHE']
 
-NAME = 'Galaxia_ananke'
 GALAXIA_SUBMODULE_NAME = 'galaxia-ananke'
 GALAXIA_URL = 'https://sourceforge.net/projects/galaxia/files/galaxia-0.7.2.tar.gz/download'
 GALAXIA_EXEC = 'galaxia'

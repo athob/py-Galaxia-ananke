@@ -2,6 +2,8 @@
 """
 Module utilities using built-in implementation
 """
+import sys
+from types import ModuleType
 from typing import Type, TypeVar, Any, Union, List, Dict, OrderedDict, Callable
 from typing_extensions import Self, ParamSpec
 from collections import OrderedDict as ODict
@@ -9,12 +11,13 @@ from functools import total_ordering
 from itertools import zip_longest
 import dataclasses as dc
 import subprocess
+import importlib.util
 import pathlib
 import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file']
 
 
 class Singleton(type):
@@ -205,6 +208,15 @@ def get_version_of_command(cmd):
 
 def lexicalorder_dict(dictionary: Dict[str, Any]) -> OrderedDict[str, Any]:
     return ODict({k: dictionary[k] for k in sorted(dictionary)})
+
+
+def import_source_file(module_name, file_path) -> ModuleType:
+    # based on https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 if __name__ == '__main__':
