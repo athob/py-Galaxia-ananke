@@ -3,7 +3,7 @@
 """
 __all__ = ['NAME']
 
-NAME = 'Galaxia_ananke'
+NAME = 'galaxia_ananke'
 
 
 if __name__ == '__main__':

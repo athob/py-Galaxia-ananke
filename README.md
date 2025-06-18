@@ -28,15 +28,15 @@ Please note that the command with flag `pip install . --no-cache-dir` may be nec
 
 ***Warning: DO NOT download the repository as a ZIP archive with intention to install it this way, the installation requires the git set up of the repository to propertly install its submodule dependencies.***
 
-After installation, the module can be imported in Python under the name `Galaxia_ananke` and be ran as such.
+After installation, the module can be imported in Python under the name `galaxia_ananke` and be ran as such.
 
 ### Troubleshooting installation
 
-You may find yourself in a situation after installation where importing the package module errors out in an `AssertionError`. The installation compiles and installs the backend C++ submodule galaxia-ananke which is required, this `AssertionError` means that process failed in some way at installation. When installing the galaxia-ananke submodule, `Galaxia_ananke`'s setup write log files in a cache location. The `AssertionError` at import that calls for the missing Galaxia executable gives the `bin` path where that executable should be located. The parent directory for that `bin` path should contain also a `log` directory, where those log files can be found and can help troubleshooting the missing executable. Below are some potential situations:
+You may find yourself in a situation after installation where importing the package module errors out in an `AssertionError`. The installation compiles and installs the backend C++ submodule galaxia-ananke which is required, this `AssertionError` means that process failed in some way at installation. When installing the galaxia-ananke submodule, `galaxia_ananke`'s setup write log files in a cache location. The `AssertionError` at import that calls for the missing Galaxia executable gives the `bin` path where that executable should be located. The parent directory for that `bin` path should contain also a `log` directory, where those log files can be found and can help troubleshooting the missing executable. Below are some potential situations:
 
 #### galaxia-ananke submodule didn't pull appropriately
 
-The installation of `Galaxia_ananke` is supposed to automatically pull the galaxia-ananke git submodule. However, if the directory of that submodule is empty, it means that the pull failed. Try to manually run `git submodule update --init` from the root of this repository before installing.
+The installation of `galaxia_ananke` is supposed to automatically pull the galaxia-ananke git submodule. However, if the directory of that submodule is empty, it means that the pull failed. Try to manually run `git submodule update --init` from the root of this repository before installing.
 
 #### build-aux/install-sh: Permission denied
 

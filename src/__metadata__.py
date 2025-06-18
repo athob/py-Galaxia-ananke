@@ -1,1 +1,1 @@
-Galaxia_ananke/__metadata__.py
+galaxia_ananke/__metadata__.py

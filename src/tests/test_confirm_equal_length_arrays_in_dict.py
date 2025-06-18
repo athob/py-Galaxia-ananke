@@ -2,7 +2,7 @@
 import pytest
 import random
 
-from ..Galaxia_ananke._builtin_utils import confirm_equal_length_arrays_in_dict
+from ..galaxia_ananke._builtin_utils import confirm_equal_length_arrays_in_dict
 
 
 def make_random_list(length):

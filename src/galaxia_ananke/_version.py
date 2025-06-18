@@ -52,8 +52,8 @@ def get_config() -> VersioneerConfig:
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = "v"
-    cfg.parentdir_prefix = "Galaxia_ananke-"
-    cfg.versionfile_source = "src/Galaxia_ananke/_version.py"
+    cfg.parentdir_prefix = "galaxia_ananke-"
+    cfg.versionfile_source = "src/galaxia_ananke/_version.py"
     cfg.verbose = False
     return cfg
 

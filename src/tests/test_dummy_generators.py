@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import random
 
-from ..Galaxia_ananke import Input
-from ..Galaxia_ananke._builtin_utils import confirm_equal_length_arrays_in_dict
+from ..galaxia_ananke import Input
+from ..galaxia_ananke._builtin_utils import confirm_equal_length_arrays_in_dict
 
 
 n_parts = random.randint(10**3,10**4)

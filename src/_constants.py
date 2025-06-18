@@ -1,1 +1,1 @@
-Galaxia_ananke/_constants.py
+galaxia_ananke/_constants.py

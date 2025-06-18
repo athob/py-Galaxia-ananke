@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from ..Galaxia_ananke._builtin_utils import Singleton
+from ..galaxia_ananke._builtin_utils import Singleton
 
 
 def test_singleton():

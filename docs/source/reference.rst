@@ -4,4 +4,4 @@ API reference
 .. toctree::
 	:maxdepth: 2
 
-	modules/Galaxia_ananke
+	modules/galaxia_ananke

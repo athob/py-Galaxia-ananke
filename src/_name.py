@@ -1,1 +1,1 @@
-Galaxia_ananke/_name.py
+galaxia_ananke/_name.py

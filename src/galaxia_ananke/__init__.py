@@ -53,7 +53,7 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
         particles : dict
             Dictionary where each elements represent the properties of the
             input particles, given as equal-length array_like objects. Refer
-            to Input documentation for appropriate formatting. Galaxia_ananke
+            to Input documentation for appropriate formatting. galaxia_ananke
             also comes packaged with a function make_dummy_particles_input to
             produce a dummy example for that dictionary.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import pytest
 
-from ..Galaxia_ananke._builtin_utils import compare_given_and_required
+from ..galaxia_ananke._builtin_utils import compare_given_and_required
 
 
 def test():
