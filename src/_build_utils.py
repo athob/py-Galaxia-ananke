@@ -8,7 +8,11 @@ import pathlib
 import shutil
 import sys
 import subprocess
+import ssl
 import urllib.request
+import urllib.parse
+import json
+import configparser
 import tempfile
 from distutils.errors import CompileError
 from setuptools.command.build_ext import build_ext
@@ -18,7 +22,7 @@ from packaging.version import Version
 from ._builtin_utils import get_version_of_command
 from ._constants import *
 from .__metadata__ import *
-from . import versioneer
+from . import _version, versioneer
 
 __all__ = ['make_package_data', 'make_cmdclass']
 
@@ -90,7 +94,80 @@ def download_galaxia(galaxia_dir):
         raise CompileError(str(e) + "\nError downloading Galaxia, aborting...\n")
 
 
+def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
+    """
+    Get submodule commit hash for a specific GitHub repository commit.
+
+    Args:
+        repo_owner: Repository owner
+        repo_name: Repository name
+        commit_sha: Commit SHA in the main repository
+        submodule_path: Relative path to the submodule
+
+    Returns:
+        Submodule commit SHA string
+    """
+    # Create SSL context (bypass verification if needed)
+    ctx = ssl.create_default_context()
+    # Uncomment below line if you encounter certificate errors
+    # ctx.check_hostname = False
+    # ctx.verify_mode = ssl.CERT_NONE
+    # Step 1: Get repository tree recursively for the specific commit
+    tree_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/git/trees/{commit_sha}?recursive=1"
+    ################################################################
+    try:
+        # Make HTTP request
+        req = urllib.request.Request(tree_url)
+        with urllib.request.urlopen(req, context=ctx) as response:
+            # Check rate limit headers
+            remaining = response.headers.get('X-RateLimit-Remaining')
+            if remaining == '0':
+                reset_time = response.headers.get('X-RateLimit-Reset')
+                raise RuntimeError(f"GitHub API rate limit exceeded. Reset at {reset_time}")
+            # Parse JSON response
+            data = response.read()
+            encoding = response.info().get_content_charset('utf-8')
+            tree_data = json.loads(data.decode(encoding))
+    except urllib.error.HTTPError as e:
+        if e.code == 403 and 'rate limit' in e.reason.lower():
+            raise RuntimeError("GitHub API rate limit exceeded. Try again later.")
+        raise  # Re-raise other HTTP errors
+    ################################################################
+    # response = requests.get(tree_url)
+    # if response.status_code == 403 and 'rate limit' in response.text.lower():
+    #     raise RuntimeError("GitHub API rate limit exceeded. Try again later.")
+    # response.raise_for_status()
+    # tree_data = response.json()
+    ################################################################
+    # Step 2: Find the submodule entry in the tree
+    for item in tree_data.get('tree', []):
+        if item['path'] == submodule_path:
+            if item['type'] == 'commit':
+                return item['sha']
+            raise ValueError(f"Path '{submodule_path}' is not a submodule (type: {item['type']})")
+    raise FileNotFoundError(f"Submodule path '{submodule_path}' not found in repository")
+
+
+def clone_and_checkout_submodules(root_dir, submodule_names):
+    parsed_url = urllib.parse.urlparse(__url__)
+    url_path = pathlib.Path(parsed_url.path)
+    gitmodules = configparser.ConfigParser()
+    gitmodules.read(root_dir / '.gitmodules')
+    for submodule_name in submodule_names:
+        galaxia_url = parsed_url._replace(path=str((url_path / gitmodules[f'submodule "{submodule_name}"']['url']).resolve())).geturl()
+        galaxia_commit = get_submodule_commit(
+            *(url_path.parts[-2:] + (_version.get_versions()['full-revisionid'], submodule_name))
+            )
+        try:
+            _temp = subprocess.call(['git', 'clone', galaxia_url], cwd=root_dir, stdout=subprocess.STDOUT)
+        except RuntimeError as e:
+            raise CompileError(str(e) + f"\nError cloning {submodule_name}, aborting...\n")
+        _temp = subprocess.call(['git', 'checkout', galaxia_commit], cwd=root_dir / submodule_name)
+        # git archive -vvv --remote=<REPO_URL> <REF> | tar -xvf -
+
+
 def check_galaxia_submodule(root_dir):
+    root_dir = pathlib.Path(root_dir)
     # if not pathlib.os.listdir(GALAXIA_SUBMODULE_NAME):
     say("\nChecking submodule Galaxia, running git...")
     try:
@@ -98,8 +175,11 @@ def check_galaxia_submodule(root_dir):
     except FileNotFoundError:
         raise OSError("Your system does not have git installed. Please install git before proceeding")
     if _temp == 128:
-        raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
-    install_sh_path = pathlib.Path(root_dir) / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
+        say("\n\tFailed to git submodule init Galaxia, attempting to clone...")
+        clone_and_checkout_submodules(root_dir, [GALAXIA_SUBMODULE_NAME])
+        say("\n\tClone was succesful")
+        # raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
+    install_sh_path = root_dir / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
     if not pathlib.os.access(install_sh_path, pathlib.os.X_OK):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
 
