@@ -159,7 +159,11 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
             *(url_path.parts[-2:] + (_version.get_versions()['full-revisionid'], submodule_name))
             )
         try:
-            _temp = subprocess.call(['git', 'clone', galaxia_url], cwd=root_dir, stdout=subprocess.STDOUT)
+            _temp = subprocess.Popen(['git', 'clone', galaxia_url], cwd=root_dir,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in iter(_temp.stdout.readline, ""):
+                say(line)
+            _temp.wait()
         except RuntimeError as e:
             raise CompileError(str(e) + f"\nError cloning {submodule_name}, aborting...\n")
         _temp = subprocess.call(['git', 'checkout', galaxia_commit], cwd=root_dir / submodule_name)
