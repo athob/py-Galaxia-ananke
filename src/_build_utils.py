@@ -172,7 +172,7 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
 
 def check_galaxia_submodule(root_dir):
     root_dir = pathlib.Path(root_dir)
-    # if not pathlib.os.listdir(GALAXIA_SUBMODULE_NAME):
+    # if not os.listdir(GALAXIA_SUBMODULE_NAME):
     say("\nChecking submodule Galaxia, running git...")
     try:
         _temp = subprocess.call(['git', 'submodule', 'update', '--init', '--recursive'], cwd=root_dir)
@@ -181,10 +181,10 @@ def check_galaxia_submodule(root_dir):
     if _temp == 128:
         say("\n\tFailed to git submodule init Galaxia, attempting to clone...")
         clone_and_checkout_submodules(root_dir, [GALAXIA_SUBMODULE_NAME])
-        say("\n\tClone was succesful")
+        say("\n\tClone was successful")
         # raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
     install_sh_path = root_dir / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
-    if not pathlib.os.access(install_sh_path, pathlib.os.X_OK):
+    if not os.access(install_sh_path, os.X_OK):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
 
 

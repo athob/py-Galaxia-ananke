@@ -2,6 +2,7 @@
 """
 Package parameters
 """
+import os
 import sys
 import pathlib
 
@@ -26,11 +27,11 @@ HASH_EXT = 'hash'
 HASH_ENCODING = 'ascii'
 
 PREFIX_ENV_VAR = "ANANKE_SYSTEM_PREFIX"
-if PREFIX_ENV_VAR in pathlib.os.environ:
-    PREFIX = pathlib.Path(pathlib.os.environ[PREFIX_ENV_VAR])
+if PREFIX_ENV_VAR in os.environ:
+    PREFIX = pathlib.Path(os.environ[PREFIX_ENV_VAR])
 else:
     PREFIX = pathlib.Path(sys.prefix)
-if not pathlib.os.access(PREFIX, pathlib.os.W_OK):
+if not os.access(PREFIX, os.W_OK):
     PermissionError(f"Installation cannot complete: to proceed, please give write permission to directory {PREFIX} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")  # TODO make the variable conda-dependent?
 
 GLOBAL_CACHE = PREFIX / '.cache'
