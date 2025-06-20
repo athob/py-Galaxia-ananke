@@ -1,6 +1,6 @@
 # py-Galaxia-ananke
 
-[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)[![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
+[![PyPI - Version](https://img.shields.io/pypi/v/galaxia_ananke)](https://pypi.org/project/galaxia-ananke/)[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)[![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
 
 Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://ascl.net/1101.007)).
 
@@ -10,15 +10,15 @@ Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://as
 
 ### Installation
 
-To install `py-Galaxia-ananke`, you can use the following pip command, which pulls the latest version directly from the repository's main branch:
+`py-Galaxia-ananke` is available on the PyPI, so it may be installed using the command
+
+    pip install galaxia_ananke
+
+Alternatively, if you wish to run the latest version on the repository, you can use the following pip command, which pulls it directly from the repository's main branch:
 
     pip install git+https://github.com/athob/py-Galaxia-ananke@main
 
-or
-
-    python -m pip install git+https://github.com/athob/py-Galaxia-ananke@main
-
-Alternatively, if you prefer, you may clone the repository to your local machine and then install `py-Galaxia-ananke` using the following pip command, which installs it from your local copy of the repository:
+You may also change the branch to use in the above command by replacing the `main` that follows the `@` symbol. If you prefer, you may clone the repository to your local machine and then install `py-Galaxia-ananke` using the following pip command, which installs it from your local copy of the repository:
 
     git clone https://github.com/athob/py-Galaxia-ananke
     cd py-Galaxia-ananke
@@ -26,7 +26,7 @@ Alternatively, if you prefer, you may clone the repository to your local machine
 
 Please note that the command with flag `pip install . --no-cache-dir` may be necessary due to some dependencies issues.
 
-***Warning: DO NOT download the repository as a ZIP archive with intention to install it this way, the installation requires the git set up of the repository to propertly install its submodule dependencies.***
+<!-- ***Warning: DO NOT download the repository as a ZIP archive with intention to install it this way, the installation requires the git set up of the repository to propertly install its submodule dependencies.*** -->
 
 After installation, the module can be imported in Python under the name `galaxia_ananke` and be ran as such.
 
