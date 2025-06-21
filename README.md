@@ -1,6 +1,9 @@
 # py-Galaxia-ananke
 
-[![PyPI - Version](https://img.shields.io/pypi/v/galaxia_ananke)](https://pypi.org/project/galaxia-ananke/)[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)[![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
+[![PyPI - Version](https://img.shields.io/pypi/v/galaxia_ananke)](https://pypi.org/project/galaxia-ananke/)
+[![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
+[![Slack](https://img.shields.io/badge/slack-chat-green.svg)](https://join.slack.com/t/ananke-users/shared_invite/zt-37wmyn7ki-kmroxUul2W_VdFlEt0qCig)
 
 Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://ascl.net/1101.007)).
 
@@ -10,19 +13,25 @@ Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://as
 
 ### Installation
 
-`py-Galaxia-ananke` is available on the PyPI, so it may be installed using the command
+`py-Galaxia-ananke` is available on the PyPI, so it may be installed using the command:
 
-    pip install galaxia_ananke
+```bash
+pip install galaxia_ananke
+```
 
 Alternatively, if you wish to run the latest version on the repository, you can use the following pip command, which pulls it directly from the repository's main branch:
 
-    pip install git+https://github.com/athob/py-Galaxia-ananke@main
+```bash
+pip install git+https://github.com/athob/py-Galaxia-ananke@main
+```
 
 You may also change the branch to use in the above command by replacing the `main` that follows the `@` symbol. If you prefer, you may clone the repository to your local machine and then install `py-Galaxia-ananke` using the following pip command, which installs it from your local copy of the repository:
 
-    git clone https://github.com/athob/py-Galaxia-ananke
-    cd py-Galaxia-ananke
-    pip install .
+```bash
+git clone https://github.com/athob/py-Galaxia-ananke
+cd py-Galaxia-ananke
+pip install .
+```
 
 Please note that the command with flag `pip install . --no-cache-dir` may be necessary due to some dependencies issues.
 
