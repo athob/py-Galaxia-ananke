@@ -201,8 +201,8 @@ def touch_autotools_files(galaxia_dir: pathlib.Path):
     (galaxia_dir / 'Makefile.am').touch()
     (galaxia_dir / 'configure').touch()
     (galaxia_dir / 'config.h.in').touch()
-    (galaxia_dir / 'Makefile.in').touch()
     (galaxia_dir / 'aclocal.m4').touch()
+    (galaxia_dir / 'Makefile.in').touch()
     (galaxia_dir / 'build-aux' / 'install-sh').touch()
 
 
