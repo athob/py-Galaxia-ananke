@@ -188,7 +188,7 @@ def check_galaxia_submodule(root_dir):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
 
 
-def remove_existing_galaxia(temp_photocat):
+def remove_existing_galaxia(temp_photocat: pathlib.Path):
     if CACHE.is_dir():
         custom_photocat = ISOCHRONES_PATH / CUSTOM_PHOTOCAT
         if custom_photocat.is_dir():
@@ -196,7 +196,15 @@ def remove_existing_galaxia(temp_photocat):
         shutil.rmtree(CACHE)
 
 
-def configure_galaxia(galaxia_dir):
+def touch_autotools_files(galaxia_dir: pathlib.Path):
+    (galaxia_dir / 'configure').touch()
+    (galaxia_dir / 'config.h.in').touch()
+    (galaxia_dir / 'Makefile.in').touch()
+    (galaxia_dir / 'aclocal.m4').touch()
+    (galaxia_dir / 'build-aux' / 'install-sh').touch()
+
+
+def configure_galaxia(galaxia_dir: pathlib.Path):
     with (GALAXIA_LOG / 'Galaxia-configure.log').open('w') as f:
         subprocess.call([f"./configure",
                         f"--prefix={CACHE}",
@@ -204,31 +212,31 @@ def configure_galaxia(galaxia_dir):
                         cwd=galaxia_dir, stdout=f, stderr=f)
 
 
-def make_galaxia(galaxia_dir):
+def make_galaxia(galaxia_dir: pathlib.Path):
     with (GALAXIA_LOG / 'Galaxia-make.log').open('w') as f:
         subprocess.call(["make"],
                         cwd=galaxia_dir, stdout=f, stderr=f)
 
 
-def make_install_galaxia(galaxia_dir):
+def make_install_galaxia(galaxia_dir: pathlib.Path):
     with (GALAXIA_LOG / 'Galaxia-make-install.log').open('w') as f:
         subprocess.call(["make", "install"],
                         cwd=galaxia_dir, stdout=f, stderr=f)
     shutil.copytree(galaxia_dir / GALAXIA_DATA.name, GALAXIA_DATA)
 
 
-def make_distclean_galaxia(galaxia_dir):
+def make_distclean_galaxia(galaxia_dir: pathlib.Path):
     with (GALAXIA_LOG / 'Galaxia-make-distclean.log').open('w') as f:
         subprocess.call(["make", "distclean"],
                         cwd=galaxia_dir, stdout=f, stderr=f)
 
 
-def clean_up_temporary(temp_photocat):
+def clean_up_temporary(temp_photocat: pathlib.Path):
     if temp_photocat.is_dir():
         temp_photocat.rename(ISOCHRONES_PATH / CUSTOM_PHOTOCAT)
 
 
-def build_and_install_galaxia(galaxia_dir):
+def build_and_install_galaxia(galaxia_dir: pathlib.Path):
     galaxia_dir = pathlib.Path(galaxia_dir).resolve()
     temp_dir = tempfile.TemporaryDirectory()
     temp_photocat = pathlib.Path(temp_dir.name) / CUSTOM_PHOTOCAT
@@ -236,6 +244,7 @@ def build_and_install_galaxia(galaxia_dir):
     say("\nBuilding Galaxia")
     GALAXIA.parent.mkdir(parents=True, exist_ok=True)
     GALAXIA_LOG.mkdir(parents=True, exist_ok=True)
+    touch_autotools_files(galaxia_dir)
     say("\n\tConfiguring")
     configure_galaxia(galaxia_dir)
     say("\n\tRunning make")
