@@ -197,13 +197,12 @@ def remove_existing_galaxia(temp_photocat: pathlib.Path):
 
 
 def touch_autotools_files(galaxia_dir: pathlib.Path):
-    (galaxia_dir / 'configure.ac').touch()
     (galaxia_dir / 'Makefile.am').touch()
-    (galaxia_dir / 'configure').touch()
-    (galaxia_dir / 'config.h.in').touch()
+    (galaxia_dir / 'configure.ac').touch()
     (galaxia_dir / 'aclocal.m4').touch()
     (galaxia_dir / 'Makefile.in').touch()
-    (galaxia_dir / 'build-aux' / 'install-sh').touch()
+    (galaxia_dir / 'configure').touch()
+    (galaxia_dir / 'config.h.in').touch()
 
 
 def configure_galaxia(galaxia_dir: pathlib.Path):
