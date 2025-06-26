@@ -59,8 +59,13 @@ class SvoFpsDriver:
         _temp = facility_filter_list.to_pandas().filterID.str.split('[/.]')
         facility_filter_list['Instrument'] = np.ma.array(_temp.str[1], dtype='object')
         facility_filter_list['Band'] = np.ma.array(_temp.str[2], dtype='object')
+        lower_case_bands = [band.lower() for band in facility_filter_list['Band']]
         for mag_name in set(self._interface.mag_names) - set(facility_filter_list['Band']):
-            facility_filter_list.add_row(len(facility_filter_list.keys())*[None])
+            if mag_name.lower() in lower_case_bands:
+                lower_case_bands.index(mag_name.lower())
+                facility_filter_list.add_row(facility_filter_list[lower_case_bands.index(mag_name.lower())])
+            else:
+                facility_filter_list.add_row(len(facility_filter_list.keys())*[None])
             facility_filter_list[-1][['Instrument','Facility']] = facility_filter_list[0][['Instrument','Facility']]
             facility_filter_list[-1][['Band']] = [mag_name]
         facility_filter_list = facility_filter_list[facility_filter_list.to_pandas().Band.reset_index().set_index('Band').loc[self._interface.mag_names].to_numpy().T[0]]
