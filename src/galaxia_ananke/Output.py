@@ -889,7 +889,7 @@ class Output:
     def _hdf5s(self):
         pattern = self._hdf5_glob_pattern
         partitions = self.__ebfs_partitions
-        length_tags = len(str(max(partitions.keys())))
+        length_tags = len(str(max(tuple(partitions.keys())+(0,))))
         return {i: pattern.parent / pattern.name.replace('*',f"{i:0{length_tags}d}") for i in partitions.keys()}
     
     def __flush_extra_columns_to_hdf5_older(self, with_columns=()):  # temporary until vaex supports it
@@ -963,7 +963,10 @@ class Output:
     def __reload_vaex(self) -> None:
         if self.__vaex is not None:
             self.__vaex.close()
-        self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+        if self._hdf5s.values():
+            self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+        else:
+            self.__vaex = vaex.from_dict({key: [] for key in self.export_keys})  # TODO not great solution, it ignores any newer column creation
         if self.__vaex_per_partition is not None and not self._pp_auto_flush:
             for i in self.__vaex_per_partition:
                 self.__vaex_per_partition[i].close()
