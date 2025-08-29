@@ -545,8 +545,11 @@ class Output:
         df.set_index('partition', drop=True, inplace=True)
         df.sort_values('length', inplace=True)
         df['length_cumsum'] = df.length.cumsum()
-        df['length_cumsum_norm'] = df.length_cumsum/df.length_cumsum.iloc[-1]
-        # df['length_norm'] = df.length/df.length.sum()
+        df['length_cumsum_norm'] = (
+            df.length_cumsum/df.length_cumsum.iloc[-1]
+            if df.length_cumsum.iloc[-1]
+            else np.linspace(0,1,df.shape[0]+1)[1:]
+            )
         df['process_id'] = np.ceil(df.length_cumsum_norm*max_workers).astype('int')-1
         unique = df.process_id.unique()
         df['process_id'] = df.process_id.map(dict(zip(unique, range(len(unique)))))
