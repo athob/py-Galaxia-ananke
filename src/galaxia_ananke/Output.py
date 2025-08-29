@@ -385,38 +385,47 @@ class Output:
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self.verbose)
-                       for i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs in common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths)]
+            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, partition_id, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self.verbose)
+                       for i, (partition_id, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs) in enumerate(common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths))]
             # Collect the results
             _ = [future.get() for future in futures]
         if not(self._pp_auto_flush):
             self.__reload_vaex()
 
     @classmethod
-    def _singlethread_ebf_to_hdf5(cls, i: int, hdf5_file: pathlib.Path,
+    def _singlethread_ebf_to_hdf5(cls, i: int, partition_id: int, hdf5_file: pathlib.Path,
                                    part_slices_in_ebfs: Dict[str, List[slice]],
                                    part_lengths_in_ebfs: Dict[str, int],
                                    ebfs: List[pathlib.Path], export_keys: Tuple[str],
                                    verbose: bool = True) -> None:
+        header_ebf: str          = str(ebfs[0].resolve())
         ebfs: List[pathlib.Path] = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
         n_ebfs: int              = len(ebfs)
+        if ebfs:
+            i_ebf: int               = i % n_ebfs
+            ebfs: List[pathlib.Path] = ebfs[i_ebf:]+ebfs[:i_ebf]
+            header_ebf: str          = str(ebfs[0].resolve())
+        #
         data_length: int         = sum(part_lengths_in_ebfs.values())
-        ebfs_slices: Dict[str, slice] = {ebf_path.name: slice(bounds[0],bounds[1])
-                                    for ebf_path, bounds in zip(ebfs, 
-                                                                np.repeat(np.cumsum(
-                                                                    [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]
-                                                                            ),
-                                                                            [1]+(n_ebfs-1)*[2]+[1]
-                                                                            ).reshape((n_ebfs,2)))}
-        ebf_sorter: NDArray      = (i + np.arange(n_ebfs)) % n_ebfs
-        i_ebf: int               = ebf_sorter[0]
-        first_ebf_str: str       = str(ebfs[i_ebf].resolve())
+        ebfs_slices: Dict[str, slice] = {
+            ebf_path.name: slice(bounds[0],bounds[1])
+            for ebf_path, bounds
+            in zip(ebfs,
+                   np.repeat(
+                       np.cumsum(
+                           [0]+[part_lengths_in_ebfs[ebf_path.name] for ebf_path in ebfs]
+                           ),
+                       [1]+(n_ebfs-1)*[2]+[1]
+                       ).reshape((n_ebfs,2)
+                       ) if ebfs else []
+                   )
+            }
         with h5.File(hdf5_file, 'w') as f5:
             f5datasets = {name: f5.create_dataset(name=name,
-                                                    shape=(data_length,),
-                                                    dtype=ebf.read_ind(first_ebf_str, f"/{name}", [0]).dtype)
+                                                  shape=(data_length,),
+                                                  dtype=ebf.getHeader(header_ebf, f"/{name}").datatype.dtype)
                             for name in export_keys}
-            for ebf_path in ebfs[i_ebf:]+ebfs[:i_ebf]:
+            for ebf_path in ebfs:
                 ebf_name: str            = ebf_path.name
                 ebf_str: str             = str(ebf_path.resolve())
                 f5data_slice: slice      = ebfs_slices[ebf_name]
@@ -428,7 +437,7 @@ class Output:
                             ebf_str, f"/{name}", begin=p_slice.start, end=p_slice.stop
                             )
                 if verbose:
-                    print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {i}")
+                    print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {partition_id}")
                     print(list(f5.keys()))
 
     def read_galaxia_output(self, partitioning_rule: Optional[CallableDFtoInt], max_pp_workers: int, pp_auto_flush: bool) -> None:
@@ -457,9 +466,12 @@ class Output:
         df[cls._gal[1]] = GC.spherical.lat.value
         df[cls._rad]    = GC.spherical.distance.value
         ####################################
-        df[cls._mugal[0]] = GC.sphericalcoslat.differentials['s'].d_lon_coslat.value
-        df[cls._mugal[1]] = GC.sphericalcoslat.differentials['s'].d_lat.value
-        df[cls._vr]       = GC.sphericalcoslat.differentials['s'].d_distance.value
+        if GC.shape[0]:
+            df[cls._mugal[0]] = GC.sphericalcoslat.differentials['s'].d_lon_coslat.value
+            df[cls._mugal[1]] = GC.sphericalcoslat.differentials['s'].d_lat.value
+            df[cls._vr]       = GC.sphericalcoslat.differentials['s'].d_distance.value
+        else:
+            df[cls._mugal[0]] = df[cls._mugal[1]] = df[cls._vr] = df[cls._pos[0]].to_numpy()+df[cls._vel[0]].to_numpy()
 
     @classmethod
     def __pp_convert_galactic_to_icrs(cls, df: pd.DataFrame) -> None:
@@ -477,8 +489,11 @@ class Output:
         df[cls._cel[0]] = GC_icrs.ra.value
         df[cls._cel[1]] = GC_icrs.dec.value
         ####################################
-        df[cls._mu[0]]  = GC_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
-        df[cls._mu[1]]  = GC_icrs.pm_dec.to(units.mas/units.yr).value
+        if GC.shape[0]:
+            df[cls._mu[0]]  = GC_icrs.pm_ra_cosdec.to(units.mas/units.yr).value
+            df[cls._mu[1]]  = GC_icrs.pm_dec.to(units.mas/units.yr).value
+        else:
+            df[cls._mu[0]] = df[cls._mu[1]] = df[cls._gal[0]].to_numpy()+df[cls._mugal[0]].to_numpy()
     
     @classmethod
     def __pp_convert_icrs_to_galactic(cls, df: pd.DataFrame) -> None:
@@ -495,8 +510,12 @@ class Output:
         IC_gal = IC.transform_to(coordinates.Galactic())
         df[cls._gal[0]]   = shift_g_lon(IC_gal.l.value)
         df[cls._gal[1]]   = IC_gal.b.value
-        df[cls._mugal[0]] = IC_gal.pm_l_cosb.to(units.mas/units.yr).value
-        df[cls._mugal[1]] = IC_gal.pm_b.to(units.mas/units.yr).value
+        ####################################
+        if IC.shape[0]:
+            df[cls._mugal[0]] = IC_gal.pm_l_cosb.to(units.mas/units.yr).value
+            df[cls._mugal[1]] = IC_gal.pm_b.to(units.mas/units.yr).value
+        else:
+            df[cls._mugal[0]] = df[cls._mugal[1]] = df[cls._cel[0]].to_numpy()+df[cls._mu[0]].to_numpy()
 
     @classmethod
     def __pp_last_conversions(cls, df: pd.DataFrame) -> None:
@@ -531,7 +550,7 @@ class Output:
         df['process_id'] = np.ceil(df.length_cumsum_norm*max_workers).astype('int')-1
         unique = df.process_id.unique()
         df['process_id'] = df.process_id.map(dict(zip(unique, range(len(unique)))))
-        df['temp'] = df.length * (-1)**(df.process_id)
+        df['temp'] = df.length * (-2)**(df.process_id)
         df.sort_values(['process_id','temp'], inplace=True)
         return df.groupby('process_id').groups
 
@@ -729,8 +748,8 @@ class Output:
                 indices_generator = (item
                                      for item in pd.DataFrame(
                                          ebf.read(ebf_str, f"/{self._partitionid}")
-                                         ).groupby([0]).indices.items()
-                                     if item[0]>=0)
+                                         ).groupby([0]).indices.items() # groupby ignores ids that don't appear
+                                     if item[0]>=0)  # hard-coded condition to only take partition id >= 0
                 for i, ind in indices_generator:
                     if i in return_dict:
                         return_dict[i][ebf_name] = ind
@@ -738,6 +757,8 @@ class Output:
                         return_dict[i] = {ebf_name: ind}
             else:
                 raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
+        if not return_dict:
+            return_dict[-1] = {}
         return return_dict
 
     @cached_property
@@ -806,7 +827,10 @@ class Output:
     
     @cached_property
     def _ebfs(self):
-        return list(self._ebf_glob)
+        ebfs = list(self._ebf_glob)
+        if not ebfs:
+            raise RuntimeError("Galaxia didn't return any ebf output files")
+        return ebfs
     
     def __clear_ebfs(self, force: bool = False) -> None:
         for ebf in self._ebf_glob:
@@ -860,7 +884,7 @@ class Output:
         if self._hdf5s.values():
             self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
         else:
-            self.__vaex = vaex.from_dict({key: [] for key in self.export_keys})  # TODO not great solution, it ignores any newer column creation
+            raise RuntimeError("Corrupted HDF5 internal dictionary")
         if self.__vaex_per_partition is not None and not self._pp_auto_flush:
             for i in self.__vaex_per_partition:
                 self.__vaex_per_partition[i].close()
