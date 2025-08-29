@@ -550,7 +550,7 @@ class Output:
         df['process_id'] = np.ceil(df.length_cumsum_norm*max_workers).astype('int')-1
         unique = df.process_id.unique()
         df['process_id'] = df.process_id.map(dict(zip(unique, range(len(unique)))))
-        df['temp'] = df.length * (-2)**(df.process_id)
+        df['temp'] = df.length * (-1)**(df.process_id)
         df.sort_values(['process_id','temp'], inplace=True)
         return df.groupby('process_id').groups
 
