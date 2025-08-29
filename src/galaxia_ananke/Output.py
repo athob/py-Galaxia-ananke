@@ -423,7 +423,7 @@ class Output:
         with h5.File(hdf5_file, 'w') as f5:
             f5datasets = {name: f5.create_dataset(name=name,
                                                   shape=(data_length,),
-                                                  dtype=ebf.getHeader(header_ebf, f"/{name}").datatype.dtype)
+                                                  dtype=ebf.getHeader(header_ebf, f"/{name}").get_dtype())
                             for name in export_keys}
             for ebf_path in ebfs:
                 ebf_name: str            = ebf_path.name
