@@ -3,7 +3,7 @@
 Contains the Input class definition
 
 Please note that this module is private. The Input class is
-available in the main ``Galaxia`` namespace - use that instead.
+available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, OrderedDict

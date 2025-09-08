@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Galaxia
-=======
+galaxia_ananke
+==============
 
 Provides a set of utilities to run a modified version of the synthetic star
 survey generator Galaxia (`Sharma et al 2011 <http://ascl.net/1101.007>`).
@@ -9,8 +9,8 @@ survey generator Galaxia (`Sharma et al 2011 <http://ascl.net/1101.007>`).
 How to use
 ----------
 
-Galaxia comes with the function make_survey_from_particles, please refer to
-its documentation for further help.
+galaxia_ananke comes with the function make_survey_from_particles, please
+refer to its documentation for further help.
 """
 from .__metadata__ import *
 from ._constants import *

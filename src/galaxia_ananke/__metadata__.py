@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Contains the Galaxia module metadata.
+Contains the galaxia_ananke module metadata.
 """
 import _sitebuiltins
 import textwrap
