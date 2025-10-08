@@ -31,7 +31,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'metadata_dicts_to_consolidated_json']
 
 
 class Singleton(type):
@@ -231,6 +231,62 @@ def import_source_file(module_name, file_path) -> ModuleType:
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def metadata_dicts_to_consolidated_json(*args, **kwargs):
+    # Create compact metadata
+    metadata = create_compact_metadata(*args, **kwargs)
+    json_string = json.dumps(metadata, indent=2)
+    return json_string
+
+
+def create_compact_metadata(metadata_dicts: List[Dict[str, Union[str,int,float]]],
+                            metadata_name: str = "") -> Dict[str, Union[str,int,List[str],List[Dict[str, Union[str,int,float]]]]]:
+    """Create a compact JSON representation that avoids redundant data"""
+    if not metadata_dicts:
+        return {}
+    # Find common values across all metadata dictionaries
+    all_keys = sorted(set().union(*(metadata_dict.keys() for metadata_dict in metadata_dicts)))
+    common_values = {}
+    varying_keys = []
+    for key in all_keys:
+        values = [metadata_dict.get(key) for metadata_dict in metadata_dicts]
+        # Check if all values are the same (and key exists in all metadata dicts)
+        if all(v == values[0] for v in values) and None not in values:
+            common_values[key] = values[0]
+        else:
+            varying_keys.append(key)
+    # Create per-metadata variations (only store what changes from common)
+    variations = []
+    for metadata_dict in metadata_dicts:
+        variation = {}
+        for key in varying_keys:
+            if key in metadata_dict and metadata_dict[key] != common_values.get(key):
+                variation[key] = metadata_dict[key]
+        variations.append(variation)
+    # Build compact metadata structure
+    metadata = {
+        'metadata_name':  metadata_name,
+        'schema_version': '1.0',
+        'common_values':  common_values,
+        'varying_keys':   varying_keys,
+        'metadata_count': len(metadata_dicts),
+        'variations':     variations
+    }
+    return metadata
+
+
+def reconstruct_log(compact_metadata: Dict[str, Union[str,int,List[str],List[Dict[str, Union[str,int,float]]]]],
+                    metadata_index: int) -> Dict[str, Union[str,int,float]]:
+    """Reconstruct original metadata dictionary from compact metadata"""
+    if metadata_index >= compact_metadata['metadata_count']:
+        raise IndexError(f"Metadata index {metadata_index} out of range")
+    # Start with common values
+    metadata_dict = compact_metadata['common_values'].copy()
+    # Apply variations for this specific metadata
+    variation = compact_metadata['variations'][metadata_index]
+    metadata_dict.update(variation)
+    return metadata_dict
 
 
 if __name__ == '__main__':

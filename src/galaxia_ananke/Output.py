@@ -41,7 +41,7 @@ import vaex.dataframe
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, State, common_entries
+from .utils import classproperty, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, State, common_entries, metadata_dicts_to_consolidated_json
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -439,9 +439,11 @@ class Output:
                                                   shape=(data_length,),
                                                   dtype=ebf.getHeader(header_ebf, f"/{name}").get_dtype())
                             for name in export_keys}
+            ebf_logs = []
             for ebf_path in ebfs:
                 ebf_name: str            = ebf_path.name
                 ebf_str: str             = str(ebf_path.resolve())
+                ebf_log: Dict[str, str]  = cls.__parse_galaxia_ebf_log(ebf_str)
                 f5data_slice: slice      = ebfs_slices[ebf_name]
                 part_slices: List[slice] = part_slices_in_ebfs[ebf_name]
                 for name in export_keys:
@@ -453,6 +455,19 @@ class Output:
                 if verbose:
                     print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {partition_id}")
                     print(list(f5.keys()))
+                ebf_logs.append(ebf_log)
+            f5.attrs["Galaxia_ebf_output_logs"] = metadata_dicts_to_consolidated_json(ebf_logs, metadata_name = "Galaxia_ebf_output_logs")
+            # if verbose:
+            #     print()
+
+    @classmethod
+    def __parse_galaxia_ebf_log(cls, ebf_str: str) -> Dict[str, str]:
+        log_string: str = str(ebf.read(ebf_str, '/log'))
+        log_header, log_body = log_string.split('\n# <parameterfile>\n')
+        log_body, log_footer = log_body.split('\n# </parameterfile>\n')
+        log_body: str = log_body.replace('\n# ','\n')
+        log_dict: Dict[str, str] = {parts[0]: ' '.join(parts[1:]) for parts in (line.split() for line in log_body.splitlines()) if len(parts)>0}
+        return {"log_header": log_header, **log_dict, "log_footer": log_footer}
 
     def read_galaxia_output(self, partitioning_rule: Optional[CallableDFtoInt], max_pp_workers: int, pp_auto_flush: bool) -> None:
         self._max_pp_workers = max_pp_workers
