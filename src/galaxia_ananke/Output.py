@@ -38,6 +38,7 @@ import pandas as pd
 from astropy import units, coordinates
 import vaex.dataframe
 
+from .__metadata__ import *
 from ._constants import *
 from ._templates import *
 from ._defaults import *
@@ -387,6 +388,16 @@ class Output:
         for key in ebf._EbfMap.keys(str(ebf_file)):
             if key not in [b'/log', b'/center'] and not key.startswith(b'/.'):
                 ebf.update_ind(str(ebf_file), key, ebf.read(str(ebf_file), key)[partition_id_sorter])
+        # Update ebf file log to flag that a modification was made
+        full_log = str(ebf.read(str(ebf_file), '/log')).rstrip('\n')
+        ebf._EbfTable.remove(str(ebf_file), '/log')  # TODO update when a more dedicated routine is available
+        ebf.write(
+            str(ebf_file), '/log',
+            f"{full_log}\n"
+            f"# Modified by Python's {NAME} v{__version__},\n"
+            f"# software available at <{__url__}>.\n",
+            'a'
+        )
         
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
