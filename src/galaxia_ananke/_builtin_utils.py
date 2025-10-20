@@ -21,6 +21,7 @@ from types import ModuleType
 from typing import Type, TypeVar, Any, Union, List, Dict, OrderedDict, Callable
 from typing_extensions import Self, ParamSpec
 from collections import OrderedDict as ODict
+from collections import Counter, defaultdict
 from functools import total_ordering
 from itertools import zip_longest
 import dataclasses as dc
@@ -246,7 +247,7 @@ def create_compact_metadata(metadata_dicts: List[Dict[str, Union[str,int,float]]
     if not metadata_dicts:
         return {}
     # Find common values across all metadata dictionaries
-    all_keys = sorted(set().union(*(metadata_dict.keys() for metadata_dict in metadata_dicts)))
+    all_keys = get_majority_voting_ordered_common_keys(metadata_dicts)
     common_values = {}
     varying_keys = []
     for key in all_keys:
@@ -274,6 +275,30 @@ def create_compact_metadata(metadata_dicts: List[Dict[str, Union[str,int,float]]
         'variations':     variations
     }
     return metadata
+
+
+def get_majority_voting_ordered_common_keys(metadata_dicts: List[Dict[str, Union[str,int,float]]]):
+    """Use the most common ordering pattern across logs"""
+    if not metadata_dicts:
+        return []
+    # Get all unique keys
+    all_keys = set().union(*(metadata_dict.keys() for metadata_dict in metadata_dicts))
+    # Build position frequency for each key
+    position_freq = defaultdict(Counter)
+    for metadata_dict in metadata_dicts:
+        for pos, key in enumerate(metadata_dict.keys()):
+            position_freq[key][pos] += 1
+    # Assign each key to its most common position
+    key_positions = {}
+    for key, freq_dict in position_freq.items():
+        most_common_pos = freq_dict.most_common(1)[0][0]
+        key_positions[key] = most_common_pos
+    # Sort by position, with ties broken by first appearance
+    ordered_keys = sorted(
+        all_keys,
+        key=lambda k: (key_positions[k], min(i for i, metadata_dict in enumerate(metadata_dicts) if k in metadata_dict))
+    )
+    return ordered_keys
 
 
 def reconstruct_log(compact_metadata: Dict[str, Union[str,int,List[str],List[Dict[str, Union[str,int,float]]]]],
