@@ -20,7 +20,7 @@ Please note that this module is private. The Output class is
 available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, Tuple, List, Dict, Iterable
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -417,7 +417,7 @@ class Output:
         #     _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         with pathos.pools.ProcessPool(self._max_pp_workers) as executor:  # credit to https://github.com/uqfoundation/pathos/issues/158#issuecomment-449636971
             # Submit tasks to the executor
-            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, partition_id, partition_ids, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self.parameters, self.verbose)
+            futures = [executor.apipe(self._singlethread_ebf_to_hdf5, i, partition_id, partition_ids, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys, self.all_metadata, self.verbose)
                        for i, (partition_id, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs) in enumerate(common_entries(self._hdf5s, self.__ebfs_part_slices, self.__ebfs_part_lengths))]
             # Collect the results
             _ = [future.get() for future in futures]
@@ -431,7 +431,7 @@ class Output:
                                   part_slices_in_ebfs: Dict[str, List[slice]],
                                   part_lengths_in_ebfs: Dict[str, int],
                                   ebfs: List[pathlib.Path], export_keys: Tuple[str],
-                                  parameters: Dict[str, Union[str,float,int]],
+                                  metadata: Dict[str, Union[str,float,int]],
                                   verbose: bool = True) -> None:
         header_ebf: str          = str(ebfs[0].resolve())
         ebfs: List[pathlib.Path] = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
@@ -484,8 +484,8 @@ class Output:
             )
             f5.attrs[f"Cat_partition_id"] = partition_id
             f5.attrs[f"All_partition_ids"] = partition_ids
-            for k, v in parameters.items():
-                f5.attrs[f"{PARAMETER_METADATA_PREFIX}{k}"] = v if isinstance(v, (bool, int, float, str)) else str(v)  # TODO consider Iterable case?
+            for k, v in metadata.items():
+                f5.attrs[k] = v
 
     @classmethod
     def __parse_galaxia_ebf_log(cls, ebf_str: str) -> Dict[str, str]:
@@ -809,6 +809,17 @@ class Output:
     @property
     def parameter_app_mag_hi(self) -> str:
         return self.parameters[FTTAGS.app_mag_lim_hi]
+
+    @property
+    def all_metadata(self) -> Dict[str, Any]:
+        return {
+            k: v if isinstance(v, (bool, int, float, str)) else str(v)  # TODO consider Iterable case?
+            for k, v in {
+                **{f"{PARAMETER_METADATA_PREFIX}{k}": v for k, v in self.parameters.items()},
+                **{f"{INPUT_METADATA_PREFIX}{k}": v for k, v in self.survey.input.metadata.items()},
+                **{f"{SURVEY_METADATA_PREFIX}{k}": v for k, v in self.survey.metadata.items()},
+            }.items()
+        }
 
     @cached_property
     def __ebfs_partitions(self) -> Dict[int, Dict[str, NDArray]]:
