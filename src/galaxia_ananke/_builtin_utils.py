@@ -266,12 +266,12 @@ def collect_metadata_marked_properties(cls: C) -> C:
     """
     # Define property that gather names of all marked properties.
     def _metadata_names(self: Self) -> List[str]:
-        return [
+        return sorted([
             name for name, attr in self.__class__.__dict__.items()
             if ((getattr(attr.fget, METADATA_MARK)
                  if hasattr(attr.fget, METADATA_MARK) else False)
                 if isinstance(attr, property) else False)
-        ]
+        ])
     # Add it to the class.
     cls._metadata_names = cached_property(_metadata_names)
     cls._metadata_names.__set_name__(cls, '_metadata_names')
