@@ -21,7 +21,7 @@ available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Optional, Union, Tuple, List, Set, Dict, Iterable
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Set, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -32,7 +32,7 @@ from pprint import PrettyPrinter
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import CallableDFtoInt, execute, lexicalorder_dict, hash_iterable
+from .utils import CallableDFtoInt, execute, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 __all__ = ['Survey']
 
 
+@collect_metadata_marked_properties
 class Survey:
     def __init__(self, input: Input, photo_sys: Union[str,List[str]] = DEFAULT_PSYS, surveyname: str = DEFAULT_SURVEYNAME, verbose: bool = True) -> None:
         """
@@ -349,10 +350,12 @@ class Survey:
                                  lexicalorder_dict(self.parameters).values()))
 
     @property
+    @mark_metadata_prop
     def hash(self) -> str:
         return self._surveyhash.decode()
 
     @property
+    @mark_metadata_prop
     def surveyname(self) -> str:
         return self.__surveyname
     
@@ -364,6 +367,10 @@ class Survey:
     def surveyname_hash(self) -> str:
         return self.surveyname + (f"_{self.hash[:7]}" if self.append_hash else "")
     
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self._metadata
+
     @property
     def input(self) -> Input:
         return self.__input

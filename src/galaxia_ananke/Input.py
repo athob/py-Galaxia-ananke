@@ -34,7 +34,7 @@ import ebf
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, hash_iterable
+from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
 from .photometry.PhotoSystem import PhotoSystem
 
 if TYPE_CHECKING:
@@ -45,6 +45,7 @@ __all__ = ['Input']
 
 FOURTHIRDPI = 4*np.pi/3
 
+@collect_metadata_marked_properties
 class Input:
     _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
     _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
@@ -379,6 +380,7 @@ class Input:
         return 3 if self.rho_vel is None else 6
 
     @property
+    @mark_metadata_prop
     def name(self) -> str:
         return self.__name
     
@@ -506,12 +508,17 @@ class Input:
                                  itertools.chain(self.particles.values(),[self.rho])))
 
     @property
+    @mark_metadata_prop
     def hash(self) -> str:
         return self._inputhash.decode()
 
     @property
     def __lex_partitionid_sorter(self) -> NDArray[np.int_]:
         return np.lexsort((self.particles[self._partitionid],))
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self._metadata
 
     def __write_particles(self, pname: pathlib.Path):
         if not self.__input_files_exist:
