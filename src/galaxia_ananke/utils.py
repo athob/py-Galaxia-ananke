@@ -25,7 +25,7 @@ from ._builtin_utils import *
 from ._constants import HASH_ENCODING
 
 
-__all__ = ['classproperty', 'CallableDFtoNone', 'CallableDFtoInt', 'RecordingDataFrame', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'lexicalorder_dict', 'metadata_dicts_to_consolidated_json', 'hash_iterable']
+__all__ = ['classproperty', 'CallableDFtoNone', 'CallableDFtoInt', 'RecordingDataFrame', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'lexicalorder_dict', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json', 'hash_iterable']
 
 
 class CallableDFtoNone(Protocol):

@@ -22,7 +22,7 @@ from typing import Type, TypeVar, Any, Union, List, Dict, OrderedDict, Callable
 from typing_extensions import Self, ParamSpec
 from collections import OrderedDict as ODict
 from collections import Counter, defaultdict
-from functools import total_ordering
+from functools import cached_property, total_ordering
 from itertools import zip_longest
 import dataclasses as dc
 import subprocess
@@ -32,7 +32,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'metadata_dicts_to_consolidated_json']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
 
 
 class Singleton(type):
@@ -232,6 +232,55 @@ def import_source_file(module_name, file_path) -> ModuleType:
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+METADATA_MARK = '_marked_for_metadata'
+
+
+def mark_metadata_prop(prop_or_getter: Union[Callable, property]) -> Union[Callable, property]:
+    """
+    Marks a property getter so that the corresponding property can be
+    included in the parent Class collected dictionary of metadata
+    properties. Can be applied before OR after @property without causing
+    an AttributeError.
+    """
+    if isinstance(prop_or_getter, property):
+        # Applied after @property – mark the getter instead.
+        if prop_or_getter.fget is not None:
+            mark_metadata_prop(prop_or_getter.fget)
+    else:
+        # Applied before @property – mark the function.
+        setattr(prop_or_getter, METADATA_MARK, True)
+    return prop_or_getter
+
+
+C = TypeVar('C', bound=type)   # Generic for any class
+
+
+def collect_metadata_marked_properties(cls: C) -> C:
+    """
+    Class decorator that adds a `_metadata` property.
+    This property returns a dictionary whose keys are the names of
+    all properties decorated with `@mark_for_metadata` and whose values
+    are the current values of those properties on the instance.
+    """
+    # Define property that gather names of all marked properties.
+    def _metadata_names(self: Self) -> List[str]:
+        return [
+            name for name, attr in self.__class__.__dict__.items()
+            if ((getattr(attr.fget, METADATA_MARK)
+                 if hasattr(attr.fget, METADATA_MARK) else False)
+                if isinstance(attr, property) else False)
+        ]
+    # Add it to the class.
+    cls._metadata_names = cached_property(_metadata_names)
+    cls._metadata_names.__set_name__(cls, '_metadata_names')
+    # Define property that builds the dictionary.
+    def _metadata(self: Self) -> Dict[str, Any]:
+        return {name: getattr(self, name) for name in self._metadata_names}
+    # Add it to the class.
+    cls._metadata = property(_metadata)
+    return cls
 
 
 def metadata_dicts_to_consolidated_json(*args, **kwargs):
