@@ -19,7 +19,10 @@ Module utilities using built-in implementation
 import sys
 from types import ModuleType
 from typing import Type, TypeVar, Any, Union, List, Dict, OrderedDict, Callable
-from typing_extensions import Self, ParamSpec
+if sys.version_info >= (3, 11):
+    from typing import Self, ParamSpec
+else:
+    from typing_extensions import Self, ParamSpec
 from collections import OrderedDict as ODict
 from collections import Counter, defaultdict
 from functools import cached_property, total_ordering
