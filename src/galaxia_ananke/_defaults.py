@@ -44,7 +44,7 @@ class DefaultUnits(metaclass=Singleton):
     velocity: units.Unit   = units.km/units.s
     wavelength: units.Unit = units.micron
     irradiance: units.Unit = units.Unit('erg/(cm2 s)')
-    spectral: units.Unit   = irradiance/wavelength
+    spectral: units.Unit   = units.Jy  # irradiance/wavelength
 
 DEF_UNIT = DefaultUnits()
 
