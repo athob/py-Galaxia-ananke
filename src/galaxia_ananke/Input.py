@@ -139,6 +139,7 @@ class Input:
         """
         self.caching: bool = kwargs.get('caching', False)
         self.__append_hash: bool = kwargs.get('append_hash', self.caching)
+        # check which args/kwargs signature case and populate kwargs accordingly
         if args:
             if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
             kwargs['particles'] = args[0]
@@ -161,6 +162,7 @@ class Input:
             self.__input_files_exist: bool = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
+        # verify and assign attributes based on kwargs
         self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
