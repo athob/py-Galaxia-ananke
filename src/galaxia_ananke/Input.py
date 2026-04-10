@@ -66,8 +66,8 @@ class Input:
     _sulphurabundance_prop = ('sulphur', "Sulphur abundance $[S/H]$ in $dex$")
     _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
     _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
+    _kernels_prop = ('h_cubic', "Phase-space kernel radii in $kpc$ and $km/s$ (Nx2)")
     _kernels = 'h_cubic'
-    _density = 'density'
     _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
     _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
     def __init__(self, *args, **kwargs) -> None:
@@ -155,8 +155,7 @@ class Input:
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
             _k: Dict[str, NDArray] =  ebf.read(_kname)
-            _mass: NDArray = _k[self._mass]  # dummy line to check format
-            kwargs[self._rho_pos] = _k[self._density]
+            kwargs[self._rho_pos] = (1. / _k[self._kernels][:,0])**3 / FOURTHIRDPI
             kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
             kwargs['k_factor'] = 1.
             self.__input_files_exist: bool = True
