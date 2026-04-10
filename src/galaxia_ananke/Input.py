@@ -80,10 +80,9 @@ class Input:
                               input_dir='{GALAXIA_TMP}',
                               name='{DEFAULT_SIMNAME}', caching=False,
                               ngb={TTAGS_nres},
-                              k_factor=1., former_kernel=False)
+                              k_factor=1.)
 
-                input = Input(pname, kname, caching=False,
-                              former_kernel=False)
+                input = Input(pname, kname, caching=False)
             
             Parameters
             ----------
@@ -137,14 +136,6 @@ class Input:
                 Path to existing pre-formatted kernel EBF files to use as
                 input for Galaxia. This keyword argument must be used in
                 conjunction with pname. Default to None if unused.
-
-            former_kernel : bool or dict
-                Flag that allow the utilization of the former implementation
-                for the kernels lengths with the consideration of a kernel
-                normalization factor. If providing a dictionary, you can
-                configure the former kernel normalization factor knorm by
-                including the value knorm under key 'knorm'. Default to False,
-                if True, knorm defaults to 0.596831.
         """
         self.caching: bool = kwargs.get('caching', False)
         self.__append_hash: bool = kwargs.get('append_hash', self.caching)
@@ -166,14 +157,8 @@ class Input:
             _k: Dict[str, NDArray] =  ebf.read(_kname)
             _mass: NDArray = _k[self._mass]  # dummy line to check format
             kwargs[self._rho_pos] = _k[self._density]
-            if kwargs.get('former_kernel', False):
-                _knorm: NDArray = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
-                _knorm: Union[float, NDArray] = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
-                kwargs[self._rho_vel] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
-                kwargs['former_kernel'] = {'knorm': _knorm}
-            else:
-                kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
-                kwargs['k_factor'] = 1.
+            kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
+            kwargs['k_factor'] = 1.
             self.__input_files_exist: bool = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
@@ -187,10 +172,7 @@ class Input:
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
         self.__kname: Optional[pathlib.Path] = kwargs.get('kname', None)
         self.__ngb: int = kwargs.get('ngb', FTTAGS.nres)
-        __old: Union[bool, Dict[str, Any]] = kwargs.get('former_kernel', False)
-        if __old and not isinstance(__old, dict):  __old = {}
-        __knorm: Optional[Union[float, NDArray]] = __old.get('knorm', 0.596831) if isinstance(__old, dict) else None
-        self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1. if __knorm is None else np.sqrt(self.ngb) * __knorm * np.cbrt(FOURTHIRDPI))
+        self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1.)
 
     @classproperty
     def particles_dictionary_description(cls):
