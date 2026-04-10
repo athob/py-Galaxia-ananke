@@ -166,16 +166,14 @@ class Input:
             _k: Dict[str, NDArray] =  ebf.read(_kname)
             _mass: NDArray = _k[self._mass]  # dummy line to check format
             kwargs[self._rho_pos] = _k[self._density]
-            _k_factor: NDArray = _k[self._kernels][:,0] * np.cbrt(FOURTHIRDPI*_k[self._density])
             if kwargs.get('former_kernel', False):
-                _knorm: NDArray = _k_factor/(np.sqrt(kwargs['ngb']) * np.cbrt(FOURTHIRDPI))
-                # _knorm = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
+                _knorm: NDArray = _k[self._kernels][:,0] * np.cbrt(_k[self._density]) / np.sqrt(kwargs['ngb'])
                 _knorm: Union[float, NDArray] = np.median(_knorm) if len(np.unique(np.round(_knorm/(2*np.finfo(_knorm.dtype).eps)).astype('int')))==1 else _knorm
                 kwargs[self._rho_vel] = (np.sqrt(kwargs['ngb']) * _knorm / _k[self._kernels][:,1])**3
                 kwargs['former_kernel'] = {'knorm': _knorm}
             else:
-                kwargs[self._rho_vel] = (_k_factor / _k[self._kernels][:,1])**3 / FOURTHIRDPI
-                kwargs['k_factor'] = _k_factor
+                kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
+                kwargs['k_factor'] = 1.
             self.__input_files_exist: bool = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
@@ -406,7 +404,7 @@ class Input:
 
     @property
     def kernels(self) -> NDArray:
-        return self.k_factor/np.cbrt(FOURTHIRDPI*self.rho)
+        return 1/np.cbrt(FOURTHIRDPI*self.rho)
     
     @property
     def _base_inputfile(self) -> pathlib.Path:  # TODO what if pname and kname already exist (case where input args are pname and kname)?
@@ -531,9 +529,9 @@ class Input:
     def __write_kernels(self, kname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._density}", self.rho_pos[self.input_sorter], "a")
-            ebf.write(kname, f"/{self._kernels}", self.kernels[self.input_sorter], "a")
-            ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self.input_sorter], "a")
+            # ebf.write(kname, f"/{self._density}", self.rho_pos[self.input_sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.k_factor*self.kernels[self.input_sorter], "a")
+            # ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self.input_sorter], "a")
  
     def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
         temp_dir = GALAXIA_NBODY1 / self.name_hash
