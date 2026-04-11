@@ -43,8 +43,6 @@ if TYPE_CHECKING:
 __all__ = ['Input']
 
 
-FOURTHIRDPI = 4*np.pi/3
-
 @collect_metadata_marked_properties
 class Input:
     _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
@@ -67,9 +65,6 @@ class Input:
     _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
     _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
     _kernels_prop = ('h_cubic', "Phase-space kernel radii in $kpc$ and $km/s$ (Nx2)")
-    # _kernels = 'h_cubic'
-    # _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
-    # _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
     def __init__(self, *args, **kwargs) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
@@ -142,8 +137,6 @@ class Input:
             if len(args) not in [2]: raise  # TODO mix & match args & kwargs for particles and kernels
             kwargs['particles'] = args[0]
             kwargs['kernels'] = args[1]
-            # kwargs[self._rho_pos] = args[1]
-            # kwargs[self._rho_vel] = args[2] if len(args) == 3 else kwargs.get(self._rho_vel, None)
             self.__input_files_exist: bool = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
@@ -156,8 +149,6 @@ class Input:
             kwargs['particles'] = ebf.read(_pname)
             _k: Dict[str, NDArray] =  ebf.read(_kname)
             kwargs['kernels'] = _k[self._kernels]
-            # kwargs[self._rho_pos] = (1. / _k[self._kernels][:,0])**3 / FOURTHIRDPI
-            # kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
             kwargs['k_factor'] = 1.
             self.__input_files_exist: bool = True
         else:
@@ -166,14 +157,12 @@ class Input:
         self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__kernels: NDArray = kwargs['kernels']
-        # self.__pos_density: NDArray = kwargs[self._rho_pos]
-        # self.__vel_density: Optional[NDArray] = kwargs.get(self._rho_vel)
+        self.__kernels: NDArray = self.__conform_kernels(kwargs['kernels'])
         self.__input_dir: pathlib.Path = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
         self.__kname: Optional[pathlib.Path] = kwargs.get('kname', None)
-        self.__ngb: int = kwargs.get('ngb', FTTAGS.nres)
+        self.__ngb: int = kwargs.get('ngb', FTTAGS.nres)  # TODO Galaxia makes no use of it, need to remove in the future
         self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1.)
 
     @classproperty
@@ -320,14 +309,6 @@ class Input:
     def _kernels(cls):
         return cls._kernels_prop[0]
 
-    # @classproperty
-    # def _rho_pos(cls):
-    #     return cls._positiondensity_prop[0]
-
-    # @classproperty
-    # def _rho_vel(cls):
-    #     return cls._velocitydensity_prop[0]
-
     @property
     def caching(self) -> bool:
         return self.__caching
@@ -347,20 +328,8 @@ class Input:
         return len(self.particles[self._mass])
     
     @property
-    def rho_pos(self) -> NDArray:
-        return self.rho if self.rho.ndim == 1 else self.rho[:,0]
-    
-    @property
-    def rho_vel(self) -> Optional[NDArray]:
-        return None if self.rho.ndim == 1 else self.rho[:,1]
-
-    @property
-    def rho(self) -> NDArray:
-        return 1/(FOURTHIRDPI*self.kernels**3)
-    
-    @property
-    def hdim(self) -> int:
-        return 3 if self.rho_vel is None else 6
+    def hdim(self) -> int:  # TODO how to adapt for ellipsoidal kernels?
+        return 3 if self.kernels.ndim == 1 else 6
 
     @property
     @mark_metadata_prop
@@ -417,16 +386,6 @@ class Input:
     def optional_keys(self) -> List[str]:
         return list(set(self.keys()).intersection(self._optional_keys_in_particles))
 
-    # def prepare_input(self, photosys: PhotoSystem, cmd_magnames: Union[str,Dict[str,str]], input_sorter: ArrayLike = None, **kwargs) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
-    #     """
-    #         TODO
-    #     """
-    #     self._input_sorter = input_sorter
-    #     cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
-    #     parfile, for_parfile = self._write_parameter_file(photosys, cmd_magnames, **kwargs)
-    #     temp_filename = self._write_ebf_files()
-    #     return self.name_hash, parfile, for_parfile
-
     def prepare_input(self, survey: Survey) -> Tuple[str, pathlib.Path, Dict[str, Union[str,float,int]]]:
         """
             TODO
@@ -434,25 +393,6 @@ class Input:
         parfile, for_parfile = survey._write_parameter_file()
         temp_filename = self._write_ebf_files()
         return self.name_hash, parfile, for_parfile
-
-    # # def _write_parameter_file(self, photosys: PhotoSystem, cmd_magnames: str, **kwargs) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:  # TODO add survey object as kwarg, hash for_parfile, and append survey.name with hash[:7]? How do I add hash to survey name...
-    # def _write_parameter_file(self, for_parfile: Dict[str, Union[str,float,int]], parfile: Union[str, pathlib.Path] = DEFAULT_PARFILE) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
-    #     """
-    #         TODO
-    #     """
-    #     parfile = pathlib.Path(parfile)  # TODO make temporary? create a global record of temporary files?
-    #     # parfile = pathlib.Path(kwargs.pop('parfile', DEFAULT_PARFILE))  # TODO make temporary? create a global record of temporary files?
-    #     if not parfile.is_absolute():
-    #         parfile = self._input_dir / parfile
-    #     # for_parfile = DEFAULTS_FOR_PARFILE.copy()
-    #     # for_parfile.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
-    #     parfile_text = PARFILE_TEMPLATE.substitute(for_parfile)
-    #     if ((parfile.read_text() != parfile_text # proceed if parfile_text is not in parfile,
-    #         if parfile.exists()                  # only if parfile exist,
-    #         else True)                           # otherwise proceed if doesn't exist
-    #         if self.caching else True):          # -> proceed anyway if self.caching is False
-    #         parfile.write_text(parfile_text)
-    #     return parfile, for_parfile
 
     def _write_ebf_files(self):
         particlefile: pathlib.Path = self.pname
@@ -540,6 +480,17 @@ class Input:
             particles[cls._partitionid] = np.zeros(particles[cls._mass].shape[0], dtype='int')
         # if cls._dform not in particles:
         #     particles[cls._dform] = 0*particles[cls._mass]
+
+    @classmethod
+    def __conform_kernels(cls, kernels: NDArray) -> NDArray:
+        if kernels.ndim == 2:
+            if kernels.shape[1] == 1:
+                kernels = kernels.flatten()
+            elif kernels.shape[1] not in [2]:  # TODO in future, this could consider (Nx6) and (Nx21) cases for ellipsoidal kernels
+                raise ValueError(f"Given 2D-array kernels is (Nx{kernels.shape[1]}) but should be either (Nx1) (position space) or (Nx2) (phase space)")
+        if kernels.ndim not in [1,2]:
+            raise ValueError(f"Given kernels ndim is {kernels.ndim} but should be either 1 (position space) or 2 (phase space)")
+        return kernels
 
     @classmethod
     def make_dummy_particles_input(cls, n_parts=10**5):
