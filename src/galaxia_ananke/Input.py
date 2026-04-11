@@ -67,16 +67,16 @@ class Input:
     _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
     _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
     _kernels_prop = ('h_cubic', "Phase-space kernel radii in $kpc$ and $km/s$ (Nx2)")
-    _kernels = 'h_cubic'
-    _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
-    _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
+    # _kernels = 'h_cubic'
+    # _positiondensity_prop = ('rho_pos', 'Position space density in $kpc^{-3}$')
+    # _velocitydensity_prop = ('rho_vel', 'Velocity space density in $[km/s]^{-3}$')
     def __init__(self, *args, **kwargs) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
 
             Call signatures::
 
-                input = Input(particles, {rho_pos}, {rho_vel}=None,
+                input = Input(particles, kernels,
                               input_dir='{GALAXIA_TMP}',
                               name='{DEFAULT_SIMNAME}', caching=False,
                               ngb={TTAGS_nres},
@@ -93,15 +93,13 @@ class Input:
                 Input comes with class method make_dummy_particles_input to
                 produce a dummy example of that dictionary.
 
-            {rho_pos} : array_like
-                Contains the position-determined kernel density estimates for
-                the input particles. Must have equal lengths as the elements
-                in the particles dictionary.
-
-            {rho_vel} : array_like
-                Contains the velocity-determined kernel density estimates for
-                the input particles. Must have equal lengths as the elements
-                in the particles dictionary.
+            kernels : array_like
+                Array containing the kernel characteristic lengths for each
+                input particle. Must be of equal length N as the arrays
+                provided in the particles dictionary, as either a (N) or a
+                (Nx2) array if representing respectively kernels in position
+                space, or in phase space (using the same position and velocity
+                unit as that of the corresponding particles dictionary entry).
 
             input_dir : string or pathlib.Path
                 Optional arguments to specify path for the directory where
@@ -110,7 +108,7 @@ class Input:
             name : string
                 Optional name Galaxia should use for the input files.
                 Default to '{DEFAULT_SIMNAME}'.
-            
+
             caching : bool
                 TODO
 
@@ -126,7 +124,7 @@ class Input:
                 the kernels sizes uniformly. Lower values reduces the kernels
                 extents, while higher values increases them.
                 Default to 1 (no adjustment).
-            
+
             pname : string
                 Path to existing pre-formatted particles EBF files to use as
                 input for Galaxia. This keyword argument must be used in
@@ -141,10 +139,11 @@ class Input:
         self.__append_hash: bool = kwargs.get('append_hash', self.caching)
         # check which args/kwargs signature case and populate kwargs accordingly
         if args:
-            if len(args) not in [2,3]: raise  # TODO mix & match args & kwargs for particles and rho_pos
+            if len(args) not in [2]: raise  # TODO mix & match args & kwargs for particles and kernels
             kwargs['particles'] = args[0]
-            kwargs[self._rho_pos] = args[1]
-            kwargs[self._rho_vel] = args[2] if len(args) == 3 else kwargs.get(self._rho_vel, None)
+            kwargs['kernels'] = args[1]
+            # kwargs[self._rho_pos] = args[1]
+            # kwargs[self._rho_vel] = args[2] if len(args) == 3 else kwargs.get(self._rho_vel, None)
             self.__input_files_exist: bool = False
         elif {'pname', 'kname'}.issubset(kwargs.keys()):  # TODO implement case where pname and kname non-formated names
             _pname = kwargs['pname'] = pathlib.Path(kwargs['pname'])
@@ -156,8 +155,9 @@ class Input:
                                                        _kname.name)[0])  # TODO what if _hdim is 3 ?
             kwargs['particles'] = ebf.read(_pname)
             _k: Dict[str, NDArray] =  ebf.read(_kname)
-            kwargs[self._rho_pos] = (1. / _k[self._kernels][:,0])**3 / FOURTHIRDPI
-            kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
+            kwargs['kernels'] = _k[self._kernels]
+            # kwargs[self._rho_pos] = (1. / _k[self._kernels][:,0])**3 / FOURTHIRDPI
+            # kwargs[self._rho_vel] = (1. / _k[self._kernels][:,1])**3 / FOURTHIRDPI
             kwargs['k_factor'] = 1.
             self.__input_files_exist: bool = True
         else:
@@ -166,8 +166,9 @@ class Input:
         self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__pos_density: NDArray = kwargs[self._rho_pos]
-        self.__vel_density: Optional[NDArray] = kwargs.get(self._rho_vel)
+        self.__kernels: NDArray = kwargs['kernels']
+        # self.__pos_density: NDArray = kwargs[self._rho_pos]
+        # self.__vel_density: Optional[NDArray] = kwargs.get(self._rho_vel)
         self.__input_dir: pathlib.Path = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
@@ -316,12 +317,16 @@ class Input:
         return cls._populationindex_prop[0]
 
     @classproperty
-    def _rho_pos(cls):
-        return cls._positiondensity_prop[0]
+    def _kernels(cls):
+        return cls._kernels_prop[0]
 
-    @classproperty
-    def _rho_vel(cls):
-        return cls._velocitydensity_prop[0]
+    # @classproperty
+    # def _rho_pos(cls):
+    #     return cls._positiondensity_prop[0]
+
+    # @classproperty
+    # def _rho_vel(cls):
+    #     return cls._velocitydensity_prop[0]
 
     @property
     def caching(self) -> bool:
@@ -343,18 +348,15 @@ class Input:
     
     @property
     def rho_pos(self) -> NDArray:
-        return self.__pos_density
+        return self.rho if self.rho.ndim == 1 else self.rho[:,0]
     
     @property
     def rho_vel(self) -> Optional[NDArray]:
-        return self.__vel_density
+        return None if self.rho.ndim == 1 else self.rho[:,1]
 
     @property
     def rho(self) -> NDArray:
-        if self.rho_vel is None:
-            return self.rho_pos
-        else:
-            return np.vstack([self.rho_pos, self.rho_vel]).T
+        return 1/(FOURTHIRDPI*self.kernels**3)
     
     @property
     def hdim(self) -> int:
@@ -387,7 +389,7 @@ class Input:
 
     @property
     def kernels(self) -> NDArray:
-        return 1/np.cbrt(FOURTHIRDPI*self.rho)
+        return self.__kernels
     
     @property
     def _base_inputfile(self) -> pathlib.Path:  # TODO what if pname and kname already exist (case where input args are pname and kname)?
@@ -486,7 +488,7 @@ class Input:
     @cached_property
     def _inputhash(self) -> bytes:
         return hash_iterable(map(lambda array: array[self.input_sorter].copy(order='C'),
-                                 itertools.chain(self.particles.values(),[self.rho])))
+                                 itertools.chain(self.particles.values(),[self.kernels])))
 
     @property
     @mark_metadata_prop
@@ -512,9 +514,7 @@ class Input:
     def __write_kernels(self, kname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            # ebf.write(kname, f"/{self._density}", self.rho_pos[self.input_sorter], "a")
             ebf.write(kname, f"/{self._kernels}", self.k_factor*self.kernels[self.input_sorter], "a")
-            # ebf.write(kname, f"/{self._mass}", self.particles[self._mass][self.input_sorter], "a")
  
     def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
         temp_dir = GALAXIA_NBODY1 / self.name_hash
@@ -577,9 +577,9 @@ class Input:
         return p
 
     @classmethod
-    def make_dummy_densities_input(cls, n_parts=10**5):
+    def make_dummy_kernels_input(cls, n_parts=10**5):
         """
-            Generate an example dummy input densities for Input
+            Generate an example dummy input kernels for Input
             made of randomly generated arrays.
 
             Parameters
@@ -589,23 +589,17 @@ class Input:
 
             Returns
             -------
-            rho_pos : array
-                Dummy example input position densities for Input.
-
-            rho_vel : array
-                Dummy example input velocity densities for Input.
+            kernels : array
+                Dummy example input phase space kernels for Input.
         """
-        rho_pos = np.exp(-2.9 + 1.1*np.random.randn(n_parts))
-        rho_vel = np.exp(-4.4 + 1.1*np.random.randn(n_parts))
-        return rho_pos, rho_vel
+        kernels = np.exp([0.5,1] + 0.4*np.random.randn(n_parts,2))
+        return kernels
 
 
 Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
                                                        DEFAULT_SIMNAME=DEFAULT_SIMNAME,
                                                        TTAGS_nres=FTTAGS.nres,
-                                                       particles_dictionary_description=Input.particles_dictionary_description,
-                                                       rho_pos=Input._rho_pos,
-                                                       rho_vel=Input._rho_vel)
+                                                       particles_dictionary_description=Input.particles_dictionary_description)
 
 Input.make_dummy_particles_input.__func__.__doc__ = Input.make_dummy_particles_input.__doc__.format(
     particles_dictionary_description=Input.particles_dictionary_description)

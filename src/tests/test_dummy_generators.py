@@ -27,10 +27,9 @@ def test_dummy_particles_input():
     assert set(p.keys()) == Input.all_possible_keys_in_particles
     confirm_equal_length_arrays_in_dict(p)
 
-def test_dummy_densities_input():
-    rho = Input.make_dummy_densities_input(n_parts)
-    assert len(rho) == 2
-    assert len(rho[0]) == len(rho[1])
+def test_dummy_kernels_input():
+    kernels = Input.make_dummy_kernels_input(n_parts)
+    # TODO assert kernels is Nx2
 
 
 if __name__ == '__main__':

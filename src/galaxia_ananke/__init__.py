@@ -33,7 +33,7 @@ from .Input import Input
 from .Survey import Survey
 from .Output import Output
 
-__all__ = ['make_dummy_particles_input', 'make_dummy_densities_input', 'make_survey_from_particles']
+__all__ = ['make_dummy_particles_input', 'make_dummy_kernels_input', 'make_survey_from_particles']
 
 
 # check Galaxia installation
@@ -43,7 +43,7 @@ if __name__ == NAME:
 
 make_dummy_particles_input = Input.make_dummy_particles_input
 
-make_dummy_densities_input = Input.make_dummy_densities_input
+make_dummy_kernels_input = Input.make_dummy_kernels_input
 
 
 def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_PSYS, cmd_magnames=DEFAULT_CMD, simname='sim', surveyname='survey', fsample=1, ngb=64, k_factor=1, caching=False, **kwargs):  # args is (particles, rho_pos, rho_vel)
@@ -54,7 +54,7 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
 
         Call signatures::
 
-            output = make_survey_from_particles(particles, rho_pos, rho_vel,
+            output = make_survey_from_particles(particles, kernels,
              photo_sys=DEFAULT_PSYS, cmd_magnames=DEFAULT_CMD, simname='sim',
              surveyname='survey', fsample=1, ngb=64, **kwargs)
 
@@ -71,15 +71,13 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
             also comes packaged with a function make_dummy_particles_input to
             produce a dummy example for that dictionary.
 
-        rho_pos : array_like
-            Contains the position-determined kernel density estimates for the
-            input particles. Must have equal lengths as the elements in the
-            particles dictionary.
-
-        rho_vel : array_like
-            Contains the velocity-determined kernel density estimates for the
-            input particles. Must have equal lengths as the elements in the
-            particles dictionary.
+        kernels : array_like
+            Array containing the kernel characteristic lengths for each
+            input particle. Must be of equal length N as the arrays
+            provided in the particles dictionary, as either a (N) or a
+            (Nx2) array if representing respectively kernels in position
+            space, or in phase space (using the same position and velocity
+            unit as that of the corresponding particles dictionary entry).
 
         pname : string
             Path to existing pre-formatted particles EBF files to use as input
@@ -145,7 +143,7 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
     """
     if pname is not None and kname is not None:
         input = Input(pname=pname, kname=kname, caching=caching)
-    elif len(args) == 3:
+    elif len(args) == 2:
         input = Input(*args,  name=simname, ngb=ngb, k_factor=k_factor, caching=caching)
     survey = Survey(input, photo_sys=photo_sys, surveyname=surveyname)
     output = survey.make_survey(cmd_magnames=cmd_magnames, fsample=fsample, **kwargs)
