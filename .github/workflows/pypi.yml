@@ -19,6 +19,45 @@ jobs:
       with:
         persist-credentials: false
         fetch-depth: 0
+    - name: Wait for CI/CD workflow to succeed
+      if: contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        WORKFLOW_NAME="CI/CD"
+        TIMEOUT=600
+        INTERVAL=10
+
+        # Get the commit SHA (the tag points to)
+        COMMIT_SHA=${{ github.sha }}
+
+        echo "Waiting for workflow '$WORKFLOW_NAME' to succeed on commit $COMMIT_SHA..."
+
+        START_TIME=$(date +%s)
+        while true; do
+          # Get all workflow runs and filter by head_sha and name
+          RESPONSE=$(gh api repos/${{ github.repository }}/actions/runs --paginate)
+          STATUS=$(echo "$RESPONSE" | jq -r --arg sha "$COMMIT_SHA" --arg name "$WORKFLOW_NAME" \
+            '.workflow_runs[] | select(.head_sha == $sha and .name == $name) | .conclusion' | head -1)
+
+          if [ "$STATUS" = "success" ]; then
+            echo "Workflow succeeded!"
+            break
+          elif [ "$STATUS" = "failure" ] || [ "$STATUS" = "neutral" ] || [ "$STATUS" = "cancelled" ] || [ "$STATUS" = "timed_out" ]; then
+            echo "Workflow failed with status: $STATUS"
+            exit 1
+          fi
+          
+          CURRENT_TIME=$(date +%s)
+          ELAPSED=$((CURRENT_TIME - START_TIME))
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Timeout waiting for workflow to complete."
+            exit 1
+          fi
+          
+          echo "Still waiting (current status: ${STATUS:-not found})... retry in ${INTERVAL}s"
+          sleep $INTERVAL
+        done
     - name: Build distributions inside manylinux2014 container
       run: |
         # Create a directory on the host to store the built artifacts
