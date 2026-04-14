@@ -37,12 +37,8 @@ jobs:
             # Set up Python (use 3.10 from the manylinux image, choose a version you support)
             export PATH=/opt/python/cp310-cp310/bin:\$PATH
             python -m pip install --upgrade pip build auditwheel
-            # Build the distribution (sdist + wheel)
+            # Build the distribution (sdist only - no wheel)
             python -m build --sdist
-            # # Repair the wheel (skipping for now)
-            # auditwheel repair dist/*.whl -w dist/
-            # Remove the original pure-Python wheel (it's now replaced by the repaired one)
-            rm dist/*-py3-none-any.whl
           "
     - name: Store the distribution packages
       uses: actions/upload-artifact@v5
