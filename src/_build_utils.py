@@ -85,13 +85,13 @@ def verify_system_dependencies():
     except FileNotFoundError:
         raise OSError("Your system does not have the utility gnumake installed. Please install one before proceeding")
     if make_version < MIN_MAKE_VERSION:
-        raise OSError(f"Your system has gnumake v{make_version} installed, but galaxia_ananke requires v{MIN_MAKE_VERSION}")
+        raise OSError(f"Your system has gnumake v{make_version} installed, but {NAME} requires v{MIN_MAKE_VERSION}")
     try:
         gpp_version = Version(get_version_of_command("g++"))
     except FileNotFoundError:
         raise OSError("Your system does not have a C++ compiler installed. Please install one before proceeding")
     if gpp_version < MIN_GPP_VERSION:
-        raise OSError(f"Your system has g++ v{gpp_version} installed, but galaxia_ananke requires v{MIN_GPP_VERSION}")
+        raise OSError(f"Your system has g++ v{gpp_version} installed, but {NAME} requires v{MIN_GPP_VERSION}")
 
 
 def download_galaxia(galaxia_dir):
