@@ -1,0 +1,98 @@
+name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+
+on:
+  push:
+    tags:
+      - 'v*'               # Trigger only when a tag starting with 'v' is pushed
+
+env:
+  PACKAGE_NAME: galaxia-ananke
+
+jobs:
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - name: Build distributions inside manylinux2014 container
+      run: |
+        # Create a directory on the host to store the built artifacts
+        mkdir -p dist
+
+        # Run the manylinux container, mounting the repository and the dist directory
+        docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          quay.io/pypa/manylinux2014_x86_64 \
+          bash -c "
+            # Install git (required by versioneer)
+            yum install -y git
+            # Trust the workspace directory (avoid dubious ownership error)
+            git config --global --add safe.directory /workspace
+            # Set up Python (use 3.10 from the manylinux image, choose a version you support)
+            export PATH=/opt/python/cp310-cp310/bin:\$PATH
+            python -m pip install --upgrade pip build auditwheel
+            # Build the distribution (sdist + wheel)
+            python -m build --sdist
+            # # Repair the wheel (skipping for now)
+            # auditwheel repair dist/*.whl -w dist/
+            # Remove the original pure-Python wheel (it's now replaced by the repaired one)
+            rm dist/*-py3-none-any.whl
+          "
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v5
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-testpypi:
+    name: Publish Python 🐍 distribution 📦 to TestPyPI
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: release
+      url: https://test.pypi.org/p/${{ env.PACKAGE_NAME }}
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: Publish Python 🐍 distribution 📦 to PyPI
+    if: github.ref_type == 'tag' && contains(github.ref_name, 'a') && contains(github.ref_name, 'b') && contains(github.ref_name, 'rc') && contains(github.ref_name, 'dev')
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: release
+      url: https://pypi.org/p/${{ env.PACKAGE_NAME }}
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
