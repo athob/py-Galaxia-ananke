@@ -72,7 +72,7 @@ jobs:
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
-    if: github.ref_type == 'tag' && contains(github.ref_name, 'a') && contains(github.ref_name, 'b') && contains(github.ref_name, 'rc') && contains(github.ref_name, 'dev')
+    if: github.ref_type == 'tag' && !contains(github.ref_name, 'a') && !contains(github.ref_name, 'b') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev')
     needs:
     - build
     runs-on: ubuntu-latest
