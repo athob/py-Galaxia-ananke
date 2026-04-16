@@ -190,7 +190,6 @@ class Input:
         return {
             cls._position_prop,
             cls._velocity_prop,
-            cls._masscurrent_prop,
             cls._massinitial_prop,
             cls._age_prop,
             cls._metallicity_prop
@@ -331,7 +330,7 @@ class Input:
     
     @property
     def length(self) -> int:
-        return len(self.particles[self._mass])
+        return len(self.particles[self._massinit])
     
     @property
     def hdim(self) -> int:  # TODO how to adapt for ellipsoidal kernels?
@@ -527,7 +526,7 @@ class Input:
         p[cls._massinit] = 5500 + 700*np.random.randn(n_parts)
         p[cls._age] = 9.7 + 0.4*np.random.randn(n_parts)
         p[cls._feh] = -0.7 + 0.4*np.random.randn(n_parts)
-        p[cls._mass] = np.clip(0.7 + 0.05*np.random.randn(n_parts), 0, 1)*p[cls._massinit]
+        # p[cls._mass] = np.clip(0.7 + 0.05*np.random.randn(n_parts), 0, 1)*p[cls._massinit]
         for el in cls._elem_list:
             p[el] = -0.6 + 0.4*np.random.randn(n_parts)
         p[cls._alph] = p[cls._Mg] - p[cls._feh]
