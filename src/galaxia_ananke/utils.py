@@ -23,10 +23,13 @@ import pandas as pd
 
 from ._builtin_utils import *
 from ._constants import HASH_ENCODING
+from ._patch_vaex import apply_vaex_patch
 
 
 __all__ = ['classproperty', 'CallableDFtoNone', 'CallableDFtoInt', 'RecordingDataFrame', 'Singleton', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'lexicalorder_dict', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json', 'hash_iterable']
 
+
+apply_vaex_patch()
 
 class CallableDFtoNone(Protocol):
     def __call__(self, df: pd.DataFrame, *args: Any) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
