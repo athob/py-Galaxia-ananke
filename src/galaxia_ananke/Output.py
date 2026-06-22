@@ -60,19 +60,19 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
                                  with_columns: Optional[Iterable] = (),
                                  update_metadata: Optional[Dict[str, Union[str,float,int]]] = None,
                                  verbose: bool = True) -> None:  # temporary until vaex supports it
-    _temp = vaex.open(hdf5_file)
+    _temp = vaex.open(hdf5_file, group=STARCATALOG_GROUP)
     old_column_names = set(_temp.column_names)
     _temp.close()
     extra_columns = [k for k in set(vaex_df.column_names)-old_column_names if not k.startswith('__')]
     with_columns = list(set(with_columns) - set(extra_columns))
     with h5.File(hdf5_file, 'r+') as f5:
         for k in extra_columns:
-            f5.create_dataset(name=k, data=vaex_df[k].to_numpy())
+            f5[STARCATALOG_GROUP].create_dataset(name=k, data=vaex_df[k].to_numpy())
         if verbose and extra_columns:
             print(f"Exported the following quantities to {hdf5_file}")
             print(extra_columns)
         for k in with_columns:
-            f5[k][...] = vaex_df[k].to_numpy()
+            f5[STARCATALOG_GROUP][k][...] = vaex_df[k].to_numpy()
         if verbose and len(with_columns):
             print(f"Overwritten the following quantities to {hdf5_file}")
             print(with_columns)
@@ -91,7 +91,7 @@ def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = Fals
                 hdf5_file: pathlib.Path = _temp
                 old_vaex_main_executor = vaex.dataframe.main_executor
                 vaex.dataframe.main_executor = vaex.execution.ExecutorLocal(vaex.multithreading.ThreadPoolIndex(max_workers=max_thread_workers))
-                vaex_df: vaex.DataFrame = vaex.open(hdf5_file)
+                vaex_df: vaex.DataFrame = vaex.open(hdf5_file, group=STARCATALOG_GROUP)
             else:
                 vaex_df: vaex.DataFrame = _temp
             pp(vaex_df, *args[1:])
@@ -456,9 +456,12 @@ class Output:
                    )
             }
         with h5.File(hdf5_file, 'w') as f5:
-            f5datasets = {name: f5.create_dataset(name=name,
+            f5.create_group(STARCATALOG_GROUP)
+            f5datasets = {name: f5[STARCATALOG_GROUP].create_dataset(
+                                                  name=name,
                                                   shape=(data_length,),
-                                                  dtype=ebf.getHeader(header_ebf, f"/{name}").get_dtype())
+                                                  dtype=ebf.getHeader(header_ebf, f"/{name}").get_dtype()
+                                                  )
                             for name in export_keys}
             ebf_logs = []
             for ebf_path in ebfs:
@@ -475,7 +478,7 @@ class Output:
                             )
                 if verbose:
                     print(f"Exported the following quantities from {ebf_path} to {hdf5_file} for partition {partition_id}")
-                    print(list(f5.keys()))
+                    print(list(f5[STARCATALOG_GROUP].keys()))
                 ebf_logs.append(ebf_log)
             f5.attrs["Galaxia_ebf_output_logs"] = metadata_dicts_to_consolidated_json(ebf_logs, metadata_name = "Galaxia_ebf_output_logs")
             f5.attrs[METADATA_HEADER_KEY] = (
@@ -964,13 +967,13 @@ class Output:
         if self.__vaex is not None:
             self.__vaex.close()
         if self._hdf5s.values():
-            self.__vaex = vaex.open_many(map(str,self._hdf5s.values()))
+            self.__vaex = vaex.open_many(map(str,self._hdf5s.values()), group=STARCATALOG_GROUP)
         else:
             raise RuntimeError("Corrupted HDF5 internal dictionary")
         if self.__vaex_per_partition is not None and not self._pp_auto_flush:
             for i in self.__vaex_per_partition:
                 self.__vaex_per_partition[i].close()
-        self.__vaex_per_partition = {i: vaex.open(str(hdf5_file)) for i, hdf5_file in self._hdf5s.items()}
+        self.__vaex_per_partition = {i: vaex.open(str(hdf5_file), group=STARCATALOG_GROUP) for i, hdf5_file in self._hdf5s.items()}
         gc.collect()
 
 
