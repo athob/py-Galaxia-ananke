@@ -457,6 +457,7 @@ class Output:
             }
         with h5.File(hdf5_file, 'w') as f5:
             f5.create_group(STARCATALOG_GROUP)
+            f5.create_group(PARENTPARTICLE_GROUP)
             f5datasets = {name: f5[STARCATALOG_GROUP].create_dataset(
                                                   name=name,
                                                   shape=(data_length,),
@@ -975,6 +976,34 @@ class Output:
                 self.__vaex_per_partition[i].close()
         self.__vaex_per_partition: Dict[int, vaex.dataframe.DataFrameLocal] = {i: vaex.open(str(hdf5_file), group=STARCATALOG_GROUP) for i, hdf5_file in self._hdf5s.items()}
         gc.collect()
+
+    @property
+    def _parent_stats_per_partitionid(self) -> Dict[int, pd.DataFrame]:
+        groupby: vaex.dataframe.DataFrameLocal = self._vaex.groupby(
+            [self._partitionid, self._parentid],
+            agg={'star_count': vaex.agg.count(), f'{self._minit}_sum': vaex.agg.sum(self._minit)},
+            sort=True, progress=True)
+        parent_groupby: vaex.dataframe.DataFrameLocal = groupby.groupby(
+            self._parentid,
+            agg={'parent_partition_count': vaex.agg.count(),
+                 'parent_star_count': vaex.agg.sum('star_count'),
+                 f'parent_{self._minit}_sum': vaex.agg.sum(f'{self._minit}_sum')},
+            sort=True, progress=True)
+        final_groupby: vaex.dataframe.DataFrameLocal = groupby.join(parent_groupby, on=self._parentid)
+        return {partitionid: stats.drop(self._partitionid, inplace=True).to_pandas_df().set_index(self._parentid)
+                for (partitionid,), stats in final_groupby.groupby(self._partitionid)}
+
+    def __save_parent_particles(self) -> None:
+        for _, hdf5_file, parent_stats in common_entries(self._hdf5s, self._parent_stats_per_partitionid):
+            particles_mask: NDArray = np.isin(self.survey.input.particle_parentids, parent_stats.index)
+            particles_parentids: NDArray = self.survey.input.particle_parentids[particles_mask]
+            reordered_stats: pd.DataFrame = parent_stats.loc[particles_parentids]
+            with h5.File(hdf5_file, 'r+') as f5:
+                f5[PARENTPARTICLE_GROUP].create_dataset(name=self._parentid, data=particles_parentids)
+                for key, array in self.survey.input.required_particles_generator:
+                    f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=array[particles_mask])
+                for key, column in reordered_stats.items():
+                    f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=column.to_numpy())
 
 
 Output.__init__.__doc__ = Output.__init__.__doc__.format(_output_properties=''.join(

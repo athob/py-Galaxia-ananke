@@ -20,7 +20,7 @@ Please note that this module is private. The Input class is
 available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, OrderedDict
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, OrderedDict, Iterator
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -327,6 +327,14 @@ class Input:
     @property
     def particles(self) -> Dict[str, NDArray]:
         return self.__particles
+    
+    @property
+    def particle_parentids(self) -> NDArray:
+        return self.particles[self._parentid]
+    
+    @property
+    def required_particles_generator(self) -> Iterator[Tuple[str, NDArray]]:
+        return ((key, self.particles[key]) for key in self._required_keys_in_particles)
     
     @property
     def length(self) -> int:
