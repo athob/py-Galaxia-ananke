@@ -704,7 +704,7 @@ class Output:
         self.check_state_before_running(description="pp_galactic_to_icrs", level=1)(self._pp_convert_galactic_to_icrs)(hold_reload=True)
         self.check_state_before_running(description="pp_last_conversions", level=1)(self._pp_last_conversions)(hold_reload=True)
         self.__reload_vaex()
-        self.__save_parent_particles()
+        self.__export_parent_particles_data()
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
@@ -994,7 +994,7 @@ class Output:
         return {partitionid: stats.drop(self._partitionid, inplace=True).to_pandas_df().set_index(self._parentid)
                 for (partitionid,), stats in final_groupby.groupby(self._partitionid)}
 
-    def __save_parent_particles(self) -> None:
+    def __export_parent_particles_data(self) -> None:
         for _, hdf5_file, parent_stats in common_entries(self._hdf5s, self._parent_stats_per_partitionid):
             particles_mask: NDArray = np.isin(self.survey.input.particle_parentids, parent_stats.index)
             particles_parentids: NDArray = self.survey.input.particle_parentids[particles_mask]
