@@ -333,8 +333,11 @@ class Input:
         return self.particles[self._parentid]
     
     @property
-    def required_particles_generator(self) -> Iterator[Tuple[str, NDArray]]:
-        return ((key, self.particles[key]) for key in self._required_keys_in_particles)
+    def parent_particles_data_generator(self) -> Iterator[Tuple[str, NDArray]]:
+        return itertools.chain(
+            ((key, self.particles[key]) for key in self._required_keys_in_particles),
+            ((self._kernels, self.__actual_kernels) for _ in range(1))
+            )
     
     @property
     def length(self) -> int:
@@ -372,6 +375,10 @@ class Input:
     @property
     def kernels(self) -> NDArray:
         return self.__kernels
+    
+    @cached_property
+    def __actual_kernels(self) -> NDArray:
+        return self.k_factor * self.kernels
     
     @property
     def _base_inputfile(self) -> pathlib.Path:  # TODO what if pname and kname already exist (case where input args are pname and kname)?
@@ -441,7 +448,7 @@ class Input:
     @cached_property
     def _inputhash(self) -> bytes:
         return hash_iterable(map(lambda array: array[self.input_sorter].copy(order='C'),
-                                 itertools.chain(self.particles.values(),[self.kernels])))
+                                 itertools.chain(self.particles.values(),[self.__actual_kernels])))
 
     @property
     @mark_metadata_prop
@@ -467,7 +474,7 @@ class Input:
     def __write_kernels(self, kname: pathlib.Path):
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
-            ebf.write(kname, f"/{self._kernels}", self.k_factor*self.kernels[self.input_sorter], "a")
+            ebf.write(kname, f"/{self._kernels}", self.__actual_kernels[self.input_sorter], "a")
  
     def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
         temp_dir = GALAXIA_NBODY1 / self.name_hash

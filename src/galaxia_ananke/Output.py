@@ -1001,7 +1001,7 @@ class Output:
             reordered_stats: pd.DataFrame = parent_stats.loc[particles_parentids]
             with h5.File(hdf5_file, 'r+') as f5:
                 f5[PARENTPARTICLE_GROUP].create_dataset(name=self._parentid, data=particles_parentids)
-                for key, array in self.survey.input.required_particles_generator:
+                for key, array in self.survey.input.parent_particles_data_generator:
                     f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=array[particles_mask])
                 for key, column in reordered_stats.items():
                     f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=column.to_numpy())
