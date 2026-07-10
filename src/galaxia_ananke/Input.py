@@ -335,7 +335,7 @@ class Input:
     @property
     def parent_particles_data_generator(self) -> Iterator[Tuple[str, NDArray]]:
         return itertools.chain(
-            ((key, self.particles[key]) for key in self._required_keys_in_particles),
+            ((key, self.particles[key]) for key in self._required_keys_in_particles if key != self._parentid),
             ((self._kernels, self.__actual_kernels) for _ in range(1))
             )
     
