@@ -14,11 +14,15 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
+Monkey-patch of vaex HDF5 reading
 """
+from warnings import warn
 import h5py
 import vaex.hdf5.dataset
 
 from vaex import open, concat
+
+from ._constants import NAME
 
 __all__ = ['apply_vaex_patch']
 
@@ -82,6 +86,7 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
 
 
 def apply_vaex_patch():
+    warn(f"Importing {NAME} monkey-patches vaex's HDF5 reading, which may cause unexpected behavior in vaex's other HDF5 I/O operations.", RuntimeWarning, stacklevel=3)
     vaex.hdf5.dataset.Hdf5MemoryMapped._load = new_hdf5_load
     vaex.open_many = new_open_many
 
