@@ -50,7 +50,7 @@ DEF_UNIT = DefaultUnits()
 
 heliocentric_center = coordinates.SkyCoord(x=0*DEF_UNIT.position, y=0*DEF_UNIT.position, z=0*DEF_UNIT.position, frame='hcrs', representation_type='cartesian')
 rSun = heliocentric_center.galactocentric.cartesian.xyz.to(DEF_UNIT.position).value
-vSun = heliocentric_center.galactocentric.frame.galcen_v_sun.get_d_xyz().to(DEF_UNIT.velocity).value
+vSun = heliocentric_center.galactocentric.frame.galcen_v_sun.to_cartesian().xyz.to(DEF_UNIT.velocity).value
 
 DEFAULTS_FOR_PARFILE = {
     # FTTAGS.output_file: ,  # TODO use temporary file
