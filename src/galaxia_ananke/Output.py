@@ -719,7 +719,7 @@ class Output:
         self.check_state_before_running(description="pp_galactic_to_icrs", level=1)(self._pp_convert_galactic_to_icrs)(hold_reload=True)
         self.check_state_before_running(description="pp_last_conversions", level=1)(self._pp_last_conversions)(hold_reload=True)
         self.__reload_vaex()
-        self.__export_parent_particles_data()
+        self.check_state_before_running(description="export_parent_data", level=1)(self.__export_parent_particles_data)()
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
