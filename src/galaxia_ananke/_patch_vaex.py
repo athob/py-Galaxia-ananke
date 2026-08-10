@@ -14,9 +14,17 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Monkey-patch of vaex HDF5 reading
+Monkey-patches and adjustments for the vaex backend.
+
+Currently includes:
+- Modified HDF5 loading logic (for compatibility with ananke HDF5 files).
+- Replacement of ``vaex.open_many`` (to handle comment / empty lines in file lists).
+- Suppression of all vaex internal logging (which is excessively verbose for a
+  backend library and can show non-critical errors from uninstalled plugins).
 """
+import logging
 from warnings import warn
+
 import h5py
 import vaex.hdf5.dataset
 
@@ -86,8 +94,28 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
 
 
 def apply_vaex_patch():
-    warn(f"Importing {NAME} monkey-patches vaex's HDF5 reading, which may cause unexpected behavior in vaex's other HDF5 I/O operations.", RuntimeWarning, stacklevel=3)
+    """
+    Apply all vaex-related customisations:
+
+    1. Suppress all vaex internal logging (WARNING, ERROR, etc.) so that
+       non-critical messages (e.g., plugin loading failures, memmap cleanup
+       warnings) do not pollute the user's output.
+    2. Replace HDF5 loading logic with a version compatible with ananke files.
+    3. Replace ``vaex.open_many`` with a version that tolerates comment/blank lines.
+    """
+    # --- Silence vaex logging ---
+    logging.getLogger("vaex").setLevel(logging.CRITICAL)
+
+    # --- Apply HDF5 patch ---
+    warn(
+        f"Importing {NAME} monkey-patches vaex's HDF5 reading, "
+        f"which may cause unexpected behavior in vaex's other HDF5 I/O operations.",
+        RuntimeWarning,
+        stacklevel=3
+    )
     vaex.hdf5.dataset.Hdf5MemoryMapped._load = new_hdf5_load
+
+    # --- Replace open_many ---
     vaex.open_many = new_open_many
 
 
