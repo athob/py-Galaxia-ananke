@@ -132,7 +132,7 @@ class Input:
                 conjunction with pname. Default to None if unused.
         """
         self.caching: bool = kwargs.get('caching', False)
-        self.__append_hash: bool = kwargs.get('append_hash', self.caching)
+        self.__append_hash: bool = kwargs.get('append_hash', True)
         # check which args/kwargs signature case and populate kwargs accordingly
         if args:
             if len(args) not in [2]: raise  # TODO mix & match args & kwargs for particles and kernels
