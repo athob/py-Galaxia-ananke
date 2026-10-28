@@ -473,6 +473,7 @@ class Output:
         with h5.File(hdf5_file, 'w') as f5:
             f5.create_group(STARCATALOG_GROUP)
             f5.create_group(PARENTPARTICLE_GROUP)
+            f5.create_group(PARTITIONING_GROUP)
             f5datasets = {name: f5[STARCATALOG_GROUP].create_dataset(
                                                   name=name,
                                                   shape=(data_length,),
@@ -502,7 +503,11 @@ class Output:
                 f"software available at <{__url__}>."
             )
             f5.attrs[f"Cat_partition_id"] = partition_id
-            f5.attrs[f"All_partition_ids"] = partition_ids
+            f5.attrs[f"All_partition_ids"] = f"Stored under dataset {PARTITIONING_GROUP}/partition_id"
+            f5[PARTITIONING_GROUP].create_dataset(
+                name='partition_id',
+                data=partition_ids
+                )
             for k, v in metadata.items():
                 f5.attrs[k] = v
 
