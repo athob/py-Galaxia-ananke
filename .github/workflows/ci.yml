@@ -1,3 +1,6 @@
+# Every `uses:` is pinned to a commit SHA, with the version in a comment: a tag can be
+# moved after the fact, a commit cannot. Dependabot proposes the updates.
+
 name: CI
 
 on:
@@ -11,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
         python-version: "3.12"
     - name: Lint with ruff
@@ -36,9 +39,9 @@ jobs:
             os: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       id: pythonsetup
       with:
         python-version: ${{ matrix.python-version }}
@@ -57,7 +60,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Fetch all unshallow
       run: git fetch --all --unshallow
     - name: Checkout stable
