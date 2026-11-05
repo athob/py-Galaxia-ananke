@@ -66,23 +66,37 @@ jobs:
         pip install pytest
         pytest src
   
-  develop-post-install:
+  promote:
+    name: Promote develop to stable
+    # Only for a push to develop, and only once lint and the tests have passed.
+    # This is a fast-forward by construction: git refuses to push SHA to stable
+    # unless stable is an ancestor of SHA, so stable is always exactly a commit
+    # that passed CI, and no merge commit (or git identity) is ever needed.
+    needs: [lint, install]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
-    needs: [lint, install]
+    concurrency:
+      group: promote-stable
+      cancel-in-progress: false
 
     steps:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - name: Fetch all unshallow
-      run: git fetch --all --unshallow
-    - name: Checkout stable
-      run: git checkout stable
-    - name: Merge develop into stable
-      run: git merge develop
-    - name: Push merge to repository
-      run: git push
-
-    if: github.ref == 'refs/heads/develop'
+      with:
+        fetch-depth: 0
+        # persist-credentials is left at its default: the push below needs the token
+    - name: Fast-forward stable to the commit that just passed
+      run: |
+        git fetch origin stable
+        if git merge-base --is-ancestor "$GITHUB_SHA" origin/stable; then
+          echo "stable already contains $GITHUB_SHA (a newer run got there first)."
+          exit 0
+        fi
+        if ! git merge-base --is-ancestor origin/stable "$GITHUB_SHA"; then
+          echo "::error::stable has commits that are not on develop, so it cannot be fast-forwarded. Merge stable into develop first."
+          exit 1
+        fi
+        git push origin "$GITHUB_SHA:refs/heads/stable"
+        echo "stable is now at $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
