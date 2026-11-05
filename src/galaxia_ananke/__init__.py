@@ -5,7 +5,7 @@
 #
 # This file is part of the py-Galaxia-ananke project,
 # <https://github.com/athob/py-Galaxia-ananke>, which is licensed
-# under the GNU Affero General Public License v3.0 (AGPL-3.0).
+# under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
 # 
 # The full copyright notice, including terms governing use, modification,
 # and redistribution, is contained in the files LICENSE and COPYRIGHT,
