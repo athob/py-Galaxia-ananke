@@ -66,19 +66,13 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-        # The C++ backend, Galaxia-ananke, is a git submodule of about 5.8 GB. Here
-        # it is fetched shallow (just the commit this repository pins), where the
-        # installer's own `git submodule update` would fetch the whole history:
-        # the installer then finds the source in place.
+        # The C++ backend, Galaxia-ananke, is a git submodule: about 5.8 GB of
+        # files, which weigh about 1 GB in git's store. Here it is fetched shallow
+        # (just the commit this repository pins), where the installer's own
+        # `git submodule update` would fetch the whole history: the installer
+        # then finds the source in place. (Measured on the first run: the runners
+        # have 146 GB of disk, with about 70 GB still free after the install.)
         submodules: recursive
-    - name: Report the disk space after the checkout
-      # The runners are documented with 14 GB of disk, and the data of the
-      # submodule is on it up to three times (the files, git's copy of them, and
-      # the copy the installer makes in the cache): these figures say how much
-      # room is left. The step durations are in the run itself.
-      run: |
-        df -h /
-        du -sh Galaxia-ananke .git/modules 2>/dev/null || true
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       id: pythonsetup
@@ -87,11 +81,6 @@ jobs:
     - name: Install package
       run: |
         pip install .
-    - name: Report the disk space after the install
-      if: always()
-      run: |
-        df -h /
-        du -sh "$(python -c 'import sys; print(sys.prefix)')/.cache/galaxia_ananke" 2>/dev/null || true
     - name: Test with pytest
       run: |
         pip install pytest
