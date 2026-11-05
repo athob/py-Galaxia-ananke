@@ -19,12 +19,12 @@ jobs:
       with:
         persist-credentials: false
         fetch-depth: 0
-    - name: Wait for CI/CD workflow to succeed
+    - name: Wait for CI workflow to succeed
       if: contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        WORKFLOW_NAME="CI/CD"
+        WORKFLOW_NAME="CI"
         TIMEOUT=600
         INTERVAL=10
 
