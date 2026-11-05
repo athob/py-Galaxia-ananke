@@ -8,6 +8,14 @@ on:
     branches-ignore:
       - main
       - stable
+  pull_request:
+    branches:
+      - develop
+  schedule:
+    # Mondays. Nothing here changes in between, but numpy, pandas, vaex and astropy
+    # do, and so can GitHub, where the Galaxia-ananke source comes from: this finds out.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,6 +28,9 @@ concurrency:
 
 jobs:
   lint:
+    # A pull request from a branch of this repository is already covered by the
+    # push to that branch: only those from forks need to run here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
 
     steps:
@@ -39,7 +50,9 @@ jobs:
         ruff check . --exit-zero --select E,F,W,C90 --statistics
 
   install:
-
+    # A pull request from a branch of this repository is already covered by the
+    # push to that branch: only those from forks need to run here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
