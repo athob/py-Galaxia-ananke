@@ -34,21 +34,23 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        WORKFLOW_NAME="CI"
-        TIMEOUT=600
+        WORKFLOW_FILE="ci.yml"
+        # The CI of this package is long (it fetches and builds the C++ backend on
+        # four Pythons), and the tag may be pushed right after the commit.
+        TIMEOUT=3600
         INTERVAL=10
 
         # Get the commit SHA (the tag points to)
         COMMIT_SHA=${{ github.sha }}
 
-        echo "Waiting for workflow '$WORKFLOW_NAME' to succeed on commit $COMMIT_SHA..."
+        echo "Waiting for workflow '$WORKFLOW_FILE' to succeed on commit $COMMIT_SHA..."
 
         START_TIME=$(date +%s)
         while true; do
-          # Get all workflow runs and filter by head_sha and name
-          RESPONSE=$(gh api repos/${{ github.repository }}/actions/runs --paginate)
-          STATUS=$(echo "$RESPONSE" | jq -r --arg sha "$COMMIT_SHA" --arg name "$WORKFLOW_NAME" \
-            '.workflow_runs[] | select(.head_sha == $sha and .name == $name) | .conclusion' | head -1)
+          # The latest run of that workflow on that commit (newest first): its conclusion
+          # once it has finished, its status (queued, in_progress) until then
+          STATUS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_FILE/runs?head_sha=$COMMIT_SHA&per_page=1" \
+            --jq '.workflow_runs[0] | if . == null then "not found" else (.conclusion // .status) end')
 
           if [ "$STATUS" = "success" ]; then
             echo "Workflow succeeded!"
@@ -60,13 +62,13 @@ jobs:
           
           CURRENT_TIME=$(date +%s)
           ELAPSED=$((CURRENT_TIME - START_TIME))
-          if [ $ELAPSED -ge $TIMEOUT ]; then
+          if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
             echo "Timeout waiting for workflow to complete."
             exit 1
           fi
           
-          echo "Still waiting (current status: ${STATUS:-not found})... retry in ${INTERVAL}s"
-          sleep $INTERVAL
+          echo "Still waiting (current status: $STATUS)... retry in ${INTERVAL}s"
+          sleep "$INTERVAL"
         done
     - name: Build distributions inside manylinux2014 container
       run: |
