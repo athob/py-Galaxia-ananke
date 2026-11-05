@@ -1,0 +1,16 @@
+name: Feature request
+description: An idea, or something that would make py-Galaxia-ananke more useful to you
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: The goal first -- what you would like to be able to do, and what you do instead today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like py-Galaxia-ananke to do?
+      description: A sketch of the call is plenty.

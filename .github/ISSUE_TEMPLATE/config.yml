@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem (privately)
+    url: https://github.com/athob/py-Galaxia-ananke/security/advisories/new
+    about: Do not open a public issue for a vulnerability; see SECURITY.md.
+  - name: Problem with py-ananke itself
+    url: https://github.com/athob/py-ananke/issues
+    about: This repository is only the Galaxia wrapper; issues about the pipeline belong there.

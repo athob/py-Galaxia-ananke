@@ -1,0 +1,73 @@
+name: Bug report
+description: Something does not work, or does the wrong thing
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Code to reproduce it
+      description: The smallest call that shows the problem, with the arguments you used.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or traceback
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: galaxia_ananke version
+      description: Output of `pip show galaxia-ananke`
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Python version and operating system
+      placeholder: "Python 3.11, Linux (cluster)"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How was it installed?
+      options:
+        - "pip install galaxia_ananke (PyPI)"
+        - "pip install git+https://github.com/athob/py-Galaxia-ananke"
+        - "pip install . from a clone"
+        - "As a dependency of py-ananke"
+    validations:
+      required: true
+  - type: dropdown
+    id: context
+    attributes:
+      label: How are you using it?
+      options:
+        - "Directly"
+        - "Through py-ananke"
+        - "Not sure"
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Compiler and make versions
+      description: Only if the installation or the import failed. Output of `g++ --version` and `make --version` (first line of each).
+      placeholder: "g++ 11.4.0, GNU Make 4.3"
+  - type: textarea
+    id: buildlogs
+    attributes:
+      label: Installation logs
+      description: >-
+        Only if the installation or the import failed (for instance an AssertionError about a missing
+        Galaxia executable). The `log` folder next to the `bin` path the error names holds them: see
+        "Troubleshooting installation" in the README.
+      render: text
