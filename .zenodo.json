@@ -16,7 +16,14 @@
             "type": "Supervisor"
         }
     ],
-    "license": "GPL-3.0-or-later",
+    "license": "AGPL-3.0-or-later",
     "upload_type": "software",
-    "description": "Python wrapper for a modified version of Galaxia (<a href='http://ascl.net/1101.007' target='_blank' rel='noopener'>Sharma et al. 2011</a>) called <a href='http://github.com/athob/Galaxia-ananke' target='_blank' rel='noopener'>Galaxia-ananke</a>"
+    "description": "Python wrapper for a modified version of Galaxia (<a href='http://ascl.net/1101.007' target='_blank' rel='noopener'>Sharma et al. 2011</a>) called <a href='http://github.com/athob/Galaxia-ananke' target='_blank' rel='noopener'>Galaxia-ananke</a>",
+    "related_identifiers": [
+        {
+            "relation": "isDocumentedBy",
+            "identifier": "10.21105/joss.06234",
+            "scheme": "doi"
+        }
+    ]
 }
