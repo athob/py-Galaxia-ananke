@@ -1,0 +1,12 @@
+# markdownlint (https://github.com/DavidAnson/markdownlint) settings, read by its command
+# line tools and by the VS Code extension. Every other rule is left at its default.
+default: true
+
+# The documents are wrapped for reading in an editor, and a long line is left alone where
+# a URL, a table or a command needs one.
+MD013: false
+
+# CHANGELOG.md repeats Added, Changed and Fixed under every version, as Keep a Changelog
+# prescribes: only headings that are siblings may not be duplicated.
+MD024:
+  siblings_only: true
