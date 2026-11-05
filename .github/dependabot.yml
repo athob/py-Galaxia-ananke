@@ -1,0 +1,27 @@
+# Dependabot opens a pull request when an action the workflows use has a new
+# release. https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Updates are proposed against `develop`, like any other change: CI runs on
+# them, and once one is merged and green CI moves `stable` forward by itself.
+# Without `target-branch` Dependabot would target `main`. (Its *security*
+# updates go to the default branch whatever is set here: merge those into
+# `develop` as well, or let the next release carry them.)
+
+version: 2
+updates:
+  # The actions are pinned by commit SHA with the version in a trailing comment
+  # (`uses: actions/checkout@3d3c... # v7.0.1`). Dependabot understands that
+  # form and updates the SHA and the comment together. Worth a look each time:
+  # a major bump can change behavior. One grouped pull request a week.
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "06:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
