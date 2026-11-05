@@ -135,6 +135,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Ruff
+.ruff_cache/
+
 # others
 src/Galaxia/galaxia*
 jupyter/*
