@@ -1,0 +1,13 @@
+# Optional: `pip install pre-commit && pre-commit install` runs ruff on every
+# commit. The hook uses the ruff of your own environment, so it matches what CI
+# installs. --force-exclude keeps the exclusions from pyproject.toml (versioneer's
+# files and the Galaxia-ananke submodule) in force when pre-commit passes the file
+# names itself.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        entry: ruff check --force-exclude
+        language: system
+        types: [python]
