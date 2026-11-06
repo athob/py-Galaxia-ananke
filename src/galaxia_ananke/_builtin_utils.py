@@ -220,7 +220,7 @@ def common_entries(*dcts: Dict):
 
 
 def get_version_of_command(cmd):
-    return re.findall("((?:[0-9]+\.)+[0-9]+)",
+    return re.findall(r"((?:[0-9]+\.)+[0-9]+)",
                       str(subprocess.check_output([cmd, '--version'])))[0]
 
 

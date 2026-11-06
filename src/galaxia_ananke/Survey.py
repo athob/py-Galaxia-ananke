@@ -337,7 +337,7 @@ class Survey:
         return list(lexicalorder_dict({
             int(n_gen[0]): value
             for key, value in self._extraparam.items()
-            if (n_gen:=re.findall("n_gen_(\d*)", key))
+            if (n_gen:=re.findall(r"n_gen_(\d*)", key))
             }).values())
 
     @property

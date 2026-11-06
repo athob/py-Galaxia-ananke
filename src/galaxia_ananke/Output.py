@@ -641,7 +641,7 @@ class Output:
                                               flush_with_columns=(), hold_flush: bool = False, hold_reload: bool = False,
                                               consolidate_partitions_per_process: bool = False,
                                               update_metadata: Optional[Dict[str, Union[str,float,int]]] = None) -> None:
-        """
+        r"""
             Apply a given post processing routine to the catalogue
 
             Parameters

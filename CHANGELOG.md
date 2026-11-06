@@ -46,6 +46,9 @@ far as the commits of this package and of the backend say.
 
 ### Fixed
 
+- Two regular expressions and a docstring held a backslash that Python reads as an invalid
+  escape sequence, and warns about (a `SyntaxWarning` on Python 3.12, a
+  `DeprecationWarning` before): they are raw strings now, with the same value.
 - The README said that Python 3.7.12 to 3.11 was supported: the package supports 3.9 to
   3.12.
 - The Zenodo record declared the license GPL-3.0-or-later: the package is
