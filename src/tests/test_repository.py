@@ -204,6 +204,46 @@ def test_a_job_of_cd_that_reads_the_kind_of_the_tag_needs_the_job_that_works_it_
             assert "meta" in needs_of(job), f"{name} reads needs.meta without needing it"
 
 
+# -- the supported Pythons --------------------------------------------------------
+
+def supported_pythons():
+    """The first and the last minor version of Python 3 that python_requires in setup.py allows."""
+    bounds = re.search(r"python_requires\s*=\s*['\"]>=3\.(\d+),\s*<3\.(\d+)", read("setup.py"))
+    return int(bounds.group(1)), int(bounds.group(2)) - 1
+
+
+def test_the_classifiers_list_every_supported_python():
+    # the Pythons the package declares, the ones CI tests, and the ones PyPI is told about agree
+    metadata = read("src/galaxia_ananke/__metadata__.py")
+    classified = set(re.findall(r'"Programming Language :: Python :: (3\.\d+)"', metadata))
+    first, last = supported_pythons()
+    supported = {f"3.{minor}" for minor in range(first, last + 1)}
+    ci = read(".github/workflows/ci.yml")
+    tested = set(re.findall(r'"(3\.\d+)"', re.search(r"python-version:\s*\[([^\]]*)\]", ci).group(1)))
+    assert classified == supported == tested, (sorted(classified), sorted(supported), sorted(tested))
+    assert '"Programming Language :: Python :: 3 :: Only"' in metadata
+
+
+def test_the_documents_state_the_supported_python_range():
+    # the range in setup.py is the one the README gives, in its introduction and in its requirements
+    first, last = supported_pythons()
+    readme = read("README.md")
+    assert f"compatible with Python versions 3.{first} to 3.{last}" in readme
+    assert f"Python 3.{first} to 3.{last} (" in readme
+
+
+def test_ruff_checks_for_the_oldest_python_supported():
+    # syntax of a newer Python would be accepted by ruff, and fail for the users of the oldest one
+    first, _ = supported_pythons()
+    assert re.search(r'^target-version\s*=\s*"py3%d"\s*$' % first, read("pyproject.toml"), flags=re.MULTILINE)
+
+
+def test_cd_builds_with_a_supported_python():
+    first, last = supported_pythons()
+    python = int(re.search(r'python-version:\s*"3\.(\d+)"', read(".github/workflows/cd.yml")).group(1))
+    assert first <= python <= last
+
+
 # -- the locks of the CI and CD requirements --------------------------------------
 
 def test_pip_installs_in_workflows_are_pinned_by_hash():
