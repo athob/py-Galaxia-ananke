@@ -1,0 +1,13 @@
+# What the install job installs to run the tests on the Pythons that are still supported, 3.11
+# and up (ci.yml). The lock holds one version of each package: that is what Dependabot needs
+# to maintain it. The Pythons past their end of life use ../requirements-frozen/ (see the .in there).
+#
+# When a Python reaches its end of life, it moves to requirements-frozen/: raise the --python-version this
+# lock is compiled with in update.sh, and list that Python in the matrix of ci.yml.
+#
+# pytest-cov and setuptools are for what comes with the tests of the package: the coverage report,
+# and the tests of the tools that build it (src/_build_utils.py), which import setuptools and
+# distutils, which a Python from 3.12 on does not come with.
+pytest
+pytest-cov
+setuptools

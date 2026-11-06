@@ -38,6 +38,9 @@ far as the commits of this package and of the backend say.
   beforehand is completed, not refused.
 - A releasing guide, `RELEASING.md`, which also says why the package is published as an sdist
   only, and what the pinned backend commit has to satisfy for an sdist to install.
+- The requirements of the tools that CI and CD install, in `.github/requirements/`, with a
+  script, `update.sh`, that locks them with hashes (`uv pip compile`) and writes the checksum
+  of the actionlint download.
 
 ### Changed
 

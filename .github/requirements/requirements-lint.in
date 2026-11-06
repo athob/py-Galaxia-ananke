@@ -1,0 +1,2 @@
+# What the lint job installs (ci.yml).
+ruff

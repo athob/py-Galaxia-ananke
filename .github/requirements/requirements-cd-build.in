@@ -1,0 +1,4 @@
+# What the CD workflow builds the sdist with, on the runner (cd.yml), whose Python is 3.12.
+# These produce what gets published, so they are pinned too.
+pip
+build

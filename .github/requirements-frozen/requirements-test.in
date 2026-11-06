@@ -1,0 +1,26 @@
+# What the install job installs to run the tests on the Pythons that are past their end of life
+# (ci.yml): 3.9 and 3.10 for now.
+#
+# This is a COMPLETE lock. Compiled with the oldest Python the package supports (3.9), it holds
+# the right version of every package for every Python from 3.9 up, 3.11 and 3.12 included, with
+# markers that say which applies where.
+# Which Pythons use it is decided by the matrix in ci.yml, not by this file. So retiring a Python
+# to it never changes this lock, only ci.yml and the --python-version of the live lock in
+# update.sh. And a lock must never be copied into this folder: the live one only covers the
+# Pythons it was compiled for, and the entries of the older ones would be lost.
+#
+# Dependabot cannot maintain a lock like this one: it takes one of the versions of a package as
+# "the current one", then checks that the newest can be pinned for every Python the lock covers,
+# which cannot be when the newest release of a tool needs a newer Python than the oldest one, and
+# reports an error. So this folder is not one of its own (see dependabot.yml), and it is next to
+# .github/requirements/ rather than inside it: Dependabot also fetches the subfolders of the
+# folder it is given.
+# `bash .github/requirements/update.sh --upgrade` refreshes it when that is worth it: uv gives
+# each Python the newest version it supports.
+#
+# pytest-cov and setuptools are for what comes with the tests of the package: the coverage report,
+# and the tests of the tools that build it (src/_build_utils.py), which import setuptools and
+# distutils, which a Python from 3.12 on does not come with.
+pytest
+pytest-cov
+setuptools
