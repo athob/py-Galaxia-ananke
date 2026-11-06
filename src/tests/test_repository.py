@@ -164,6 +164,45 @@ def test_update_sh_locks_every_input_with_the_python_its_lock_records():
             f"update.sh locks {source.name} for Python {python}, but {lock.parent.name}/{lock.name} was compiled otherwise"
 
 
+def test_dependabot_updates_the_locks_with_uv():
+    # The pip ecosystem would regenerate a lock with pip-compile for its own Python only, and drop
+    # what the other Pythons need. The uv ecosystem runs the lock's own `uv pip compile` command again.
+    text = read(".github/dependabot.yml")
+    entries = [e for e in re.split(r"^\s*- package-ecosystem:\s*", text, flags=re.MULTILINE)[1:]
+               if re.search(r"^\s*directory:\s*/\.github/requirements\s*$", e, flags=re.MULTILINE)]
+    assert len(entries) == 1, "dependabot.yml needs exactly one entry for /.github/requirements"
+    assert entries[0].split()[0].strip("\"'") == "uv", "the locks must be updated by the uv ecosystem, not pip"
+
+
+def test_dependabot_proposes_its_updates_against_develop():
+    # without target-branch it would target main, where nothing is merged between releases
+    entries = re.split(r"^\s*- package-ecosystem:\s*", read(".github/dependabot.yml"), flags=re.MULTILINE)[1:]
+    assert entries
+    for entry in entries:
+        assert re.search(r"^\s*target-branch:\s*develop\s*$", entry, flags=re.MULTILINE), \
+            f"the {entry.split()[0]} entry of dependabot.yml does not target develop"
+
+
+@pytest.mark.parametrize("lock", sorted(REQUIREMENTS.glob("requirements-*.txt")), ids=lambda p: p.name)
+def test_locks_dependabot_maintains_pin_each_package_once(lock):
+    # Dependabot takes one version as the current one and checks the newest can be pinned for
+    # every Python the lock covers: a package locked once per Python is reported as an error.
+    # Such a lock belongs in requirements-frozen/, which it does not scan.
+    pins = [line for line in lock.read_text(encoding="utf-8").splitlines()
+            if re.match(r"^[A-Za-z0-9_.\-]+(\[[^\]]*\])?==", line)]
+    names = [re.match(r"^([A-Za-z0-9_.\-]+)", line).group(1).lower() for line in pins]
+    twice = sorted({name for name in names if names.count(name) > 1})
+    assert not twice, f"{lock.name} pins {twice} more than once: it cannot be maintained by Dependabot"
+
+
+def test_the_folder_dependabot_scans_has_no_subfolders():
+    # Dependabot fetches the subfolders of the folder it is given, not only its files. A lock it
+    # must not maintain lives next to the folder, as requirements-frozen/ does.
+    subfolders = [p.name for p in REQUIREMENTS.iterdir() if p.is_dir() and p.name != "__pycache__"]
+    assert not subfolders, f".github/requirements/ has subfolders {subfolders}: Dependabot would scan them"
+    assert not re.search(r"directory:\s*/\.github/requirements-frozen", read(".github/dependabot.yml"))
+
+
 def test_the_actionlint_download_has_its_checksum():
     checksum = (REQUIREMENTS / "actionlint.sha256").read_text(encoding="utf-8").strip()
     assert re.fullmatch(r"[0-9a-f]{64}", checksum)

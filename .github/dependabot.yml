@@ -25,3 +25,43 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
+
+  # The tools the CI and CD workflows install are locked, with hashes, in
+  # .github/requirements/: update.sh writes each requirements-X.txt from the
+  # requirements-X.in next to it, with `uv pip compile --universal --generate-hashes
+  # --python-version N`, and the lock records that command in its header.
+  #
+  # The ecosystem has to be uv, not pip. The pip ecosystem regenerates a compiled lock with
+  # pip-tools' pip-compile, which knows neither --universal nor --python-version: it resolves
+  # for its own Python on its own platform, and drops what the other Pythons need. The uv
+  # ecosystem runs the `uv pip compile` command recorded in the lock again, options included.
+  #
+  # Dependabot takes one version of each package as "the current one", and checks that the newest
+  # can be pinned for every Python the lock covers. A lock that holds several versions of a
+  # package, one per Python, therefore cannot be maintained by it: the Pythons past their end of
+  # life have their lock in .github/requirements-frozen/, next to this directory and not in it
+  # (Dependabot also fetches the subfolders of its directory), which is not a directory it looks
+  # at, and requirements-test.txt only covers the supported ones.
+  #
+  # `allow: all`, because most of what the locks hold (coverage, pluggy...) is not named in a
+  # .in file, and Dependabot proposes nothing for those by default.
+  #
+  # Possible problem: in py-EnBiD-ananke, which has the same layout, GitHub refuses to open the
+  # pull requests for these locks (HTTP 400, reported as dependency_file_not_supported),
+  # whatever there is to update, and the cause is not known; see
+  # https://github.com/athob/py-EnBiD-ananke/issues/12. If it happens here as well, the locks
+  # are refreshed by hand with `update.sh --upgrade` until that changes.
+  - package-ecosystem: uv
+    directory: /.github/requirements
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "06:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: all
+    groups:
+      ci-tools:
+        patterns: ["*"]

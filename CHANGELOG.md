@@ -44,6 +44,8 @@ far as the commits of this package and of the backend say.
 - Tests of the repository itself, in `src/tests/test_repository.py`, that keep the locks of
   the CI requirements, the workflows that install them and the matrix of Pythons in
   agreement. They do not need Galaxia.
+- Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
+  ecosystem.
 
 ### Changed
 
