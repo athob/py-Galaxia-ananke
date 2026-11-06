@@ -31,6 +31,9 @@ far as the commits of this package and of the backend say.
   and tests of it.
 - The CD workflow can be run by hand: it builds the sdist and keeps it as an artifact,
   and publishes nothing.
+- The CD workflow creates the GitHub release of each release once it is on PyPI, with its
+  section of this changelog as the notes and the sdist attached. A release made by hand
+  beforehand is completed, not refused.
 
 ### Changed
 
