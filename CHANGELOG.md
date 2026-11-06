@@ -45,6 +45,9 @@ far as the commits of this package and of the backend say.
 - The CD workflow refuses a tag that is not a plain PEP 440 version, and for a release it
   checks that `CHANGELOG.md` has the dated section of that version before anything is
   built or published.
+- The CD workflow builds the sdist directly on the runner, with Python 3.12, instead of
+  inside a manylinux2014 container that a package which compiles nothing when it is built
+  has no use for, and lists what it built in the summary of the run.
 - The install job of CI fetches the C++ backend in its checkout, shallow (only the commit
   this repository pins), instead of leaving the installer to clone it whole, and runs
   Python 3.9 on `ubuntu-22.04`.

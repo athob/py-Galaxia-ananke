@@ -93,27 +93,22 @@ jobs:
           echo "Still waiting (current status: $STATUS)... retry in ${INTERVAL}s"
           sleep "$INTERVAL"
         done
-    - name: Build distributions inside manylinux2014 container
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.12"
+    - name: Build the sdist
+      # Only the sdist is published (see RELEASING.md): it holds the Python sources and a
+      # pointer to the C++ backend, which is fetched when the package is installed. So
+      # nothing is compiled here, and no container is needed. versioneer reads the git
+      # tags, hence the full history of the checkout above.
       run: |
-        # Create a directory on the host to store the built artifacts
-        mkdir -p dist
-
-        # Run the manylinux container, mounting the repository and the dist directory
-        docker run --rm \
-          -v ${{ github.workspace }}:/workspace \
-          -w /workspace \
-          quay.io/pypa/manylinux2014_x86_64 \
-          bash -c "
-            # Install git (required by versioneer)
-            yum install -y git
-            # Trust the workspace directory (avoid dubious ownership error)
-            git config --global --add safe.directory /workspace
-            # Set up Python (use 3.10 from the manylinux image, choose a version you support)
-            export PATH=/opt/python/cp310-cp310/bin:\$PATH
-            python -m pip install --upgrade pip build auditwheel
-            # Build the distribution (sdist only - no wheel)
-            python -m build --sdist
-          "
+        python -m pip install build
+        python -m build --sdist
+    - name: Show what was built
+      run: |
+        echo "### Built distributions" >> "$GITHUB_STEP_SUMMARY"
+        ls -1 dist >> "$GITHUB_STEP_SUMMARY"
     - name: Store the distribution packages
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
