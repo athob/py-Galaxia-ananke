@@ -56,8 +56,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         WORKFLOW_FILE="ci.yml"
-        # The CI of this package is long (it fetches and builds the C++ backend on
-        # four Pythons), and the tag may be pushed right after the commit.
+        # The CI of this package takes about 4 minutes (it fetches and builds the C++
+        # backend on four Pythons). The tag may be pushed right after the commit, or
+        # while other runs are queued: the loop ends as soon as CI succeeds, so this is
+        # only the limit.
         TIMEOUT=3600
         INTERVAL=10
 
