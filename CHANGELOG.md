@@ -43,8 +43,8 @@ far as the commits of this package and of the backend say.
   of the actionlint download.
 - Tests of the repository itself, in `src/tests/test_repository.py`, that keep the project
   files, the workflows and their habits, the locks of the CI requirements, the supported
-  Pythons, the license and the citation files, the git submodule and the changelog in
-  agreement. They do not need Galaxia.
+  Pythons, the license and the citation files, the git submodule, the changelog and the
+  contributing guide in agreement. They do not need Galaxia.
 - Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
   ecosystem.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that

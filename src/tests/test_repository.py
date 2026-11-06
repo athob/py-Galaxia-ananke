@@ -40,6 +40,11 @@ def read(path):
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def prose(path):
+    """A document as running text: the way its lines break is not part of what it says."""
+    return " ".join(read(path).split())
+
+
 def header_of(lock):
     """The first lines of a lock, where uv records the command that wrote it."""
     return "\n".join(lock.read_text(encoding="utf-8").splitlines()[:3])
@@ -48,7 +53,7 @@ def header_of(lock):
 # -- the project files and the workflows ------------------------------------------
 
 @pytest.mark.parametrize("path", [
-    "README.md", "LICENSE", "COPYRIGHT", "CHANGELOG.md", "RELEASING.md", "CODE_OF_CONDUCT.md",
+    "README.md", "LICENSE", "COPYRIGHT", "CHANGELOG.md", "CONTRIBUTING.md", "RELEASING.md", "CODE_OF_CONDUCT.md",
     "SECURITY.md", "CITATION.cff", ".zenodo.json", ".editorconfig", ".gitattributes", ".gitmodules",
     ".pre-commit-config.yaml", ".markdownlint.yaml", ".readthedocs.yaml",
     ".github/dependabot.yml", ".github/PULL_REQUEST_TEMPLATE.md",
@@ -525,3 +530,53 @@ def test_changelog_tells_what_came_before_0_4_0():
     assert re.search(r"^## Before 0\.4\.0$", text, flags=re.MULTILINE)
     for tag in ("v0.0.0-alpha", "v0.3.1-beta", "v0.4.0b3"):
         assert tag in text
+
+
+# -- the contributing guide -------------------------------------------------------
+
+def test_contributing_describes_every_job_of_ci():
+    # a job added to ci.yml and left out of the guide would be a check nobody knows to run
+    contributing = read("CONTRIBUTING.md")
+    for name in jobs_of("ci.yml"):
+        assert f"- **{name}**" in contributing, f"CONTRIBUTING.md does not describe the {name} job of ci.yml"
+
+
+def test_contributing_points_only_to_files_that_exist():
+    unresolved = [link for link in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", read("CONTRIBUTING.md"))
+                  if not link.startswith("http") and not (ROOT / link).exists()]
+    assert not unresolved, f"CONTRIBUTING.md points to files that do not exist: {unresolved}"
+
+
+def test_contributing_is_about_this_repository():
+    # the guide began as the one of the sibling project: what was not adapted would still talk about it
+    contributing = prose("CONTRIBUTING.md")
+    # the name of the sibling project is allowed where it is named as such, even if a line breaks inside it
+    assert "enbid" not in re.sub(r"py-EnBiD-\s*ananke", "", contributing).lower(), "CONTRIBUTING.md still talks about EnBiD"
+    for command in re.findall(r"gh api[^\n]*?(repos/\S+)", contributing):
+        assert command.startswith("repos/athob/py-Galaxia-ananke/"), f"a gh command of CONTRIBUTING.md names {command}"
+
+
+def test_contributing_says_which_pythons_use_which_test_lock():
+    ci = read(".github/workflows/ci.yml")
+    frozen = [version for version, _ in re.findall(r'-\s*python-version:\s*"(3\.\d+)"\s*\n\s*test-lock:\s*(\S+)', ci)]
+    assert frozen, "no Python uses the frozen lock"
+    listed = ", ".join(frozen[:-1]) + (" and " if len(frozen) > 1 else "") + frozen[-1]
+    lowest = int(re.search(r"--python-version\s+3\.(\d+)", header_of(REQUIREMENTS / "requirements-test.txt")).group(1))
+    oldest = supported_pythons()[0]
+    contributing = prose("CONTRIBUTING.md")
+    assert f"(3.{lowest} and up)" in contributing, "the Pythons of requirements-test.txt"
+    assert f"oldest the package supports (3.{oldest})" in contributing
+    assert f"at the end of their life ({listed})" in contributing, f"the Pythons of the frozen lock are {listed}"
+
+
+def test_contributing_states_the_supported_python_range():
+    first, last = supported_pythons()
+    contributing = prose("CONTRIBUTING.md")
+    assert f"(currently 3.{first} up to 3.{last})" in contributing
+    assert f"each Python version from 3.{first} to 3.{last}," in contributing
+
+
+def test_contributing_says_vaex_is_pinned_if_it_is():
+    # the day the pin becomes a range, the guide has to stop saying so
+    pinned = re.search(r"['\"]vaex==[\d.]+['\"]", read("setup.py")) is not None
+    assert ("vaex is pinned to one version" in prose("CONTRIBUTING.md")) == pinned
