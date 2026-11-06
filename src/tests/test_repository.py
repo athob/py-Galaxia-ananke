@@ -490,3 +490,38 @@ def test_python_sources_compile_without_warnings():
             except Exception as error:
                 problems.append(f"{path.relative_to(ROOT)}: {error}")
     assert not problems, problems
+
+
+# -- the changelog -----------------------------------------------------------------
+
+def test_changelog_format():
+    text = read("CHANGELOG.md")
+    headings = re.findall(r"^## \[([^\]]+)\](.*)$", text, flags=re.MULTILINE)
+    names = [name for name, _ in headings]
+    assert names and names[0] == "Unreleased", "the first section has to be [Unreleased]"
+    for name, rest in headings[1:]:
+        assert re.fullmatch(r" - \d{4}-\d{2}-\d{2}", rest), f"[{name}] needs '## [{name}] - YYYY-MM-DD'"
+    links = set(re.findall(r"^\[([^\]]+)\]:\s", text, flags=re.MULTILINE))
+    assert set(names) <= links, f"no link at the bottom for: {sorted(set(names) - links)}"
+
+
+def test_changelog_links_compare_consecutive_versions():
+    # at a release `[Unreleased]` becomes the new version and the links move with it: this is the step to get wrong
+    text = read("CHANGELOG.md")
+    versions = re.findall(r"^## \[(\d[^\]]*)\]", text, flags=re.MULTILINE)
+    links = dict(re.findall(r"^\[([^\]]+)\]:\s*(\S+)\s*$", text, flags=re.MULTILINE))
+    base = "https://github.com/athob/py-Galaxia-ananke/compare/"
+    assert versions, "the changelog has no released version"
+    assert links["Unreleased"] == f"{base}v{versions[0]}...develop"
+    for newer, older in zip(versions, versions[1:]):
+        assert links[newer] == f"{base}v{older}...v{newer}", f"[{newer}] has to compare v{older} with v{newer}"
+    # the oldest version compares with the pre-release its development started from
+    assert re.fullmatch(re.escape(base) + r"v[\w.\-]+\.\.\.v" + re.escape(versions[-1]), links[versions[-1]])
+
+
+def test_changelog_tells_what_came_before_0_4_0():
+    # the package did not start with 0.4.0, and the changelog must not read as if it did
+    text = read("CHANGELOG.md")
+    assert re.search(r"^## Before 0\.4\.0$", text, flags=re.MULTILINE)
+    for tag in ("v0.0.0-alpha", "v0.3.1-beta", "v0.4.0b3"):
+        assert tag in text
