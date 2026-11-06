@@ -27,7 +27,8 @@ far as the commits of this package and of the backend say.
 - A check in CI: ruff. CI also runs on pull requests, every week and on demand.
 - A README that gives the installation requirements, the size of the C++ backend among
   them, and says how to cite the package.
-- A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag.
+- A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag,
+  and tests of it.
 
 ### Changed
 
