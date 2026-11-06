@@ -29,6 +29,8 @@ far as the commits of this package and of the backend say.
   them, and says how to cite the package.
 - A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag,
   and tests of it.
+- The CD workflow can be run by hand: it builds the sdist and keeps it as an artifact,
+  and publishes nothing.
 
 ### Changed
 

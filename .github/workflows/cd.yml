@@ -7,6 +7,10 @@ on:
   push:
     tags:
       - 'v*'               # Trigger only when a tag starting with 'v' is pushed
+  # Run by hand (Actions tab, or `gh workflow run cd.yml --ref BRANCH`), it builds the sdist
+  # and keeps it as an artifact, and publishes nothing: that is how a change to the build is
+  # tried out without using up a version on TestPyPI.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,6 +32,8 @@ jobs:
         persist-credentials: false
     - name: Classify the tag and check the changelog
       id: meta
+      # a run by hand is on a branch, not on a tag: there is nothing to classify
+      if: github.event_name == 'push'
       env:
         TAG: ${{ github.ref_name }}
       # What a tag may look like, and where each kind goes, is in the script. For a
@@ -117,6 +123,8 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
+    # Only for a pushed tag: a run by hand never publishes, whatever it is run on.
+    if: github.event_name == 'push'
     needs:
     - build
     runs-on: ubuntu-latest
@@ -141,7 +149,7 @@ jobs:
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
-    if: github.ref_type == 'tag' && needs.meta.outputs.kind == 'release'
+    if: github.event_name == 'push' && github.ref_type == 'tag' && needs.meta.outputs.kind == 'release'
     needs:
     - meta
     - build
