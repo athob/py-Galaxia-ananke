@@ -14,10 +14,10 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Tests of the repository itself rather than of the code: what has to agree with something
-else does (the locks of the CI requirements and the workflows that install them, the
-matrix and the lock each of its Pythons uses). Standard library only, and nothing here
-needs Galaxia.
+Tests of the repository itself rather than of the code: the project files are there, the
+workflows keep the habits they were given, and what has to agree with something else does
+(the locks of the CI requirements and the workflows that install them, the matrix and the
+lock each of its Pythons uses). Standard library only, and nothing here needs Galaxia.
 """
 import pathlib
 import re
@@ -40,6 +40,77 @@ def read(path):
 def header_of(lock):
     """The first lines of a lock, where uv records the command that wrote it."""
     return "\n".join(lock.read_text(encoding="utf-8").splitlines()[:3])
+
+
+# -- the project files and the workflows ------------------------------------------
+
+@pytest.mark.parametrize("path", [
+    "README.md", "LICENSE", "COPYRIGHT", "CHANGELOG.md", "RELEASING.md", "CODE_OF_CONDUCT.md",
+    "SECURITY.md", "CITATION.cff", ".zenodo.json", ".editorconfig", ".gitattributes", ".gitmodules",
+    ".pre-commit-config.yaml", ".markdownlint.yaml", ".readthedocs.yaml",
+    ".github/dependabot.yml", ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+])
+def test_project_file_exists(path):
+    assert (ROOT / path).is_file(), f"{path} is missing"
+
+
+def test_gitattributes_keeps_versioneer_export_subst():
+    # versioneer needs this to find the version in a `git archive`
+    assert "src/galaxia_ananke/_version.py export-subst" in read(".gitattributes")
+
+
+def test_there_are_workflows():
+    assert {p.name for p in WORKFLOWS} >= {"ci.yml", "cd.yml"}
+
+
+@pytest.mark.parametrize("workflow", WORKFLOWS, ids=lambda p: p.name)
+def test_actions_are_pinned_to_a_commit(workflow):
+    unpinned = []
+    for line in workflow.read_text(encoding="utf-8").splitlines():
+        match = re.match(r"^\s*(?:-\s+)?uses:\s+(?P<action>[^@\s]+)@(?P<ref>\S+)(?P<rest>.*)$", line)
+        if match and not match.group("action").startswith("./"):
+            if not re.fullmatch(r"[0-9a-f]{40}", match.group("ref")) or "#" not in match.group("rest"):
+                unpinned.append(line.strip())
+    assert not unpinned, f"{workflow.name}: pin to a commit SHA, with the version in a comment: {unpinned}"
+
+
+@pytest.mark.parametrize("workflow", WORKFLOWS, ids=lambda p: p.name)
+def test_workflows_set_their_permissions(workflow):
+    text = workflow.read_text(encoding="utf-8")
+    assert re.search(r"^permissions:", text, flags=re.MULTILINE), \
+        f"{workflow.name} has no top-level `permissions:`: the token would get the repository default"
+
+
+def test_promote_waits_for_every_other_job_of_ci():
+    # a job added to ci.yml and forgotten in promote's needs would not hold stable back
+    ci = read(".github/workflows/ci.yml")
+    jobs = re.findall(r"^  ([a-z][\w-]*):\s*$", ci.split("\njobs:\n", 1)[1], flags=re.MULTILINE)
+    needs = re.search(r"^  promote:.*?^    needs:\s*\[([^\]]*)\]", ci, flags=re.MULTILINE | re.DOTALL).group(1)
+    assert set(jobs) - {"promote"} == {name.strip() for name in needs.split(",")}
+
+
+def test_cd_publishes_only_on_a_push():
+    # the workflow can also be run by hand, to try a build out: that must never publish anything
+    cd = read(".github/workflows/cd.yml")
+    jobs = dict(re.findall(r"^  ([a-z][\w-]*):\s*\n(.*?)(?=^  [a-z][\w-]*:\s*\n|\Z)",
+                           cd.split("\njobs:\n", 1)[1], flags=re.MULTILINE | re.DOTALL))
+    for name in ("publish-to-testpypi", "publish-to-pypi", "github-release"):
+        condition = re.search(r"^    if:(.*)$", jobs[name], flags=re.MULTILINE)
+        assert condition and "github.event_name == 'push'" in condition.group(1), \
+            f"{name} has to run only on a push: a run by hand must not publish"
+
+
+def test_no_job_of_ci_is_allowed_to_fail():
+    # a job that may fail is red without holding stable back: if one is ever meant to, say so here
+    assert "continue-on-error" not in read(".github/workflows/ci.yml")
+
+
+def test_cd_waits_for_a_workflow_that_exists():
+    match = re.search(r'WORKFLOW_FILE="([^"]+)"', read(".github/workflows/cd.yml"))
+    assert match, "the CD workflow no longer says which workflow it waits for"
+    assert (ROOT / ".github" / "workflows" / match.group(1)).is_file()
 
 
 # -- the locks of the CI and CD requirements --------------------------------------

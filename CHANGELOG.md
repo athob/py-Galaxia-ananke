@@ -41,8 +41,9 @@ far as the commits of this package and of the backend say.
 - The requirements of the tools that CI and CD install, in `.github/requirements/`, with a
   script, `update.sh`, that locks them with hashes (`uv pip compile`) and writes the checksum
   of the actionlint download.
-- Tests of the repository itself, in `src/tests/test_repository.py`, that keep the locks of
-  the CI requirements, the workflows that install them and the matrix of Pythons in
+- Tests of the repository itself, in `src/tests/test_repository.py`, that keep the project
+  files, the workflows and their habits, the locks of the CI requirements, the supported
+  Pythons, the license and the citation files, the git submodule and the changelog in
   agreement. They do not need Galaxia.
 - Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
   ecosystem.
