@@ -25,6 +25,8 @@ far as the commits of this package and of the backend say.
 - `CITATION.cff`, with the py-ananke article as the preferred citation, the Zenodo record
   of this package, and Galaxia. The Zenodo record now points back to the article.
 - A check in CI: ruff. CI also runs on pull requests, every week and on demand.
+- A check of the workflow files in CI, with actionlint, whose download is verified against a
+  checksum.
 - A README that gives the installation requirements, the size of the C++ backend among
   them, and says how to cite the package.
 - A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag,

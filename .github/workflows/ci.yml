@@ -49,6 +49,35 @@ jobs:
         # exit-zero treats all errors as warnings
         ruff check . --exit-zero --select E,F,W,C90 --statistics
 
+  workflows:
+    name: Lint the workflow files
+    # A pull request from a branch of this repository is already covered by the
+    # push to that branch: only those from forks need to run here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    env:
+      # actionlint (https://github.com/rhysd/actionlint) reads .github/workflows/
+      # without running anything: a misspelled key, a `needs:` naming no job, a
+      # `${{ }}` expression that cannot work, a `run:` script that shellcheck
+      # (preinstalled on the runner) objects to. When the version changes, run
+      # .github/requirements/update.sh again: it writes the checksum checked below.
+      ACTIONLINT_VERSION: "1.7.12"
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Install actionlint
+      # the release archive of the pinned version, which has to match the checksum
+      # committed in .github/requirements/actionlint.sha256
+      run: |
+        archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+        curl -sSfL -o "$archive" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+        echo "$(cat .github/requirements/actionlint.sha256)  ${archive}" | sha256sum --check
+        tar -xzf "$archive" actionlint
+    - name: actionlint
+      run: ./actionlint -color
+
   install:
     # A pull request from a branch of this repository is already covered by the
     # push to that branch: only those from forks need to run here.
@@ -92,7 +121,7 @@ jobs:
     # This is a fast-forward by construction: git refuses to push SHA to stable
     # unless stable is an ancestor of SHA, so stable is always exactly a commit
     # that passed CI, and no merge commit (or git identity) is ever needed.
-    needs: [lint, install]
+    needs: [lint, workflows, install]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
