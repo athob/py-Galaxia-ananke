@@ -20,6 +20,7 @@ workflows keep the habits they were given, and what has to agree with something 
 lock each of its Pythons uses). Standard library only, and nothing here needs Galaxia.
 """
 import configparser
+import json
 import pathlib
 import re
 
@@ -408,3 +409,64 @@ def test_the_folder_dependabot_scans_has_no_subfolders():
 def test_the_actionlint_download_has_its_checksum():
     checksum = (REQUIREMENTS / "actionlint.sha256").read_text(encoding="utf-8").strip()
     assert re.fullmatch(r"[0-9a-f]{64}", checksum)
+
+
+# -- what has to agree with something else ----------------------------------------
+
+ZENODO_DOI = "10.5281/zenodo.13942945"   # all versions of this package
+JOSS_DOI = "10.21105/joss.06234"         # the py-ananke article
+
+
+def test_the_dois_agree():
+    metadata = re.search(r'^__doi__ = "([^"]+)"', read("src/galaxia_ananke/__metadata__.py"), flags=re.MULTILINE)
+    assert metadata and metadata.group(1) == JOSS_DOI
+    cff = read("CITATION.cff")
+    assert re.search(rf"^doi: {re.escape(ZENODO_DOI)}$", cff, flags=re.MULTILINE)
+    assert re.search(rf"^  doi: {re.escape(JOSS_DOI)}$", cff, flags=re.MULTILINE)
+    readme = read("README.md")
+    assert ZENODO_DOI in readme and JOSS_DOI in readme
+    related = json.loads(read(".zenodo.json"))["related_identifiers"]
+    assert any(item["identifier"] == JOSS_DOI for item in related)
+
+
+def test_the_license_is_said_the_same_way_everywhere():
+    assert json.loads(read(".zenodo.json"))["license"] == "AGPL-3.0-or-later"
+    assert re.search(r"^license: AGPL-3.0-or-later$", read("CITATION.cff"), flags=re.MULTILINE)
+    assert "(AGPLv3+)" in read("src/galaxia_ananke/__metadata__.py")
+    assert "GNU AFFERO GENERAL PUBLIC LICENSE" in read("LICENSE")
+
+
+def test_the_license_shipped_in_the_package_is_the_one_of_the_repository():
+    assert read("LICENSE") == read("src/galaxia_ananke/__license__/LICENSE")
+
+
+def test_zenodo_and_citation_files_name_the_same_software():
+    title = json.loads(read(".zenodo.json"))["title"]
+    assert re.search(rf'^title: "{re.escape(title)}"$', read("CITATION.cff"), flags=re.MULTILINE)
+
+
+def test_source_files_carry_the_license_header():
+    # empty files, Sphinx's conf.py, and what versioneer generates are the exceptions; so is
+    # a symlink that a checkout without symlink support holds as a line of text
+    exempt = {"conf.py", "_version.py", "versioneer.py"}
+    missing = []
+    candidates = list((ROOT / "src").rglob("*.py")) + list((ROOT / ".github").rglob("*.py")) + [ROOT / "setup.py"]
+    for path in candidates:
+        if path.is_symlink() or path.name in exempt:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if len(text.splitlines()) >= 3 and "(AGPL-3.0-or-later)" not in text:
+            missing.append(str(path.relative_to(ROOT)))
+    assert not missing, f"no AGPL-3.0-or-later header in: {missing}"
+
+
+def test_the_readme_says_what_the_build_requires():
+    # the versions of the tools the installation checks for, and the Pythons, are those the code enforces
+    build = read("src/_build_utils.py")
+    make = re.search(r'MIN_MAKE_VERSION\s*=\s*Version\("([\d.]+)"\)', build).group(1)
+    gpp = re.search(r'MIN_GPP_VERSION\s*=\s*Version\("([\d.]+)"\)', build).group(1)
+    readme = read("README.md")
+    assert f"GNU make ({make} or later)" in readme, f"make {make} in the README"
+    assert f"g++ ({gpp} or later)" in readme, f"g++ {gpp} in the README"
+    assert "Windows is not supported" in readme
+    assert "pip install galaxia_ananke" in readme                    # from PyPI first
