@@ -19,6 +19,7 @@ workflows keep the habits they were given, and what has to agree with something 
 (the locks of the CI requirements and the workflows that install them, the matrix and the
 lock each of its Pythons uses). Standard library only, and nothing here needs Galaxia.
 """
+import configparser
 import pathlib
 import re
 
@@ -111,6 +112,96 @@ def test_cd_waits_for_a_workflow_that_exists():
     match = re.search(r'WORKFLOW_FILE="([^"]+)"', read(".github/workflows/cd.yml"))
     assert match, "the CD workflow no longer says which workflow it waits for"
     assert (ROOT / ".github" / "workflows" / match.group(1)).is_file()
+
+
+# -- the submodule, and what CI and CD do with it ---------------------------------
+
+FORK_GUARD = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository"
+
+
+def jobs_of(workflow):
+    """The jobs of a workflow, by name, as their text."""
+    text = read(f".github/workflows/{workflow}")
+    return dict(re.findall(r"^  ([a-z][\w-]*):\s*\n(.*?)(?=^  [a-z][\w-]*:\s*\n|\Z)",
+                           text.split("\njobs:\n", 1)[1], flags=re.MULTILINE | re.DOTALL))
+
+
+def needs_of(job):
+    """The jobs a job needs, written as `needs: job` or as a list."""
+    return re.findall(r"^    - (\S+)\s*$", job, flags=re.MULTILINE) + re.findall(r"^    needs:\s*(\w[\w-]*)\s*$", job, flags=re.MULTILINE)
+
+
+def test_the_submodule_is_declared_the_way_the_installer_reads_it():
+    # When the sources are not a git repository (an sdist), the installer reads .gitmodules itself: it
+    # joins the url, which has to be relative to the one of this repository, to the url of this repository.
+    parser = configparser.ConfigParser()
+    parser.read(ROOT / ".gitmodules", encoding="utf-8")
+    name = re.search(r"^GALAXIA_SUBMODULE_NAME\s*=\s*['\"]([^'\"]+)['\"]", read("src/galaxia_ananke/_constants.py"),
+                     flags=re.MULTILINE).group(1)
+    assert parser.sections() == [f'submodule "{name}"'], parser.sections()
+    section = parser[parser.sections()[0]]
+    assert section["path"] == name
+    assert re.fullmatch(r"\.\./\.\./[\w.\-]+/Galaxia-ananke\.git", section["url"]), \
+        f"the url of the submodule has to stay relative, like ../../owner/Galaxia-ananke.git: {section['url']}"
+
+
+def test_the_manifest_ships_the_declaration_of_the_submodule_and_not_the_submodule():
+    manifest = read("MANIFEST.in").splitlines()
+    assert "include .gitmodules" in manifest, "an sdist needs .gitmodules: the installer reads the url of the backend in it"
+    name = re.search(r"^GALAXIA_SUBMODULE_NAME\s*=\s*['\"]([^'\"]+)['\"]", read("src/galaxia_ananke/_constants.py"),
+                     flags=re.MULTILINE).group(1)
+    assert not [line for line in manifest if name in line and not line.startswith("prune")], \
+        "the backend is fetched when the package is installed: it is not part of the sdist"
+
+
+def test_only_the_jobs_of_ci_that_install_the_package_fetch_the_submodule():
+    # the commit the repository pins weighs about 1 GB in git's store: only a job that builds the backend pays for it
+    for name, job in jobs_of("ci.yml").items():
+        installs = re.search(r"^\s*pip install \.\s*$", job, flags=re.MULTILINE) is not None
+        fetches = re.search(r"^\s*submodules:\s*recursive\s*$", job, flags=re.MULTILINE) is not None
+        assert fetches == installs, (f"the {name} job of ci.yml " + (
+            "installs the package without fetching the submodule" if installs else "fetches the submodule without building it"))
+
+
+def test_every_job_of_ci_but_promote_skips_the_pull_requests_of_this_repository():
+    # a pull request from a branch of this repository is already covered by the push to that branch
+    for name, job in jobs_of("ci.yml").items():
+        if name != "promote":
+            assert f"    if: {FORK_GUARD}\n" in job, f"the {name} job of ci.yml runs twice for a pull request of this repository"
+
+
+def test_cd_can_be_run_by_hand_and_does_not_classify_a_tag_then():
+    assert re.search(r"^  workflow_dispatch:", read(".github/workflows/cd.yml"), flags=re.MULTILINE)
+    assert "if: github.event_name == 'push'" in jobs_of("cd.yml")["meta"], "a run by hand is on a branch: there is no tag to classify"
+
+
+def test_the_build_of_cd_gets_the_whole_history():
+    # versioneer reads the git tags to name the version
+    assert re.search(r"^\s*fetch-depth:\s*0\s*$", jobs_of("cd.yml")["build"], flags=re.MULTILINE)
+
+
+def test_cd_builds_the_sdist_and_nothing_else():
+    # the backend is not built into a wheel (RELEASING.md says why): the build is the Python files only
+    build = jobs_of("cd.yml")["build"]
+    assert "python -m build --sdist" in build
+    for leftover in ("docker", "manylinux", "auditwheel", "--wheel", "yum "):
+        assert leftover not in build, f"the build of cd.yml still has {leftover!r}, which an sdist does not need"
+    assert build.index("actions/setup-python") < build.index("python -m build"), "Python has to be set up before the build"
+
+
+def test_pypi_is_for_releases_and_the_github_release_comes_after_it():
+    jobs = jobs_of("cd.yml")
+    for name in ("publish-to-pypi", "github-release"):
+        assert "needs.meta.outputs.kind == 'release'" in jobs[name], f"{name} is not reserved for releases"
+    assert "publish-to-pypi" in needs_of(jobs["github-release"]), "the GitHub release has to wait for the upload to PyPI"
+    wait = re.search(r"- name: Wait for CI workflow to succeed\n\s*if:(.*)", jobs["build"])
+    assert wait and "needs.meta.outputs.kind == 'prerelease'" in wait.group(1), "only a pre-release waits for CI"
+
+
+def test_a_job_of_cd_that_reads_the_kind_of_the_tag_needs_the_job_that_works_it_out():
+    for name, job in jobs_of("cd.yml").items():
+        if "needs.meta." in job:
+            assert "meta" in needs_of(job), f"{name} reads needs.meta without needing it"
 
 
 # -- the locks of the CI and CD requirements --------------------------------------
