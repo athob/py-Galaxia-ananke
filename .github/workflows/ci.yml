@@ -43,7 +43,7 @@ jobs:
         python-version: "3.12"
     - name: Lint with ruff
       run: |
-        pip install ruff
+        pip install --require-hashes -r .github/requirements/requirements-lint.txt
         # stop the build if there are Python syntax errors or undefined names
         ruff check . --output-format=github
         # exit-zero treats all errors as warnings
@@ -88,8 +88,14 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
         include:
+          # The Pythons past their end of life test with their own lock of the test tools,
+          # which holds a version of each for every Python (see the .in next to it): the
+          # others use requirements/requirements-test.txt, which holds one.
           - python-version: "3.9"
+            test-lock: requirements-frozen/requirements-test.txt
             os: ubuntu-22.04
+          - python-version: "3.10"
+            test-lock: requirements-frozen/requirements-test.txt
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -112,7 +118,7 @@ jobs:
         pip install .
     - name: Test with pytest
       run: |
-        pip install pytest
+        pip install --require-hashes -r .github/${{ matrix.test-lock || 'requirements/requirements-test.txt' }}
         pytest src
   
   promote:

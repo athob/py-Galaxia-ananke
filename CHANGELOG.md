@@ -63,6 +63,9 @@ far as the commits of this package and of the backend say.
 - The install job of CI fetches the C++ backend in its checkout, shallow (only the commit
   this repository pins), instead of leaving the installer to clone it whole, and runs
   Python 3.9 on `ubuntu-22.04`.
+- CI installs the tools it uses, ruff and pytest, from the hash-locked requirements: pip
+  refuses anything that is not what the lock says. The Pythons past their end of life, 3.9
+  and 3.10, use a lock of their own for the test tools.
 
 ### Fixed
 
