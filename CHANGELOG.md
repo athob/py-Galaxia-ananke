@@ -46,6 +46,8 @@ far as the commits of this package and of the backend say.
   agreement. They do not need Galaxia.
 - Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
   ecosystem.
+- The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
+  PyPI shows them.
 
 ### Changed
 
