@@ -107,9 +107,11 @@ jobs:
       # Only the sdist is published (see RELEASING.md): it holds the Python sources and a
       # pointer to the C++ backend, which is fetched when the package is installed. So
       # nothing is compiled here, and no container is needed. versioneer reads the git
-      # tags, hence the full history of the checkout above.
+      # tags, hence the full history of the checkout above. The build tools are the locked
+      # ones of .github/requirements/requirements-cd-build.txt, which is compiled for the
+      # Python above.
       run: |
-        python -m pip install build
+        python -m pip install --require-hashes -r .github/requirements/requirements-cd-build.txt
         python -m build --sdist
     - name: Show what was built
       run: |

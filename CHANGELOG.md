@@ -65,7 +65,8 @@ far as the commits of this package and of the backend say.
   Python 3.9 on `ubuntu-22.04`.
 - CI installs the tools it uses, ruff and pytest, from the hash-locked requirements: pip
   refuses anything that is not what the lock says. The Pythons past their end of life, 3.9
-  and 3.10, use a lock of their own for the test tools.
+  and 3.10, use a lock of their own for the test tools. So does the CD workflow with the
+  tools that build the sdist.
 
 ### Fixed
 
