@@ -49,6 +49,9 @@ far as the commits of this package and of the backend say.
   ecosystem.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
+- A contributing guide, `CONTRIBUTING.md`: the branches, how to set up a copy with the C++
+  backend that is a git submodule, how the package is built, what CI does, and how versions
+  and releases work.
 
 ### Changed
 

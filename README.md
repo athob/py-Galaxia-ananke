@@ -74,7 +74,7 @@ If you use py-Galaxia-ananke in your work, please cite, in this order:
 
 ## Contributing
 
-Bug reports and feature requests go to the [issue tracker](https://github.com/athob/py-Galaxia-ananke/issues), which has a form for each. Contributions are welcome, under the [code of conduct](https://github.com/athob/py-Galaxia-ananke/blob/main/CODE_OF_CONDUCT.md). Please report security problems privately, as described in [SECURITY.md](https://github.com/athob/py-Galaxia-ananke/blob/main/SECURITY.md).
+Bug reports and feature requests go to the [issue tracker](https://github.com/athob/py-Galaxia-ananke/issues), which has a form for each. Contributions are welcome: [CONTRIBUTING.md](https://github.com/athob/py-Galaxia-ananke/blob/main/CONTRIBUTING.md) says how to set up a copy, what the automatic checks do and how releases work, and everyone taking part is expected to follow the [code of conduct](https://github.com/athob/py-Galaxia-ananke/blob/main/CODE_OF_CONDUCT.md). Please report security problems privately, as described in [SECURITY.md](https://github.com/athob/py-Galaxia-ananke/blob/main/SECURITY.md).
 
 ## License
 
