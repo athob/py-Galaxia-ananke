@@ -34,6 +34,8 @@ far as the commits of this package and of the backend say.
 - The CD workflow creates the GitHub release of each release once it is on PyPI, with its
   section of this changelog as the notes and the sdist attached. A release made by hand
   beforehand is completed, not refused.
+- A releasing guide, `RELEASING.md`, which also says why the package is published as an sdist
+  only, and what the pinned backend commit has to satisfy for an sdist to install.
 
 ### Changed
 
