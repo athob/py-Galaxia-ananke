@@ -27,6 +27,7 @@ far as the commits of this package and of the backend say.
 - A check in CI: ruff. CI also runs on pull requests, every week and on demand.
 - A README that gives the installation requirements, the size of the C++ backend among
   them, and says how to cite the package.
+- A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag.
 
 ### Changed
 
@@ -40,6 +41,9 @@ far as the commits of this package and of the backend say.
 - The `CI/CD` workflow is now two: `CI` and `CD`. `stable` is moved forward to a commit
   that passed CI by a fast-forward, the actions are pinned to commit SHAs, and the
   workflows only get the permissions they need.
+- The CD workflow refuses a tag that is not a plain PEP 440 version, and for a release it
+  checks that `CHANGELOG.md` has the dated section of that version before anything is
+  built or published.
 - The install job of CI fetches the C++ backend in its checkout, shallow (only the commit
   this repository pins), instead of leaving the installer to clone it whole, and runs
   Python 3.9 on `ubuntu-22.04`.

@@ -15,8 +15,29 @@ env:
   PACKAGE_NAME: galaxia-ananke
 
 jobs:
+  meta:
+    name: Classify the tag
+    runs-on: ubuntu-latest
+    outputs:
+      kind: ${{ steps.meta.outputs.kind }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Classify the tag and check the changelog
+      id: meta
+      env:
+        TAG: ${{ github.ref_name }}
+      # What a tag may look like, and where each kind goes, is in the script. For a
+      # release it also makes sure CHANGELOG.md has the section of that version,
+      # before anything is built or published.
+      run: python3 .github/scripts/release_meta.py check "$TAG" --github-output "$GITHUB_OUTPUT"
+
   build:
     name: Build distribution 📦
+    needs: meta
     runs-on: ubuntu-latest
 
     permissions:
@@ -30,7 +51,7 @@ jobs:
         persist-credentials: false
         fetch-depth: 0
     - name: Wait for CI workflow to succeed
-      if: contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc')
+      if: needs.meta.outputs.kind == 'prerelease'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -123,8 +144,9 @@ jobs:
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
-    if: github.ref_type == 'tag' && !contains(github.ref_name, 'a') && !contains(github.ref_name, 'b') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev')
+    if: github.ref_type == 'tag' && needs.meta.outputs.kind == 'release'
     needs:
+    - meta
     - build
     runs-on: ubuntu-latest
 
