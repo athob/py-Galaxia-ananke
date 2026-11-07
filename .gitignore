@@ -139,6 +139,5 @@ dmypy.json
 .ruff_cache/
 
 # others
-src/Galaxia/galaxia*
 jupyter/*
 !jupyter/*.ipynb
