@@ -110,9 +110,11 @@ takes about four minutes. Its jobs:
 - **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`
   forward to that commit.
 
-Apart from CI, the **CodeQL** workflow reports to Security > Code scanning: it is GitHub's
-code scanning of the Python source, run on `develop`, on pull requests and every Wednesday.
-Its findings are meant to be looked at, and `stable` does not wait for it.
+Apart from CI, two workflows report to Security > Code scanning: **CodeQL** (GitHub's code
+scanning of the Python source; on `develop`, on pull requests and every Wednesday) and
+**Scorecard** (the [OpenSSF](https://securityscorecards.dev) grading of the repository's
+supply-chain habits; from `main`, every Thursday). Their findings are meant to be looked at,
+and `stable` does not wait for them.
 
 The tools the workflows install (ruff, pytest, build and twine, and what the CD workflow builds with) are
 locked with hashes in

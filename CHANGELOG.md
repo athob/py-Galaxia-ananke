@@ -57,6 +57,8 @@ far as the commits of this package and of the backend say.
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
   week, which reports to Security > Code scanning and which `stable` does not wait for.
+- OpenSSF Scorecard, which grades the supply-chain habits of the repository every week from
+  `main`, reports to Security > Code scanning and which `stable` does not wait for.
 - A contributing guide, `CONTRIBUTING.md`: the branches, how to set up a copy with the C++
   backend that is a git submodule, how the package is built, what CI does, and how versions
   and releases work.
