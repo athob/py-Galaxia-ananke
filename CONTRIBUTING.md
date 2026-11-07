@@ -66,7 +66,7 @@ ruff check .      # must pass
 pytest src
 ```
 
-To have ruff run on every commit by itself, install the optional
+To have ruff, and actionlint if you have it, run on every commit by itself, install the optional
 [pre-commit](https://pre-commit.com/) hook: `pip install pre-commit && pre-commit install`.
 
 ## How the package is built
@@ -99,7 +99,8 @@ takes about four minutes. Its jobs:
   (syntax errors and undefined names, selected in `pyproject.toml`); the style
   warnings are listed for information.
 - **workflows**: [actionlint](https://github.com/rhysd/actionlint) on the workflow
-  files. You can run it locally too.
+  files. You can run it locally too, and the pre-commit hook does so when it is
+  installed.
 - **install**: for each Python version from 3.9 to 3.12, fetches the backend (shallow: the
   one commit this repository pins), installs the package and runs `pytest src`.
 - **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`

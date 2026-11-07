@@ -1,8 +1,8 @@
-# Optional: `pip install pre-commit && pre-commit install` runs ruff on every
-# commit. The hook uses the ruff of your own environment, so it matches what CI
-# installs. --force-exclude keeps the exclusions from pyproject.toml (versioneer's
-# files and the Galaxia-ananke submodule) in force when pre-commit passes the file
-# names itself.
+# Optional: `pip install pre-commit && pre-commit install` runs ruff, and
+# actionlint if it is installed, on every commit. The ruff hook uses the ruff of
+# your own environment, so it matches what CI installs. --force-exclude keeps the
+# exclusions from pyproject.toml (versioneer's files and the Galaxia-ananke
+# submodule) in force when pre-commit passes the file names itself.
 repos:
   - repo: local
     hooks:
@@ -11,3 +11,12 @@ repos:
         entry: ruff check --force-exclude
         language: system
         types: [python]
+      - id: actionlint
+        name: actionlint (workflow files)
+        # skips itself, with a note, when actionlint is not installed
+        entry: >-
+          sh -c 'command -v actionlint >/dev/null ||
+          { echo "actionlint is not installed: skipped"; exit 0; };
+          exec actionlint "$@"' --
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
