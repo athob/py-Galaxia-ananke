@@ -87,6 +87,8 @@ far as the commits of this package and of the backend say.
 
 ### Fixed
 
+- The metadata of the package states its license in a `License` field, where only a
+  classifier did.
 - Building the package from files that have no git information, such as an archive of a commit
   that no tag names or a copy of the files made without `.git`, failed for want of a date, and so
   did importing a package built from them. The date is that of now when versioneer has none, and
