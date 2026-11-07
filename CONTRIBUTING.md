@@ -190,6 +190,31 @@ versions for 3.10 and later, as `requirements-test.txt` does.
   run on Linux only, and the release is built on Python 3.12 (`cd.yml`), where the build
   environment resolves a setuptools that has the fixes.
 
+Scorecard also lists a few findings that are accepted rather than fixed, each for a reason:
+
+- **Code-Review**: there is one maintainer, so nobody else is there to review a change.
+- **Fuzzing**: not set up. The package is a wrapper, with some tools of its own, around a C++
+  backend that is a modified version of Galaxia and lives in its own repository, which is
+  where a fuzzer would belong.
+- **Pinned-Dependencies, the `pip install .` line of `ci.yml`**: it installs this repository
+  itself, which cannot be pinned by hash.
+- **Vulnerabilities, the three advisories of the frozen test lock** that are listed above:
+  Scorecard reads the locks itself, so it keeps listing them after the alerts of Dependabot are
+  dismissed (it names the second one `PYSEC-2026-3447`, which is `GHSA-h35f-9h28-mq5c`).
+
+An alert is identified by the place it is raised at, so a dismissed one comes back as a new
+alert when a change moves its line. Check the list of open alerts first, then dismiss the
+`pip install .` one again with:
+
+```bash
+gh api "repos/athob/py-Galaxia-ananke/code-scanning/alerts?state=open&per_page=100" \
+  --jq '.[] | select(.rule.id == "PinnedDependenciesID") | .number' | while read -r n; do
+  gh api -X PATCH "repos/athob/py-Galaxia-ananke/code-scanning/alerts/$n" -f state=dismissed \
+    -f dismissed_reason="won't fix" \
+    -f dismissed_comment="Installs this repository itself, which cannot be pinned by hash."
+done
+```
+
 If CI fails on one Python version only, it is usually a real incompatibility
 rather than bad luck.
 
