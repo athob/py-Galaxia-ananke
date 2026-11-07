@@ -1,0 +1,50 @@
+name: CodeQL
+
+# GitHub's code scanning (https://codeql.github.com): reads the Python source for the
+# kinds of mistakes that become vulnerabilities -- path handling, command construction,
+# unsafe deserialization -- and lists what it finds under Security > Code scanning.
+# The wrapper builds paths from the names it is given and runs an executable on the
+# files it writes there, so this is worth having. (The C++ backend is a git submodule,
+# which the checkout below does not fetch: only the Python is analyzed.)
+#
+# Runs on pushes to develop, on pull requests into develop, and weekly (new queries
+# appear over time). It is deliberately NOT something `stable` waits for: a new finding
+# should be looked at, not block an unrelated commit.
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+  schedule:
+    # Wednesdays 05:41 UTC: after the Monday CI run and the Tuesday Dependabot pull request.
+    - cron: "41 5 * * 3"
+
+permissions: {}
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      security-events: write   # to upload the results
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        languages: python
+        build-mode: none
+        queries: security-extended
+    - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        category: "/language:python"
