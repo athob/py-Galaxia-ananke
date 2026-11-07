@@ -1,6 +1,7 @@
 # py-Galaxia-ananke
 
 [![PyPI - Version](https://img.shields.io/pypi/v/galaxia_ananke)](https://pypi.org/project/galaxia-ananke/)
+[![CI](https://github.com/athob/py-Galaxia-ananke/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/athob/py-Galaxia-ananke/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](https://github.com/athob/py-Galaxia-ananke/blob/main/LICENSE)
