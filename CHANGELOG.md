@@ -125,8 +125,8 @@ far as the commits of this package and of the backend say.
 
 - **Breaking:** `Input` takes the mass of the particles under a new key, `massinit`, which is
   their initial mass, in place of the key `mass`, which it no longer accepts. A script that
-  passes only `mass` fails with an error that refers to this change. The key of the initial
-  mass in the output catalog is renamed too, in the backend.
+  passes only `mass` fails: the error meant to explain the change fails itself, on a wrong
+  import. The key of the initial mass in the output catalog is renamed too, in the backend.
 - **Breaking:** the output files hold their catalog in a group within the HDF5 structure,
   rather than at the root of the file: whoever reads them directly will not find the former
   flat layout.
