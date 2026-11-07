@@ -1,0 +1,4 @@
+# What the package job builds the sdist and checks it with (ci.yml). The Python of that job
+# is 3.12.
+build
+twine
