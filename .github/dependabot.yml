@@ -65,3 +65,27 @@ updates:
     groups:
       ci-tools:
         patterns: ["*"]
+
+  # The C++ backend is a git submodule, and this repository pins one commit of it: that pin is
+  # the backend a release ships. This entry compares the pinned commit with the tip of the
+  # branch the submodule follows (.gitmodules names none, so the default branch of
+  # Galaxia-ananke), and when the branch has moved on it opens a pull request that changes the
+  # pin and nothing else. CI then builds the package with that commit, which is the use of it.
+  # Dependabot follows the branch tip: it does not compare versions (Galaxia-ananke has no
+  # releases), and it makes no security updates for submodules. A pull request is a question,
+  # not a chore: see CONTRIBUTING.md for what to do with it.
+  #
+  # Possible problem: the url of the submodule in .gitmodules is relative
+  # (../../athob/Galaxia-ananke.git), and the installer needs it that way. Dependabot turns the
+  # url of a submodule into an absolute one with a helper of its own, and it is not known that it
+  # handles this form. If its log (Insights > Dependency graph > Dependabot) says that it cannot
+  # find the submodule, that url is the first suspect.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "06:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 1

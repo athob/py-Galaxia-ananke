@@ -59,6 +59,8 @@ far as the commits of this package and of the backend say.
   week, which reports to Security > Code scanning and which `stable` does not wait for.
 - OpenSSF Scorecard, which grades the supply-chain habits of the repository every week from
   `main`, reports to Security > Code scanning and which `stable` does not wait for.
+- Dependabot also watches the pinned commit of the C++ backend, with its `gitsubmodule`
+  ecosystem: it proposes the newer ones as pull requests that change the pin alone.
 - A contributing guide, `CONTRIBUTING.md`: the branches, how to set up a copy with the C++
   backend that is a git submodule, how the package is built, what CI does, and how versions
   and releases work.

@@ -149,6 +149,15 @@ until when, because the ignores of `dependabot.yml` are not read by `update.sh`.
 The same script writes the checksum the actionlint download is checked against: run it
 again whenever `ACTIONLINT_VERSION` changes in `ci.yml`.
 
+Dependabot also proposes moving the pin of the C++ backend (the `gitsubmodule` entry of
+`dependabot.yml`): about once a week, if the default branch of Galaxia-ananke has moved on, a
+pull request into `develop` changes the pinned commit and nothing else, and CI builds the
+package with it. Such a pull request is a question, not a chore. Read what it brings
+(`git log OLD..NEW` in the Galaxia-ananke repository) and merge it only when the next release
+should ship that backend; then tell the change in `CHANGELOG.md` under `[Unreleased]`, since the
+backend has no changelog of its own. Leave the pull request open otherwise. Dependabot follows
+the branch and compares no versions, and it makes no security updates for submodules.
+
 Dependabot raises the security advisories of the packages in a lock as alerts of its own,
 and each new advisory on an old pin does the same. The frozen lock holds the pins of the
 Pythons that are past their end of life, and a fix often needs a newer Python than they
