@@ -103,10 +103,14 @@ takes about four minutes. Its jobs:
   installed.
 - **install**: for each Python version from 3.9 to 3.12, fetches the backend (shallow: the
   one commit this repository pins), installs the package and runs `pytest src`.
+- **package**: builds the sdist the way a release would, then runs `twine check --strict`
+  and `.github/scripts/check_dist.py`: the sdist has to hold what installing needs
+  (`.gitmodules` among it), with a version and a revision id that the installer can use, and
+  not the backend.
 - **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`
   forward to that commit.
 
-The tools the workflows install (ruff, pytest, and what the CD workflow builds with) are
+The tools the workflows install (ruff, pytest, build and twine, and what the CD workflow builds with) are
 locked with hashes in
 [`.github/requirements/`](.github/requirements): each `requirements-X.in` says what is
 wanted, and `requirements-X.txt` pins every package, transitive ones included, to a version

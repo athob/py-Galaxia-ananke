@@ -121,13 +121,43 @@ jobs:
         pip install --require-hashes -r .github/${{ matrix.test-lock || 'requirements/requirements-test.txt' }}
         pytest src
   
+  package:
+    name: Build and check the sdist
+    # A pull request from a branch of this repository is already covered by the
+    # push to that branch: only those from forks need to run here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        # versioneer reads the git tags to name the version
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.12"
+    - name: Build the sdist
+      # as a release does (see cd.yml): only the sdist is published
+      run: |
+        pip install --require-hashes -r .github/requirements/requirements-package.txt
+        python -m build --sdist
+    - name: Check it
+      run: |
+        # the README is the long description on PyPI: this is what renders it
+        twine check --strict dist/*
+        # what installing needs is in the sdist, the backend is not, and the revision id
+        # the installer looks up is a commit
+        python .github/scripts/check_dist.py dist
+
   promote:
     name: Promote develop to stable
     # Only for a push to develop, and only once lint and the tests have passed.
     # This is a fast-forward by construction: git refuses to push SHA to stable
     # unless stable is an ancestor of SHA, so stable is always exactly a commit
     # that passed CI, and no merge commit (or git identity) is ever needed.
-    needs: [lint, workflows, install]
+    needs: [lint, workflows, install, package]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:

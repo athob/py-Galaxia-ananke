@@ -31,6 +31,8 @@ far as the commits of this package and of the backend say.
   them, and says how to cite the package.
 - A script, `.github/scripts/release_meta.py`, that the CD workflow runs on the pushed tag,
   and tests of it.
+- A job of CI, `package`, that builds the sdist and checks it with `twine check --strict` and
+  `check_dist.py`, which `stable` waits for like for the others.
 - A script, `.github/scripts/check_dist.py`, that checks the sdist before it is published: it
   has to hold what installing needs, which is the Python sources, `.gitmodules` and the version
   that versioneer baked in, with a revision id the installer can look up, and it must not hold
