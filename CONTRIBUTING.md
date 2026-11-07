@@ -153,6 +153,23 @@ gh api -X PATCH repos/athob/py-Galaxia-ananke/dependabot/alerts/NUMBER -f state=
   -f dismissed_comment="Test-time only. The fix needs a newer Python than the lock's end-of-life ones: see CONTRIBUTING.md."
 ```
 
+Three alerts have been dismissed this way, all against the pins that the frozen lock holds for
+Python 3.9: the releases that fix them need Python 3.10 or later, and the lock pins patched
+versions for 3.10 and later, as `requirements-test.txt` does.
+
+- **pytest**: [GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g)
+  (CVE-2025-71176, [PYSEC-2026-1845](https://osv.dev/PYSEC-2026-1845)) affects every pytest
+  before 9.0.3. It only matters when the tests run on a machine shared with other users (it
+  is about pytest's temporary directories in `/tmp`), and it goes away with the support of
+  Python 3.9.
+- **setuptools**: [GHSA-h35f-9h28-mq5c](https://github.com/advisories/GHSA-h35f-9h28-mq5c)
+  (CVE-2026-59890: on macOS, the exclusions of a `MANIFEST.in` can be bypassed when an sdist
+  is built; fixed in 83.0.0) and
+  [GHSA-xmj3-9gf7-h52w](https://github.com/advisories/GHSA-xmj3-9gf7-h52w) (on Windows, a path
+  can escape while a legacy wheel is installed; fixed in 84.1.0). The tests that use this lock
+  run on Linux only, and the release is built on Python 3.12 (`cd.yml`), where the build
+  environment resolves a setuptools that has the fixes.
+
 If CI fails on one Python version only, it is usually a real incompatibility
 rather than bad luck.
 
