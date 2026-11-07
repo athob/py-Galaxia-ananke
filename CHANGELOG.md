@@ -81,6 +81,10 @@ far as the commits of this package and of the backend say.
 
 ### Fixed
 
+- Building the package from files that have no git information, such as an archive of a commit
+  that no tag names or a copy of the files made without `.git`, failed for want of a date, and so
+  did importing a package built from them. The date is that of now when versioneer has none, and
+  the version `0+unknown`: releases, which have both, are not affected.
 - Two regular expressions and a docstring held a backslash that Python reads as an invalid
   escape sequence, and warns about (a `SyntaxWarning` on Python 3.12, a
   `DeprecationWarning` before): they are raw strings now, with the same value.

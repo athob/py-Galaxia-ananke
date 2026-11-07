@@ -19,7 +19,7 @@ Contains the galaxia_ananke module metadata.
 import _sitebuiltins
 import textwrap
 from typing import Final
-from datetime import datetime
+from datetime import datetime, timezone
 
 from . import _version
 
@@ -49,8 +49,12 @@ __license_short__ = "Licensed under the GNU AGPL v3 or later"
 
 # SOFTWARE METADATA
 __version__: Final[str] = _version.get_versions()['version']
+# versioneer has no date where there is no git information and no tag that names the version (an archive of a commit that
+# no tag names, a copy of the files without .git, a package built from those): it is the date of now there, which is only
+# the end of the years of the copyright.
 __date__: str = _version.get_versions()['date']
-__date__: datetime = datetime.fromisoformat(f"{__date__[:-2]}:{__date__[-2:]}")
+__date__: datetime = (datetime.fromisoformat(f"{__date__[:-2]}:{__date__[-2:]}") if __date__ is not None
+                      else datetime.now(timezone.utc))
 __maintainer__ = "Adrien Thob"
 __email__ = "athob@sas.upenn.edu"
 __status_classifier__ = "Development Status :: 5 - Production/Stable"
