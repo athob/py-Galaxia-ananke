@@ -21,6 +21,8 @@ import random
 import string
 import pathlib
 import stat
+import types
+import itertools
 import contextlib
 import functools
 
@@ -77,6 +79,27 @@ def fake_commands(commands):
             yield
         finally:
             os.environ['PATH'] = previous
+
+PACKAGE_DIR = pathlib.Path(__file__).resolve().parents[1] / "galaxia_ananke"
+_fresh_counter = itertools.count()
+
+@contextlib.contextmanager
+def fresh_package():
+    """
+    A copy of the package under a name of its own until the end of the block, made of its files and without running
+    its __init__ (which imports everything): the block imports the modules that it needs from it,
+    `importlib.import_module(f"{package}._constants")` for one, and gets them as they are when they are first
+    imported, which is when what they read (the environment, the version) is what the test set up.
+    """
+    name = f"galaxia_ananke_under_test_{next(_fresh_counter)}"
+    package = types.ModuleType(name)
+    package.__path__ = [str(PACKAGE_DIR)]
+    sys.modules[name] = package
+    try:
+        yield name
+    finally:
+        for key in [key for key in sys.modules if key == name or key.startswith(name + ".")]:
+            del sys.modules[key]
 
 class list_stdout(list):
     """
