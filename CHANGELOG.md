@@ -59,6 +59,13 @@ far as the commits of this package and of the backend say.
   of a command, the loading of a source file, and the metadata of the classes and the compact
   form of the logs of the backend. The known bug of `execute`, which cuts a command on its
   spaces, is an expected failure that fails the run on the day it is fixed.
+- Tests of the templates that write the parameter file and the commands of the backend, with
+  the parameter file in the format that the backend reads; of the constants, which name what the
+  files of a survey are written with and where the cache is; of the metadata of the package,
+  including its date when versioneer has none; of the defaults, including the position and the
+  velocity of the Sun that astropy gives; of the hash that names the cache of an input; and of
+  what importing the package does to vaex. The known bug of a prefix that cannot be written to,
+  which is not refused, is an expected failure.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
