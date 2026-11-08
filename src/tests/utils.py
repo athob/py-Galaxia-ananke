@@ -176,6 +176,16 @@ def replay_svo(monkeypatch, **files):
     monkeypatch.setattr(module.SvoFps, 'get_filter_list', get_filter_list)
     return asked
 
+def write_catalogue_hdf5(path, columns, group='StarCatalog', attrs=None):
+    """An HDF5 file with a group of one dataset for each column, as the files of a catalogue have them."""
+    import h5py
+    with h5py.File(path, 'w') as f5:
+        for name, values in columns.items():
+            f5.require_group(group).create_dataset(name=name, data=values)
+        for key, value in (attrs or {}).items():
+            f5.attrs[key] = value
+    return pathlib.Path(path)
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630
