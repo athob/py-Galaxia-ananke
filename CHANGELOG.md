@@ -101,6 +101,14 @@ far as the commits of this package and of the backend say.
   directory behind and cannot be made again under its name, a system with a single magnitude gives
   its column and not a tuple of columns, and an oldest age that does not end with a white dwarf
   fails on an index.
+- Tests of the photometric systems, without the network: the registry that is read from the
+  installation, the dictionary with slashes that it is made of, the isochrones that are added
+  and the clearing of them, what a system says about itself and the check of the colors of a
+  diagram, the instruments that a system is asked about, and the effective wavelengths and zero
+  points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
+  weaknesses that they found are expected failures: the protection of the padova category compares
+  by identity, a name with a slash is set in a copy, an isochrone that is added is not a
+  photometric system, and the filters of LSST are eight for six magnitudes.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
