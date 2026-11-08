@@ -233,6 +233,10 @@ rather than bad luck.
 - **New behaviour comes with a test** in `src/tests`. A survey run takes under a minute when its
   input is small and its colour-magnitude box (`cmd_box`) cuts the faint stars, which are the
   numerous ones: keep the tests that run the real backend to that.
+- **Every test starts from a seeded random state.** `src/tests/conftest.py` seeds NumPy and
+  Python with a number that the name of the test determines, so that a failure can be
+  reproduced and two tests do not draw the same values; the seed is in the report of a failing
+  test. `GALAXIA_TEST_SEED=N pytest src` shifts all the seeds, to try other draws.
 - **The repository checks itself**: `src/tests/test_repository.py` verifies, among other
   things, that the DOIs and the license wording agree between the README, `CITATION.cff`,
   `.zenodo.json` and the metadata, that the actions are pinned and the workflows set their
