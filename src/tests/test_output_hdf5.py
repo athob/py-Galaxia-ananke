@@ -53,6 +53,16 @@ def test_a_column_that_was_made_is_written_in_the_file_next_to_the_others(tmp_pa
     assert datasets(path) == {'x': [1.0, 2.0, 3.0], 'y': [10, 20, 30], 'z': [2.0, 4.0, 6.0]}
 
 
+def test_each_new_column_is_written_with_its_own_data(tmp_path):
+    path = catalogue(tmp_path)
+    df = vaex.open(path, group=STARCATALOG_GROUP)
+    df['z'] = df.x * 2
+    df['w'] = df.y + 1
+    _flush_extra_columns_to_hdf5(df, path, verbose=False)
+    df.close()
+    assert datasets(path) == {'x': [1.0, 2.0, 3.0], 'y': [10, 20, 30], 'z': [2.0, 4.0, 6.0], 'w': [11, 21, 31]}
+
+
 def test_the_columns_that_are_not_new_are_left_as_they_are_unless_they_are_asked_for(tmp_path):
     path = catalogue(tmp_path)
     df = vaex.open(path, group=STARCATALOG_GROUP)
