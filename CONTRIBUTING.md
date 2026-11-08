@@ -102,7 +102,8 @@ takes about four minutes. Its jobs:
   files. You can run it locally too, and the pre-commit hook does so when it is
   installed.
 - **install**: for each Python version from 3.9 to 3.12, fetches the backend (shallow: the
-  one commit this repository pins), installs the package and runs `pytest src`.
+  one commit this repository pins), installs the package and runs `pytest src`; the run on Python 3.12 also puts the coverage of the
+  tests in the summary of the run.
 - **package**: builds the sdist the way a release would, then runs `twine check --strict`
   and `.github/scripts/check_dist.py`: the sdist has to hold what installing needs
   (`.gitmodules` among it), with a version and a revision id that the installer can use, and
