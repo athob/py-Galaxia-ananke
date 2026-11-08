@@ -140,6 +140,12 @@ def patch_nbody1(monkeypatch, tmp_path):
     monkeypatch.setattr(module, 'GALAXIA_FILENAMES', directory / 'filenames')
     return directory
 
+def write_isochrone_file(path, header, rows):
+    """An isochrone file as the padova ones are: a commented header with the names of the columns, then a row for each star."""
+    path = pathlib.Path(path)
+    path.write_text("# " + " ".join(header) + "\n" + "".join(" ".join(str(value) for value in row) + "\n" for row in rows))
+    return path
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630
