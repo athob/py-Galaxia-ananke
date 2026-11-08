@@ -76,6 +76,14 @@ far as the commits of this package and of the backend say.
   failures: a step of the build, a clone, a checkout or a git that fails goes unnoticed, the
   backend is built from a name relative to the working directory, and the custom systems cannot be
   moved between two file systems.
+- Tests of `Input`: how it is made, what it refuses and what it completes, its hash (pinned,
+  since it names the cache of an input), the names of the files that follow from it, the files
+  that it writes and how it prepares them for the backend. The weaknesses that they found are
+  expected failures: the explanation of the change of the mass keys fails on an import, a wrong
+  number of arguments reaches a bare `raise`, the default number of neighbours is the name of its
+  tag, an input that was just made cannot say its hash, a name with a dot loses its hash in the
+  names of its files, the kernels and the particles cannot be given as lists, and the kernels are
+  not checked to be as many as the particles.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
