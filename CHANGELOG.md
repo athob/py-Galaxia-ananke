@@ -68,6 +68,14 @@ far as the commits of this package and of the backend say.
   velocity of the Sun that astropy gives; of the hash that names the cache of an input; and of
   what importing the package does to vaex. The known bug of a prefix that cannot be written to,
   which is not refused, is an expected failure.
+- Tests of the tools that build the package: what the system must have, the lookup on GitHub
+  of the commit that a version pins, the cache of an earlier installation with the custom
+  photometric systems in it, the build of a toy backend with the real make, and the fetch of the
+  backend with the real git on repositories laid out as on GitHub, including the sources that are
+  not a git repository, as an sdist unpacks them. The weaknesses that they found are expected
+  failures: a step of the build, a clone, a checkout or a git that fails goes unnoticed, the
+  backend is built from a name relative to the working directory, and the custom systems cannot be
+  moved between two file systems.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
