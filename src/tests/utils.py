@@ -114,6 +114,19 @@ def patch_cache(monkeypatch, tmp_path):
         monkeypatch.setattr(build, name, path)
     return types.SimpleNamespace(**places)
 
+def minimal_particles():
+    """The smallest valid particles dictionary: two particles, the five required keys, values that a float holds exactly."""
+    return {'age': np.array([9.5, 10.0]),
+            'feh': np.array([-0.5, -1.0]),
+            'massinit': np.array([1000.0, 2000.0]),
+            'pos3': np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            'vel3': np.array([[0.5, 1.5, 2.5], [3.5, 4.5, 5.5]])}
+
+
+def minimal_kernels():
+    """Phase space kernels (Nx2) for minimal_particles."""
+    return np.array([[1.0, 2.0], [3.0, 4.0]])
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630
