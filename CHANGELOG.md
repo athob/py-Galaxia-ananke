@@ -111,6 +111,12 @@ far as the commits of this package and of the backend say.
   photometric system, the filters of LSST are eight for six magnitudes, the tables of an
   isochrone that is made in Python fail on duplicate column names, and the particles that share
   their nearest metallicity fail on an index.
+- Tests of what `Output` is made of that needs no survey: the longitude within bounds, the
+  partitions shared between processes, the keys of a catalogue, the conversions of the coordinates
+  (checked against physics: a star at 1 kpc that moves across the sky at 4.74 km/s moves by 1
+  mas/yr; the center and the pole of the Galaxy; formulas that do not use astropy; a round trip),
+  the helpers that flush what a pipeline made into the HDF5 file of a catalogue, and the patch
+  that the package makes to vaex to open the groups of its files and lists of files.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
