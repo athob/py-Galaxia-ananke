@@ -183,8 +183,9 @@ def test_the_nearest_is_the_one_across_the_middle_between_two_values():
     assert (first, second) == ('0.0/9.0', '-1.0/9.0')                  # -0.5 is the middle between -1 and 0
 
 
-@pytest.mark.xfail(strict=False, reason="PROBE, not known yet: the particles that have the same nearest metallicity are one group, and "
-                   "itemgetter with one index gives the array and not a tuple of one, so the group may be taken for the particles")
+@pytest.mark.xfail(raises=IndexError, reason="the particles that have the same nearest metallicity are one group, and itemgetter with one "
+                   "index gives the array and not a tuple of one: the group is taken for the particles, and the ages that are found "
+                   "are fewer than the particles to put them back in the order of")
 def test_particles_that_all_have_the_same_nearest_metallicity_each_get_a_table():
     photo_system = PhotoSystem(isochrone(**tracks_isochrone()))
     tables = photo_system.get_nearest_isochrone_track_for_age_and_metallicity(np.array([9.1, 8.2]), np.array([0.1, 0.05]))

@@ -108,7 +108,9 @@ far as the commits of this package and of the backend say.
   points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
   weaknesses that they found are expected failures: the protection of the padova category compares
   by identity, a name with a slash is set in a copy, an isochrone that is added is not a
-  photometric system, and the filters of LSST are eight for six magnitudes.
+  photometric system, the filters of LSST are eight for six magnitudes, the tables of an
+  isochrone that is made in Python fail on duplicate column names, and the particles that share
+  their nearest metallicity fail on an index.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
