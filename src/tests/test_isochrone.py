@@ -24,14 +24,13 @@ import re
 import sys
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
 from ..galaxia_ananke.photometry.Formatting import (default_formatting, oldpadova_fomatting, oldpadova_fomatting_withlogage,
                                                     padova_formatting)
 from ..galaxia_ananke.photometry.Isochrone import Isochrone
-from .utils import write_isochrone_file
+from .utils import custom_isochrone_data as custom_data, write_isochrone_file
 
 ISOCHRONE_MODULE = sys.modules[Isochrone.__module__]
 HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of default_formatting
@@ -42,13 +41,6 @@ def isochrones_path(tmp_path, monkeypatch):
     """Where the isochrones that are made in Python go: a temporary directory, in Isochrone, which took it from the constants."""
     monkeypatch.setattr(ISOCHRONE_MODULE, 'ISOCHRONES_PATH', tmp_path / 'Isochrones')
     return tmp_path / 'Isochrones'
-
-
-def custom_data():
-    """Data for an isochrone made in Python: a table for each metallicity that is needed, with the magnitudes before the rest."""
-    table = pd.DataFrame({'G': [5.0, 3.0, 5.1], 'BP': [5.5, 3.2, 5.6], 'Age': [9.0, 9.0, 10.0], 'M_ini': [1.0, 2.0, 1.0],
-                          'M_act': [0.9, 1.8, 0.95], 'Lum': [0.0, 1.0, 0.1], 'T_eff': [3.7, 3.8, 3.7], 'Grav': [4.4, 4.0, 4.3]})
-    return {feh: table.copy() for feh in sorted(Isochrone._required_metallicities)}
 
 
 def isochrone_directory(base, name, stars_by_metallicity, descriptor='X 9 7 2 G BP', category='mine'):

@@ -1,0 +1,269 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - name: FilterProfileService
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ref.ivorn}
+#   - {utype: PhotometryFilter.fpsIdentifier}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: filterID
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ref.ivoid}
+#   - {utype: 'photdm:PhotometryFilter.identifier'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthUnit
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.unit}
+#   - {utype: PhotometryFilter.SpectralAxis.unit}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthUCD
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ucd}
+#   - {utype: PhotometryFilter.SpectralAxis.UCD}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: PhotSystem
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: 'photdm:PhotometricSystem.description'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: DetectorType
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotometricSystem.detectorType'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Band
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr.bandpass}
+#   - {utype: 'photdm:PhotometryFilter.bandName'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Instrument
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Facility
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr.obsty}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: ProfileReference
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: CalibrationReference
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Description
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.note}
+#   - {utype: 'photdm:PhotometryFilter.description'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Comments
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.note}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthRef
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;meta.main}
+#   - {utype: 'photdm:PhotometryFilter.spectralLocation.value'}
+# - name: WavelengthMean
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthEff
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl.effective}
+#   - {utype: ''}
+# - name: WavelengthMin
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;stat.min}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.start.value'}
+# - name: WavelengthMax
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;stat.max}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.stop.value'}
+# - name: WidthEff
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: instr.bandwidth}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.extent.value'}
+# - name: WavelengthCen
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPivot
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPeak
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPhot
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: FWHM
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: instr.bandwidth}
+#   - {utype: ''}
+# - name: Fsun
+#   unit: erg / (A s cm2)
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.flux.density}
+#   - {utype: ''}
+# - name: PhotCalID
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.id}
+#   - {utype: 'photdm:PhotCal.identifier'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: MagSys
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotCal.MagnitudeSystem.type'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: ZeroPoint
+#   unit: Jy
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.flux.density}
+#   - {utype: 'photdm:PhotCal.zeroPoint.flux.value'}
+# - name: ZeroPointUnit
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.unit}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.flux.unitexpression'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Mag0
+#   unit: ''
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.mag}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.referenceMagnitude.value'}
+# - name: ZeroPointType
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.type'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: AsinhSoft
+#   unit: ''
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: obs.param}
+#   - {utype: 'photdm:PhotCal.AsinhZeroPoint.softeningParameter'}
+# - name: TrasmissionCurve
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: DATA_LINK}
+#   - {utype: 'phfdm:PhotometryFilter.filterTransmissionCurve'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# schema: astropy-2.0
+FilterProfileService filterID WavelengthUnit WavelengthUCD PhotSystem DetectorType Band Instrument Facility ProfileReference CalibrationReference Description Comments WavelengthRef WavelengthMean WavelengthEff WavelengthMin WavelengthMax WidthEff WavelengthCen WavelengthPivot WavelengthPeak WavelengthPhot FWHM Fsun PhotCalID MagSys ZeroPoint ZeroPointUnit Mag0 ZeroPointType AsinhSoft TrasmissionCurve
+"""ivo://svo/fps""" """LSST/LSST.u_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """u""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST u filter (filter only)""" """Version 1.5""" 3562.9249598189 3584.0770205076 3641.1660798722 3061.2068243768 4080.3572184413 688.46331996229 3583.2926962058 3562.9249598189 3792.0 3656.801107849 712.78781714287 102.74888824595 """LSST/LSST.u_filter/Vega""" """Vega""" 1711.9901699461 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.u_filter"""
+"""ivo://svo/fps""" """LSST/LSST.u""" """Angstrom""" """em.wl""" """LSST""" """1""" """""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST u filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 3680.0441519771 3694.2467374219 3751.2046747812 3206.3350328786 4081.5098469615 473.18659165986 3713.6102908908 3680.0441519771 3792.0 3760.3183483234 493.42937524528 107.92723320238 """LSST/LSST.u/Vega""" """Vega""" 2038.2203170542 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.u"""
+"""ivo://svo/fps""" """LSST/LSSTv19.g_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """g""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/tree/main/baseline""" """""" """LSST g filter (filter only). Version 1.9""" """Filter only. Version 1.9""" 4733.01173522 4795.1364776409 4690.1912499271 3851.5338012432 5696.036444478 1345.5541613048 4761.799988497 4733.01173522 5340.000000000532 4731.131782103 1506.1242925754 187.16123097876 """LSST/LSSTv19.g_filter/Vega""" """Vega""" 4011.0081604308 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSSTv19.g_filter"""
+"""ivo://svo/fps""" """LSST/LSST.g_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """g""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST u filter (filter only)""" """Version 1.5""" 4746.3419396685 4807.7501729743 4704.0835551787 3871.9609801774 5665.2610534732 1335.543243205 4788.9982419367 4746.3419396685 5372.0 4744.5227390905 1466.850639382 187.16688405442 """LSST/LSST.g_filter/Vega""" """Vega""" 4004.1569640791 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.g_filter"""
+"""ivo://svo/fps""" """LSST/LSST.g""" """Angstrom""" """em.wl""" """LSST""" """1""" """g""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST g filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 4782.2631044457 4840.8261428035 4740.662917025 3876.0182236334 5665.3261032682 1253.2558366386 4813.7184688064 4782.2631044457 5372.0 4779.631602358 1419.3657790004 187.93856977827 """LSST/LSST.g/Vega""" """Vega""" 3990.4750236117 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.g"""
+"""ivo://svo/fps""" """LSST/LSSTv19.g""" """Angstrom""" """em.wl""" """LSST""" """1""" """g""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/tree/main/baseline""" """""" """LSST full throughput. Version 1.9""" """Full throughput: filter+telescope+detector+atmosphere (@ airmass 1.2)\nVersion 1.9""" 4786.1629422553 4844.4183191324 4744.3103442114 3853.3482719996 5696.4787338659 1220.3573337684 4806.2562081942 4786.1629422553 5340.000000000532 4783.2895064972 1422.5616609853 188.16847996769 """LSST/LSSTv19.g/Vega""" """Vega""" 3989.6739443152 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSSTv19.g"""
+"""ivo://svo/fps""" """LSST/LSST.r_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """r""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST r filter (filter only)""" """Version 1.5""" 6201.4991979438 6241.8676527866 6155.8207363907 5376.3106802531 7055.1847375971 1277.9706320597 6230.0608267187 6201.4991979438 6766.0 6182.7658220921 1365.1874267498 167.68844753506 """LSST/LSST.r_filter/Vega""" """Vega""" 3174.4936391774 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.r_filter"""
+"""ivo://svo/fps""" """LSST/LSST.r""" """Angstrom""" """em.wl""" """LSST""" """1""" """r""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST r filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 6217.8167025607 6257.7366582102 6172.3440332442 5377.1931057996 7055.1570987567 1206.9158135107 6230.7376303506 6217.8167025607 6766.0 6199.1808046344 1327.3204373997 167.1810501176 """LSST/LSST.r/Vega""" """Vega""" 3163.859622763 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.r"""
+"""ivo://svo/fps""" """LSST/LSST.i""" """Angstrom""" """em.wl""" """LSST""" """1""" """""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST i filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 7532.2759919962 7560.482595277 7500.9748221937 6765.7662223421 8325.0537198719 1174.7679034995 7551.5876354988 7532.2759919962 8036.0 7519.7574147825 1243.9953744889 125.65554019709 """LSST/LSST.i/Vega""" """Vega""" 2576.0692326551 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.i"""
+"""ivo://svo/fps""" """LSST/LSST.i_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """i""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST i filter (filter only)""" """Version 1.5""" 7535.6713781525 7563.6025944988 7504.6403220596 6765.9524449316 8325.1826324628 1193.596543202 7556.0890314622 7535.6713781525 8036.0 7523.2665299459 1252.2671426532 125.56936516865 """LSST/LSST.i_filter/Vega""" """Vega""" 2574.6557305466 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.i_filter"""
+"""ivo://svo/fps""" """LSST/LSSTv19.i_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/tree/main/baseline""" """""" """LSST i filter (filter only). Version 1.9""" """Filter only. Version 1.9""" 7546.2501865129 7575.7561220071 7513.456094805 6635.1823412535 8407.4834809513 1239.9101524472 7572.3650243468 7546.2501865129 8020.000000001141 7533.1417046144 1285.1968087595 125.2652503911 """LSST/LSSTv19.i_filter/Vega""" """Vega""" 2571.0254389245 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSSTv19.i_filter"""
+"""ivo://svo/fps""" """LSST/LSSTv19.i""" """Angstrom""" """em.wl""" """LSST""" """1""" """i""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/tree/main/baseline""" """""" """LSST full throughput. Version 1.9""" """Full throughput: filter+telescope+detector+atmosphere (@ airmass 1.2)\nVersion 1.9""" 7549.2813842591 7579.0662431782 7516.166462443 6641.5168903249 8407.4795490623 1189.3207347792 7574.2830524114 7549.2813842591 7980.000000001132 7536.0474627899 1278.4089064662 125.17484196295 """LSST/LSSTv19.i/Vega""" """Vega""" 2569.8945734488 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSSTv19.i"""
+"""ivo://svo/fps""" """LSST/LSST.z""" """Angstrom""" """em.wl""" """LSST""" """1""" """z""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST z filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 8685.062157252 8701.2854974337 8678.9039639501 8035.3922721447 9375.4719614626 997.50905770914 8707.4988185989 8685.062157252 8890.0 8689.8027135375 1024.1100153719 96.142609066056 """LSST/LSST.z/Vega""" """Vega""" 2261.3977099694 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.z"""
+"""ivo://svo/fps""" """LSST/LSST.z_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """z""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST z filter (filter only)""" """Version 1.5""" 8701.8271095531 8718.8319347264 8695.5092862249 8035.6444065505 9380.157067243 1011.6039675465 8715.325385398 8701.8271095531 9092.0 8706.9434248506 1043.252097565 95.756101876245 """LSST/LSST.z_filter/Vega""" """Vega""" 2262.2564863983 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.z_filter"""
+"""ivo://svo/fps""" """LSST/LSST.y""" """Angstrom""" """em.wl""" """LSST""" """1""" """""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST y filter (full)""" """Full throughput: system - mirrors, lenses, filter, detector, and the zenith atmosphere.\nAerosols added to atmosphere\nVersion 1.5""" 9730.0529758245 9749.299651145 9711.8212185088 9089.0666523755 10915.007941097 871.82802025868 9671.5690035079 9730.0529758245 9395.0 9724.2143150353 930.03734890056 76.782572108918 """LSST/LSST.y/Vega""" """Vega""" 2165.2312712442 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.y"""
+"""ivo://svo/fps""" """LSST/LSST.y_filter""" """Angstrom""" """em.wl""" """LSST""" """1""" """y""" """LSST""" """LSST""" """https://github.com/lsst/throughputs/blob/master/baseline/README.md""" """""" """LSST y filter (filter only)""" """Version 1.5""" 10103.579037135 10142.44266347 10056.61728199 9091.2875803276 10999.99 1621.1415181257 10130.627939935 10103.579037135 10999.0 10082.153476666 1737.7441201301 70.896852413217 """LSST/LSST.y_filter/Vega""" """Vega""" 2072.0949259482 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=LSST/LSST.y_filter"""

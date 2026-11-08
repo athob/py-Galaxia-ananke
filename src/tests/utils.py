@@ -146,6 +146,36 @@ def write_isochrone_file(path, header, rows):
     path.write_text("# " + " ".join(header) + "\n" + "".join(" ".join(str(value) for value in row) + "\n" for row in rows))
     return path
 
+SVO_DATA = pathlib.Path(__file__).resolve().parent / "data"
+
+
+def custom_isochrone_data():
+    """Data for an isochrone made in Python: a table for each metallicity that is needed, with the magnitudes before the rest."""
+    import pandas as pd
+    from ..galaxia_ananke.photometry.Isochrone import Isochrone
+    table = pd.DataFrame({'G': [5.0, 3.0, 5.1], 'BP': [5.5, 3.2, 5.6], 'Age': [9.0, 9.0, 10.0], 'M_ini': [1.0, 2.0, 1.0],
+                          'M_act': [0.9, 1.8, 0.95], 'Lum': [0.0, 1.0, 0.1], 'T_eff': [3.7, 3.8, 3.7], 'Grav': [4.4, 4.0, 4.3]})
+    return {feh: table.copy() for feh in sorted(Isochrone._required_metallicities)}
+
+
+def replay_svo(monkeypatch, **files):
+    """
+    Makes the SVO filter profile service answer from tables that were saved, so that nothing here uses the network: each keyword
+    is a facility and gives the file (in tests/data) of the table that astroquery returned for it, or a table. Returns the list of
+    the facilities that were asked about, in order. A table is made again at each question, as the code that asks changes what it gets.
+    """
+    from astropy.table import Table
+    from ..galaxia_ananke.photometry.SvoFpsDriver import SvoFpsDriver
+    module = sys.modules[SvoFpsDriver.__module__]
+    asked = []
+
+    def get_filter_list(facility=None, **kwargs):
+        asked.append(facility)
+        source = files[facility]
+        return source.copy() if isinstance(source, Table) else Table.read(SVO_DATA / source)
+    monkeypatch.setattr(module.SvoFps, 'get_filter_list', get_filter_list)
+    return asked
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630

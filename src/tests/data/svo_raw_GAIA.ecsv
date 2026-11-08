@@ -1,0 +1,270 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - name: FilterProfileService
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ref.ivorn}
+#   - {utype: PhotometryFilter.fpsIdentifier}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: filterID
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ref.ivoid}
+#   - {utype: 'photdm:PhotometryFilter.identifier'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthUnit
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.unit}
+#   - {utype: PhotometryFilter.SpectralAxis.unit}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthUCD
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.ucd}
+#   - {utype: PhotometryFilter.SpectralAxis.UCD}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: PhotSystem
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: 'photdm:PhotometricSystem.description'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: DetectorType
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotometricSystem.detectorType'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Band
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr.bandpass}
+#   - {utype: 'photdm:PhotometryFilter.bandName'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Instrument
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Facility
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: instr.obsty}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: ProfileReference
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: CalibrationReference
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Description
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.note}
+#   - {utype: 'photdm:PhotometryFilter.description'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Comments
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.note}
+#   - {utype: ''}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: WavelengthRef
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;meta.main}
+#   - {utype: 'photdm:PhotometryFilter.spectralLocation.value'}
+# - name: WavelengthMean
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthEff
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl.effective}
+#   - {utype: ''}
+# - name: WavelengthMin
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;stat.min}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.start.value'}
+# - name: WavelengthMax
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl;stat.max}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.stop.value'}
+# - name: WidthEff
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: instr.bandwidth}
+#   - {utype: 'photdm:PhotometryFilter.bandwidth.extent.value'}
+# - name: WavelengthCen
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPivot
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPeak
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: WavelengthPhot
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: em.wl}
+#   - {utype: ''}
+# - name: FWHM
+#   unit: Angstrom
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: instr.bandwidth}
+#   - {utype: ''}
+# - name: Fsun
+#   unit: erg / (A s cm2)
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.flux.density}
+#   - {utype: ''}
+# - name: PhotCalID
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.id}
+#   - {utype: 'photdm:PhotCal.identifier'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: MagSys
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotCal.MagnitudeSystem.type'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: ZeroPoint
+#   unit: Jy
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.flux.density}
+#   - {utype: 'photdm:PhotCal.zeroPoint.flux.value'}
+# - name: ZeroPointUnit
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.unit}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.flux.unitexpression'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: Mag0
+#   unit: ''
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: phot.mag}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.referenceMagnitude.value'}
+# - name: ZeroPointType
+#   unit: ''
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: meta.code}
+#   - {utype: 'photdm:PhotCal.ZeroPoint.type'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# - name: AsinhSoft
+#   unit: ''
+#   datatype: float64
+#   meta: !!omap
+#   - {ucd: obs.param}
+#   - {utype: 'photdm:PhotCal.AsinhZeroPoint.softeningParameter'}
+# - name: TrasmissionCurve
+#   datatype: string
+#   meta: !!omap
+#   - {ucd: DATA_LINK}
+#   - {utype: 'phfdm:PhotometryFilter.filterTransmissionCurve'}
+#   - {_votable_string_dtype: char}
+#   - {_votable_arraysize: '*'}
+#   subtype: json
+# schema: astropy-2.0
+FilterProfileService filterID WavelengthUnit WavelengthUCD PhotSystem DetectorType Band Instrument Facility ProfileReference CalibrationReference Description Comments WavelengthRef WavelengthMean WavelengthEff WavelengthMin WavelengthMax WidthEff WavelengthCen WavelengthPivot WavelengthPeak WavelengthPhot FWHM Fsun PhotCalID MagSys ZeroPoint ZeroPointUnit Mag0 ZeroPointType AsinhSoft TrasmissionCurve
+"""ivo://svo/fps""" """GAIA/Gaia2m.Gbp_faint""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://ui.adsabs.harvard.edu/abs/2018A%26A...619A.180M/abstract""" """""" """GAIA Gbp filter, DR2 Ma\u00edz Apell\u00e1niz & Weiler revision (faint, G>10.87)""" """""" 5037.4044069846 5267.7542387029 4979.2284836999 3292.2171842998 6791.6159100104 2600.0483034672 5318.3311452052 5037.4044069846 6127.5 5108.1615197711 2707.8546972427 174.58098812341 """GAIA/Gaia2m.Gbp_faint/Vega""" """Vega""" 3496.5578078878 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/Gaia2m.Gbp_faint"""
+"""ivo://svo/fps""" """GAIA/GAIA2r.Gbp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """""" """GAIA Gbp filter, DR2 revised curve""" """Revised passband for Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve).""" 5048.6242989136 5278.582413804 5017.6937808197 3279.274419444 6708.9154891708 2279.4307908955 5358.6066826619 5048.6242989136 6470.0 5142.5077480273 2483.2380140496 175.23716989124 """GAIA/GAIA2r.Gbp/Vega""" """Vega""" 3438.2895767386 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2r.Gbp"""
+"""ivo://svo/fps""" """GAIA/GAIA2.Gbp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """GAIA Gbp filter, DR2""" """Original passband used for the magnitudes published in Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve)""" 5050.0 5279.8925948176 5050.0 3280.4497429151 6719.0296730486 2347.3752758911 5350.2394310059 5050.0 6470.0 5138.9488536408 2520.030845596 175.28772947535 """GAIA/GAIA2.Gbp/Vega""" """Vega""" 3534.741 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2.Gbp"""
+"""ivo://svo/fps""" """GAIA/GAIA3.Gbp""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/edr3-passbands""" """""" """GAIA Gbp filter, DR3""" """""" 5109.7120850159 5319.8652108699 5035.7502754443 3301.8296034651 6739.3372529264 2157.5049836097 5341.2859163472 5109.7120850159 6290.0 5157.1828510172 2530.7865085328 176.54901330865 """GAIA/GAIA3.Gbp/Vega""" """Vega""" 3552.0128903434 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA3.Gbp"""
+"""ivo://svo/fps""" """GAIA/GAIA0.Gbp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """http://adsabs.harvard.edu/abs/2010A%26A...523A..48J""" """""" """GAIA Gbp filter pre release""" """""" 5124.2029615744 5319.8980345523 5041.6111420241 3283.0353817505 6713.5661764706 2333.0630720983 5329.7827359076 5124.2029615744 6470.0 5156.2440640662 2529.830655733 177.47127778016 """GAIA/GAIA0.Gbp/Vega""" """Vega""" 3599.1176654123 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA0.Gbp"""
+"""ivo://svo/fps""" """GAIA/Gaia2m.Gbp_bright""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://ui.adsabs.harvard.edu/abs/2018A%26A...619A.180M/abstract""" """""" """GAIA Gbp filter, DR2 Ma\u00edz Apell\u00e1niz & Weiler revision (bright, G<10.87)""" """""" 5117.1521496936 5324.2653845446 5038.9412125858 3291.5373688759 6776.1933012175 2434.5746133453 5360.0234847576 5117.1521496936 6327.5 5158.3764902462 2600.1498169764 176.80945754446 """GAIA/Gaia2m.Gbp_bright/Vega""" """Vega""" 3564.940376206 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/Gaia2m.Gbp_bright"""
+"""ivo://svo/fps""" """GAIA/GAIA3.G""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/edr3-passbands""" """""" """GAIA G filter, DR3""" """""" 6217.590403249 6719.5494436669 5822.3887136979 3309.1300431716 10381.713610409 4052.9683037356 6605.3479463013 6217.590403249 7200.0 6132.2472709579 4365.3525326628 146.43763032776 """GAIA/GAIA3.G/Vega""" """Vega""" 3228.7464752872 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA3.G"""
+"""ivo://svo/fps""" """GAIA/Gaia2m.G""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://ui.adsabs.harvard.edu/abs/2018A%26A...619A.180M/abstract""" """""" """GAIA G filter, DR2 Ma\u00edz Apell\u00e1niz & Weiler revision""" """""" 6229.3580821441 6720.6093801951 5837.7214754688 3313.8135213881 10299.709100275 4135.7895354494 6623.6994323757 6229.3580821441 7262.5 6139.9766416117 4424.0200317736 146.81963561224 """GAIA/Gaia2m.G/Vega""" """Vega""" 3231.452431057 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/Gaia2m.G"""
+"""ivo://svo/fps""" """GAIA/GAIA0.G""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """http://adsabs.harvard.edu/abs/2010A%26A...523A..48J""" """""" """GAIA G filter pre release""" """""" 6251.5039180104 6735.4121537628 5850.876447469 3321.3852813853 10514.700996678 4203.6142178653 6631.7889778965 6251.5039180104 7010.0 6146.8663034951 4396.689066904 147.11461699114 """GAIA/GAIA0.G/Vega""" """Vega""" 3256.0147235941 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA0.G"""
+"""ivo://svo/fps""" """GAIA/GAIA2.G""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """GAIA G filter, DR2""" """Original passband used for the magnitudes published in Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve)""" 6230.0 6742.5082796867 6230.0 3306.6039005948 10450.650159395 4182.9635181394 6636.464893422 6230.0 7060.0 6148.7882323138 4372.4436157118 146.11374851991 """GAIA/GAIA2.G/Vega""" """Vega""" 3296.201 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2.G"""
+"""ivo://svo/fps""" """GAIA/GAIA2r.G""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """""" """GAIA G filter, DR2 revised curve""" """Revised passband for Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve).""" 6246.7645445392 6773.7043075919 5829.5799337521 3321.2002148405 10827.456811998 4358.4256027372 6647.0115835974 6246.7645445392 7010.0 6147.7814835288 4578.3181026466 145.55099558583 """GAIA/GAIA2r.G/Vega""" """Vega""" 3243.848262579 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2r.G"""
+"""ivo://svo/fps""" """GAIA/GAIA2.Grp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """GAIA Grp filter, DR2""" """Original passband used for the magnitudes published in Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve)""" 7730.0 7883.7057746781 7730.0 6254.9737467956 10605.786098469 2756.7790153144 7806.7684597568 7730.0 7260.0 7691.5294212543 2794.5368509782 118.69194276539 """GAIA/GAIA2.Grp/Vega""" """Vega""" 2620.252 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2.Grp"""
+"""ivo://svo/fps""" """GAIA/GAIA2r.Grp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/iow_20180316/""" """""" """GAIA Grp filter, DR2 revised curve""" """Revised passband for Gaia DR2.\n\nThe original curve has been multiplied by &#955; and normalized to maximum transmission=1 (to transform it to \""energy counting\"" curve).""" 7740.869525699 7919.0764862008 7587.213835951 6176.8080030946 10608.331013591 2943.7240625933 7858.5378546256 7740.869525699 7610.0 7700.976336931 3116.3831751651 118.08496371183 """GAIA/GAIA2r.Grp/Vega""" """Vega""" 2566.0776344001 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA2r.Grp"""
+"""ivo://svo/fps""" """GAIA/Gaia2m.Grp""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://ui.adsabs.harvard.edu/abs/2018A%26A...619A.180M/abstract""" """""" """GAIA Grp filter, DR2 Ma\u00edz Apell\u00e1niz & Weiler revision""" """""" 7752.067871864 7933.0571263259 7596.5557432801 6194.5336688652 10613.078501634 3007.3780497114 7881.2095050927 7752.067871864 7385.0 7712.0193841698 3144.7124610858 117.76276218883 """GAIA/Gaia2m.Grp/Vega""" """Vega""" 2564.2129408052 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/Gaia2m.Grp"""
+"""ivo://svo/fps""" """GAIA/GAIA3.Grp""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/edr3-passbands""" """""" """GAIA Grp filter, DR3""" """""" 7769.0226260418 7939.1014333152 7619.9599926215 6200.4566154641 10465.566531006 2924.4362576966 7849.1369016309 7769.0226260418 8140.0 7730.3478865637 3082.8134971928 117.38623417818 """GAIA/GAIA3.Grp/Vega""" """Vega""" 2554.9484277488 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA3.Grp"""
+"""ivo://svo/fps""" """GAIA/GAIA0.Grp""" """Angstrom""" """em.wl""" """GAIA""" """0""" """""" """GAIA""" """GAIA""" """http://adsabs.harvard.edu/abs/2010A%26A...523A..48J""" """""" """GAIA Grp filter pre release""" """""" 7829.6530603298 7992.8923919354 7690.7357488545 6296.4329268293 10636.56462585 2842.1137307902 7895.8685560427 7829.6530603298 7790.0 7795.6295671026 2956.3989825891 115.86634485565 """GAIA/GAIA0.Grp/Vega""" """Vega""" 2530.3541200236 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA0.Grp"""
+"""ivo://svo/fps""" """GAIA/GAIA3.Grvs""" """Angstrom""" """em.wl""" """GAIA""" """1""" """""" """GAIA""" """GAIA""" """https://www.cosmos.esa.int/web/gaia/dr3-passbands""" """""" """GAIA Grvs filter, DR3""" """""" 8578.7613420633 8579.5940085457 8578.1595190347 8459.7502595805 8700.2497384036 235.1243119935 8579.9994960161 8578.7613420633 8581.25 8578.7149738772 240.23941158059 97.439601765659 """GAIA/GAIA3.Grvs/Vega""" """Vega""" 2219.0479548294 """Jy""" 0.0 """Pogson""" 0.0 """http://svo2.cab.inta-csic.es//theory/fps/fps.php?ID=GAIA/GAIA3.Grvs"""
