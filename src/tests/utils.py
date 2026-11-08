@@ -101,6 +101,19 @@ def fresh_package():
         for key in [key for key in sys.modules if key == name or key.startswith(name + ".")]:
             del sys.modules[key]
 
+def patch_cache(monkeypatch, tmp_path):
+    """
+    Puts the places of the cache of the backend (where a build installs it, with its data and its logs) under a
+    temporary directory, in _build_utils, which took them from the constants when it was imported.
+    """
+    from .. import _build_utils as build
+    root = tmp_path / '.cache' / 'galaxia_ananke'
+    places = {'CACHE': root, 'GALAXIA': root / 'bin' / 'galaxia', 'GALAXIA_DATA': root / 'GalaxiaData',
+              'GALAXIA_LOG': root / 'log', 'ISOCHRONES_PATH': root / 'GalaxiaData' / 'Isochrones'}
+    for name, path in places.items():
+        monkeypatch.setattr(build, name, path)
+    return types.SimpleNamespace(**places)
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630
