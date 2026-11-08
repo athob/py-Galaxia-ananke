@@ -53,6 +53,12 @@ far as the commits of this package and of the backend say.
   contributing guide in agreement. They do not need Galaxia.
 - Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
   ecosystem.
+- Tests of the utilities that the package is built on: the state that tracks the steps of a
+  survey and lets a run with caching skip the ones already done, `execute`, the checks of the
+  dictionaries of particles and of the lengths of their arrays, the symbolic links, the version
+  of a command, the loading of a source file, and the metadata of the classes and the compact
+  form of the logs of the backend. The known bug of `execute`, which cuts a command on its
+  spaces, is an expected failure that fails the run on the day it is fixed.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
