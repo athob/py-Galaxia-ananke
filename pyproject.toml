@@ -23,3 +23,18 @@ select = ["E9", "F63", "F7", "F82"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+# -ra says why tests were skipped or are expected to fail; a marker or a setting that pytest does not know is an error
+addopts = "-ra --strict-markers --strict-config"
+# an expected failure that passes fails the run: the xfail marker of a known bug (see CONTRIBUTING.md) goes with its fix
+xfail_strict = true
+markers = [
+    "integration: runs the compiled backend (installing the package builds it), and is skipped where it is not built",
+    "network: uses the network (the SVO filter service), and only runs where GALAXIA_TEST_NETWORK is set",
+]
+filterwarnings = [
+    # Importing the package warns on purpose, about the patch it makes to vaex: a test of its own checks that it does
+    "ignore:Importing galaxia_ananke monkey-patches vaex:RuntimeWarning",
+]
