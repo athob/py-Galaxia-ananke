@@ -117,6 +117,11 @@ far as the commits of this package and of the backend say.
   mas/yr; the center and the pole of the Galaxy; formulas that do not use astropy; a round trip),
   the helpers that flush what a pipeline made into the HDF5 file of a catalogue, and the patch
   that the package makes to vaex to open the groups of its files and lists of files.
+- Tests of `Output` on synthetic output of the backend (EBF files laid out as Galaxia writes
+  them): what it says of itself, the files of the backend that it looks for and clears, the stars
+  of each partition and the runs of them that are copied, the names of the HDF5 files, what those
+  hold (the stars, the groups, the attributes, the logs of the backend), the redefinition of the
+  partitions by a rule of the user, and the parser of the logs of the backend.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
