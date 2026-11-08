@@ -105,7 +105,7 @@ def test_a_prefix_that_is_a_symlink_is_resolved_for_the_cache(tmp_path, monkeypa
     assert constants.CACHE == (tmp_path / "real" / ".cache" / "galaxia_ananke").resolve()
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the module builds a PermissionError for a prefix that cannot be "
+@pytest.mark.xfail(raises=pytest.fail.Exception, reason="the module builds a PermissionError for a prefix that cannot be "
                    "written to and never raises it, so the installation goes on and fails later")
 def test_a_prefix_that_cannot_be_written_to_is_refused(tmp_path, monkeypatch, package):
     prefix = tmp_path / "read-only"
