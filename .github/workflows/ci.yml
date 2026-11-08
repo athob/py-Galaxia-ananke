@@ -125,7 +125,7 @@ jobs:
       if: matrix.python-version == '3.12'
       run: |
         pip install --require-hashes -r .github/${{ matrix.test-lock || 'requirements/requirements-test.txt' }}
-        # the floor of the coverage (fail_under, in pyproject.toml), once there is one, is enforced by the
+        # the floor of the coverage (fail_under, in pyproject.toml) is enforced by the
         # report below and not here, so that the table is in the summary of the run when the floor is not reached
         pytest src --cov --cov-fail-under=0
         echo "### Test coverage (Python 3.12)" >> "$GITHUB_STEP_SUMMARY"

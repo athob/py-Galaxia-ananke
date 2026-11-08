@@ -53,6 +53,6 @@ omit = [
 exclude_also = [
     "if __name__ == .__main__.:",
 ]
-# There is no floor yet (fail_under): the suite is being written, and the floor will be the coverage that is measured
-# when it is worth keeping. From then on, when the coverage rises, raise the floor; a change that lowers it needs a
-# test, not a lower floor.
+# The floor of the coverage, by lines and branches, on the Python 3.12 run of CI, which fails under it. When the
+# coverage rises, raise it; a change that lowers it needs a test, not a lower floor.
+fail_under = 56

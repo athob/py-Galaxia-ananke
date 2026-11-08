@@ -103,7 +103,10 @@ takes about four minutes. Its jobs:
   installed.
 - **install**: for each Python version from 3.9 to 3.12, fetches the backend (shallow: the
   one commit this repository pins), installs the package and runs `pytest src`; the run on Python 3.12 also puts the coverage of the
-  tests in the summary of the run.
+  tests in the summary of the run, and fails under the floor of the coverage (`fail_under` in
+  `pyproject.toml`). When the coverage rises, raise the floor; a change that lowers it needs a test,
+  not a lower floor. Running a part of the tests with `--cov` falls under it: add
+  `--cov-fail-under=0`.
 - **package**: builds the sdist the way a release would, then runs `twine check --strict`
   and `.github/scripts/check_dist.py`: the sdist has to hold what installing needs
   (`.gitmodules` among it), with a version and a revision id that the installer can use, and

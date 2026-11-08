@@ -53,6 +53,8 @@ far as the commits of this package and of the backend say.
   contributing guide in agreement. They do not need Galaxia.
 - Dependabot also watches the locked requirements of the CI and CD tools, with its `uv`
   ecosystem.
+- The test coverage is measured by branch too, without the footer of the modules that no test
+  can run, and it has a floor, 56% for now, which the Python 3.12 run of CI fails under.
 - Tests of the utilities that the package is built on: the state that tracks the steps of a
   survey and lets a run with caching skip the ones already done, `execute`, the checks of the
   dictionaries of particles and of the lengths of their arrays, the symbolic links, the version
