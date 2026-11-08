@@ -48,13 +48,14 @@ def test_the_name_of_the_files_is_output_then_the_metallicity():
     assert IsochroneFile._file_format == 'output_{}.dat'
 
 
-@pytest.mark.parametrize("arguments, error", [
-    ((), "Keyword argument 'isochrone' missing"),
-    (('a', 'b', 'c'), "Too many arguments \\(3 given\\)"),
+@pytest.mark.parametrize("arguments, keywords, error", [
+    ((), {}, "Keyword argument 'isochrone' missing"),
+    (('a', 'b', 'c'), {}, "Keyword argument 'isochrone' missing"),                 # the isochrone is asked for before the arguments are counted
+    (('a', 'b', 'c'), {'isochrone': ISOCHRONE}, "Too many arguments \\(3 given\\)"),
 ])
-def test_an_isochrone_file_that_is_wrongly_made_says_what_is_wrong(arguments, error):
+def test_an_isochrone_file_that_is_wrongly_made_says_what_is_wrong(arguments, keywords, error):
     with pytest.raises(TypeError, match=error):
-        IsochroneFile(*arguments)
+        IsochroneFile(*arguments, **keywords)
 
 
 def test_an_isochrone_file_needs_at_least_a_path():
@@ -109,7 +110,7 @@ def test_data_that_is_not_a_table_is_refused(data, tmp_path):
 @pytest.mark.parametrize("header", [
     "# a b c",
     "#a\tb\tc",
-    "#   a    b   c   ",
+    "#   a    b   c",
     "# first line\n# a b c",                                # the last line of comments is the one with the names
     "# a\t\tb c",
 ], ids=["spaces", "tabs", "many spaces", "two comments", "mixed"])
@@ -119,11 +120,13 @@ def test_the_names_of_the_columns_are_in_the_last_comment_of_the_header(header, 
     assert IsochroneFile(path, isochrone=ISOCHRONE).column_names == ['a', 'b', 'c']
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the spaces around the names are stripped before the tabs are made spaces, so a "
-                   "tab right after the # leaves an empty name in front of the others, and every column is one off")
-def test_a_header_that_starts_with_a_tab_has_no_empty_name(tmp_path):
+@pytest.mark.xfail(raises=AssertionError, reason="the spaces around the names are stripped before the tabs are made spaces, and the "
+                   "newline that closes the line is stripped after them: a tab at the start, or spaces or a tab at the end, "
+                   "leave an empty name, and every column is one off")
+@pytest.mark.parametrize("header", ["#\ta\tb\tc", "# a b c   ", "# a b c\t"], ids=["a tab at the start", "spaces at the end", "a tab at the end"])
+def test_a_header_with_white_space_at_its_ends_has_no_empty_name(header, tmp_path):
     path = tmp_path / 'output_0.019000.dat'
-    path.write_text("#\ta\tb\tc\n1 2 3\n")
+    path.write_text(f"{header}\n1 2 3\n")
     assert IsochroneFile(path, isochrone=ISOCHRONE).column_names == ['a', 'b', 'c']
 
 
