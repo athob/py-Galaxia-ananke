@@ -127,6 +127,19 @@ def minimal_kernels():
     """Phase space kernels (Nx2) for minimal_particles."""
     return np.array([[1.0, 2.0], [3.0, 4.0]])
 
+def patch_nbody1(monkeypatch, tmp_path):
+    """
+    Puts the directory where the backend finds its inputs under a temporary directory, in Input, which took it from the
+    constants when it was imported: so that preparing an input never writes in the cache of the installation.
+    """
+    from ..galaxia_ananke import Input
+    module = sys.modules[Input.__module__]
+    directory = tmp_path / 'GalaxiaData' / 'nbody1'
+    (directory / 'filenames').mkdir(parents=True)
+    monkeypatch.setattr(module, 'GALAXIA_NBODY1', directory)
+    monkeypatch.setattr(module, 'GALAXIA_FILENAMES', directory / 'filenames')
+    return directory
+
 class list_stdout(list):
     """
     Credit to https://stackoverflow.com/a/16571630

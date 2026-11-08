@@ -20,7 +20,6 @@ installation). The hashes are pinned: they name the cache of an input, so a chan
 """
 import os
 import re
-import sys
 import types
 
 import ebf
@@ -28,7 +27,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke import Input
-from .utils import minimal_kernels, minimal_particles
+from .utils import minimal_kernels, minimal_particles, patch_nbody1
 
 # The hashes of the smallest inputs, worked out outside Input: the sha256 of the hashes of the arrays in the order that the
 # particles have once the keys that are missing are added (the keys in lexical order, then the parent and the partition if they
@@ -50,12 +49,7 @@ def make(tmp_path, particles=None, kernels=None, sorted_by_partition=True, **kwa
 @pytest.fixture
 def nbody1(tmp_path, monkeypatch):
     """Where the backend finds its inputs, under a temporary directory and not in the cache of the installation."""
-    module = sys.modules[Input.__module__]
-    directory = tmp_path / 'GalaxiaData' / 'nbody1'
-    (directory / 'filenames').mkdir(parents=True)
-    monkeypatch.setattr(module, 'GALAXIA_NBODY1', directory)
-    monkeypatch.setattr(module, 'GALAXIA_FILENAMES', directory / 'filenames')
-    return directory
+    return patch_nbody1(monkeypatch, tmp_path)
 
 
 # -- the sorter ---------------------------------------------------------------------
