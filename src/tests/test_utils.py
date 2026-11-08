@@ -17,6 +17,8 @@
 Tests of the utilities that need pandas: RecordingDataFrame, which Output uses to find out which columns of a survey a function
 of the user reads, and hash_iterable, whose value names the files of the cache of an input.
 """
+import warnings
+
 import pandas as pd
 import pytest
 
@@ -66,6 +68,14 @@ def test_an_element_that_is_not_bytes_is_a_type_error():
 @pytest.fixture
 def frame():
     return RecordingDataFrame({"age": [1, 2], "feh": [3, 4], "mass": [5, 6]})
+
+
+@pytest.mark.xfail(raises=UserWarning, reason="making a frame sets an attribute that pandas takes for a column that someone "
+                   "forgot to make, and warns: whoever post-processes a survey with a function of their own sees it")
+def test_a_recording_frame_is_made_without_a_warning():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        RecordingDataFrame({"age": [1, 2]})
 
 
 def test_a_new_frame_has_read_nothing(frame):
