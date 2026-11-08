@@ -84,6 +84,14 @@ far as the commits of this package and of the backend say.
   tag, an input that was just made cannot say its hash, a name with a dot loses its hash in the
   names of its files, the kernels and the particles cannot be given as lists, and the kernels are
   not checked to be as many as the particles.
+- Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
+  the photometric systems after the first, the generations, the name that follows from its hash,
+  the parameter file, the commands that run the backend and append a photometric system, running
+  with and without caching, and what making a survey does in what order. The weaknesses that they
+  found are expected failures: a survey that is made again with other parameters keeps the name
+  of the first, a parameter that does not exist is not refused, no generation fails with a message
+  that says nothing of the generations, and `n_gens` and `fsample` of a survey that was not made
+  fail on `None`.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
