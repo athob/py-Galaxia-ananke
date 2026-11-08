@@ -1,0 +1,292 @@
+#!/usr/bin/env python
+#
+# Author: Adrien CR Thob
+# Copyright (C) 2026  Adrien CR Thob
+#
+# This file is part of the py-Galaxia-ananke project,
+# <https://github.com/athob/py-Galaxia-ananke>, which is licensed
+# under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
+#
+# The full copyright notice, including terms governing use, modification,
+# and redistribution, is contained in the files LICENSE and COPYRIGHT,
+# which can be found at the root of the source code distribution tree:
+# - LICENSE <https://github.com/athob/py-Galaxia-ananke/blob/main/LICENSE>
+# - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
+#
+"""
+Tests of Isochrone, which is the isochrones of one photometric system: a directory with a descriptor (the name of the system, where
+the magnitudes start in the files, and their names) and a file per metallicity. They cover how one is made, from a directory or from
+data in Python, what the descriptor says, which layout the files have, and the tables that are made from them. The isochrones that
+are made in Python go to a temporary directory and not to the installation, and the others are small ones that are written here.
+"""
+import pathlib
+import re
+import sys
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
+from ..galaxia_ananke.photometry.Formatting import (default_formatting, oldpadova_fomatting, oldpadova_fomatting_withlogage,
+                                                    padova_formatting)
+from ..galaxia_ananke.photometry.Isochrone import Isochrone
+from .utils import write_isochrone_file
+
+ISOCHRONE_MODULE = sys.modules[Isochrone.__module__]
+HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of default_formatting
+
+
+@pytest.fixture
+def isochrones_path(tmp_path, monkeypatch):
+    """Where the isochrones that are made in Python go: a temporary directory, in Isochrone, which took it from the constants."""
+    monkeypatch.setattr(ISOCHRONE_MODULE, 'ISOCHRONES_PATH', tmp_path / 'Isochrones')
+    return tmp_path / 'Isochrones'
+
+
+def custom_data():
+    """Data for an isochrone made in Python: a table for each metallicity that is needed, with the magnitudes before the rest."""
+    table = pd.DataFrame({'G': [5.0, 3.0, 5.1], 'BP': [5.5, 3.2, 5.6], 'Age': [9.0, 9.0, 10.0], 'M_ini': [1.0, 2.0, 1.0],
+                          'M_act': [0.9, 1.8, 0.95], 'Lum': [0.0, 1.0, 0.1], 'T_eff': [3.7, 3.8, 3.7], 'Grav': [4.4, 4.0, 4.3]})
+    return {feh: table.copy() for feh in sorted(Isochrone._required_metallicities)}
+
+
+def isochrone_directory(base, name, stars_by_metallicity, descriptor='X 9 7 2 G BP', category='mine'):
+    """An isochrone as a directory of the installation has it, with the layout of default_formatting."""
+    directory = base / category / name
+    directory.mkdir(parents=True)
+    if descriptor is not None:
+        (directory / Isochrone._file_descriptor).write_text(descriptor + "\n\n")
+    for metallicity, stars in stars_by_metallicity.items():
+        write_isochrone_file(directory / f"output_{metallicity:.6f}.dat", HEADER, stars)
+    return directory
+
+
+# -- what is needed -----------------------------------------------------------------
+
+def test_what_an_isochrone_needs():
+    assert Isochrone._required_keys == ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav']
+    assert Isochrone._file_descriptor == 'IsoFileDescriptor.txt'
+    needed = Isochrone._required_metallicities
+    assert len(needed) == 34 and min(needed) == 0.0001 and max(needed) == 0.03
+    assert len({format(metallicity, '.6f') for metallicity in needed}) == 34         # each one has a file name of its own
+
+
+# -- how an isochrone is made -------------------------------------------------------
+
+def test_an_isochrone_made_from_a_directory_is_that_directory(tmp_path):
+    iso = Isochrone(tmp_path / 'padova' / 'LSST')
+    assert iso.path == tmp_path / 'padova' / 'LSST' and iso.category == 'padova' and iso.name == 'LSST'
+    assert repr(iso) == 'Isochrone(category=padova, name=LSST)'
+    assert Isochrone(str(tmp_path / 'padova' / 'LSST')).path == tmp_path / 'padova' / 'LSST'
+
+
+def test_an_isochrone_needs_at_least_an_argument():
+    with pytest.raises(TypeError, match="requires at least one argument"):
+        Isochrone()
+
+
+def test_an_isochrone_does_not_take_more_than_two_arguments():
+    with pytest.raises(TypeError, match=r"Too many arguments \(3 given\)"):
+        Isochrone('a', 'b', 'c')
+
+
+def test_an_isochrone_made_from_data_is_made_in_the_custom_category(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert iso.path == isochrones_path / CUSTOM_PHOTOCAT / 'mine'
+    assert (iso.category, iso.name) == (CUSTOM_PHOTOCAT, 'mine')
+
+
+def test_an_isochrone_made_from_data_has_a_file_for_each_metallicity_and_a_descriptor(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert sorted(path.name for path in iso.path.glob('output_*.dat')) == sorted(
+        f"output_{metallicity:.6f}.dat" for metallicity in Isochrone._required_metallicities)
+    assert iso.has_file_descriptor and iso.file_descriptor_path == iso.path / 'IsoFileDescriptor.txt'
+
+
+def test_the_descriptor_gives_the_name_the_columns_and_the_names_of_the_magnitudes_in_order(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert iso.file_descriptor_path.read_text() == "Python_mine 8 6 2 BP G\n\n"           # the magnitudes after the six others, sorted
+
+
+def test_the_files_have_the_columns_in_the_order_that_the_descriptor_says(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert iso.isochrone_files[0].column_names == ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'BP', 'G']
+
+
+def test_an_isochrone_that_exists_is_not_made_again(isochrones_path):
+    first = Isochrone('mine', custom_data())
+    with pytest.raises(FileExistsError, match=f"Isochrone 'mine' already exists at '{re.escape(str(first.path))}'"):
+        Isochrone('mine', custom_data())
+
+
+def test_an_isochrone_that_exists_can_be_made_again_over_the_old_one(isochrones_path):
+    first = Isochrone('mine', custom_data())
+    (first.path / 'left_by_the_first.txt').write_text('')
+    again = Isochrone('mine', custom_data(), overwrite=True)
+    assert again.path == first.path and not (again.path / 'left_by_the_first.txt').exists() and again.has_file_descriptor
+
+
+# -- what is refused ----------------------------------------------------------------
+
+def refused(isochrones_path, data, error):
+    with pytest.raises(ValueError, match=error):
+        Isochrone('mine', data)
+
+
+def test_data_that_misses_a_metallicity_is_refused(isochrones_path):
+    data = custom_data()
+    del data[0.0001]
+    refused(isochrones_path, data, "Given isochrone data covers wrong set of metallicities: misses {0.0001}")
+
+
+def test_data_with_a_metallicity_that_is_not_needed_is_refused(isochrones_path):
+    data = custom_data()
+    data[0.5] = data[0.03]
+    refused(isochrones_path, data, "misincludes {0.5}")
+
+
+def test_data_whose_tables_do_not_have_the_same_columns_is_refused(isochrones_path):
+    data = custom_data()
+    data[0.03] = data[0.03].assign(extra=1.0)
+    refused(isochrones_path, data, "Given isochrone dataframes have unequal headers")
+
+
+def test_data_without_a_required_column_is_refused(isochrones_path):
+    data = {metallicity: table.drop(columns='Lum') for metallicity, table in custom_data().items()}
+    refused(isochrones_path, data, "incomplete headers: missing {'Lum'}")
+
+
+def test_data_without_magnitudes_is_refused(isochrones_path):
+    data = {metallicity: table.drop(columns=['G', 'BP']) for metallicity, table in custom_data().items()}
+    refused(isochrones_path, data, "have no magnitude columns")
+
+
+@pytest.mark.xfail(raises=FileExistsError, reason="the directory of the isochrone is made before its data is looked at: data that "
+                   "is refused leaves the directory behind, empty, and the name cannot be used again without `overwrite`")
+def test_an_isochrone_that_is_refused_leaves_nothing_behind(isochrones_path):
+    data = custom_data()
+    incomplete = {metallicity: table for metallicity, table in data.items() if metallicity != 0.0001}
+    with pytest.raises(ValueError):
+        Isochrone('mine', incomplete)
+    assert Isochrone('mine', data).has_file_descriptor
+
+
+# -- what the descriptor says -------------------------------------------------------
+
+def test_the_descriptor_is_read_as_the_name_the_columns_the_start_of_the_magnitudes_and_their_names(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert iso.file_descriptor_content == ['Python_mine', '8', '6', '2', 'BP', 'G']
+    assert (iso._fd_startid, iso._fd_nmags, iso.mag_names) == (6, 2, ['BP', 'G'])
+    assert iso.magnitude_itemgetter([f"column{i}" for i in range(8)]) == ('column6', 'column7')
+
+
+def test_a_directory_without_a_descriptor_is_not_a_photometric_system(tmp_path):
+    (tmp_path / 'padova' / 'Nothing').mkdir(parents=True)
+    iso = Isochrone(tmp_path / 'padova' / 'Nothing')
+    assert not iso.has_file_descriptor
+    with pytest.raises(NotImplementedError, match="doesn't have an IsoFileDescriptor.txt file"):
+        iso.file_descriptor_content
+
+
+@pytest.mark.xfail(raises=AssertionError, reason="itemgetter with one index gives the element and not a tuple of one: a system with a "
+                   "single magnitude gives its column and not the columns of its magnitudes")
+def test_the_magnitudes_of_a_system_with_a_single_one_are_a_tuple(tmp_path):
+    directory = isochrone_directory(tmp_path, 'Single', {0.0152: []}, descriptor='Single 8 7 1 G')
+    assert Isochrone(directory).magnitude_itemgetter([f"column{i}" for i in range(8)]) == ('column7',)
+
+
+def test_the_isochrone_files_are_those_of_the_directory_in_the_order_of_their_names(tmp_path):
+    stars = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5)]
+    iso = Isochrone(isochrone_directory(tmp_path, 'X', {0.152: stars, 0.0152: stars, 0.00152: stars}))
+    assert [iso_file.filename for iso_file in iso.isochrone_files] == ['output_0.001520.dat', 'output_0.015200.dat', 'output_0.152000.dat']
+    assert all(iso_file.isochrone is iso for iso_file in iso.isochrone_files)
+
+
+# -- the layout of the files --------------------------------------------------------
+
+@pytest.mark.parametrize("category, name, expected", [
+    ('padova', 'WFIRST+HST__WFC3', oldpadova_fomatting_withlogage),
+    *[('padova', name, oldpadova_fomatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, padova_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
+    ('padova', 'Another', default_formatting),
+    ('py_custom', 'LSST', default_formatting),                      # the names are those of padova only
+    ('elsewhere', 'GAIA__DR2', default_formatting),
+])
+def test_the_layout_of_the_files_is_that_of_the_category_and_the_name(category, name, expected):
+    assert Isochrone(pathlib.Path('nowhere') / category / name).formatting is expected
+
+
+# -- the tables ---------------------------------------------------------------------
+
+STARS = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5),
+         (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2),
+         (10.0, 1.0, 0.98, 0.1, 3.7, 4.3, 0, 5.2, 5.7),
+         (10.0, 2.0, 0.6, -9.999, 4.4, 8.1, 9, 16.0, 16.5)]
+
+
+def test_the_tables_are_for_each_metallicity_in_log_and_then_each_age(tmp_path):
+    iso = Isochrone(isochrone_directory(tmp_path, 'X', {0.0152: STARS, 0.152: STARS}))
+    assert list(iso.qtables_dictionary) == pytest.approx([0.0, 1.0])
+    assert [list(ages) for ages in iso.qtables_dictionary.values()] == [[9.0, 10.0], [9.0, 10.0]]
+    assert [list(ages) for ages in iso.qtables_unique_ages_dictionary.values()] == [[9.0, 10.0], [9.0, 10.0]]
+
+
+@pytest.mark.xfail(strict=False, reason="PROBE, not known yet: the files of an isochrone made in Python have the magnitudes from "
+                   "the column that the default layout takes for the label, so the first magnitude may be read twice")
+def test_the_tables_of_an_isochrone_made_in_python_hold_its_magnitudes(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    table = next(iter(iso.qtables_dictionary.values()))[9.0]
+    assert np.asarray(table['G'].value).tolist() == [5.0, 3.0] and np.asarray(table['BP'].value).tolist() == [5.5, 3.2]
+
+
+# the last star of the first age is a white dwarf: it is carried to the last age, with its magnitudes
+WHITE_DWARFS = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2),
+                (9.0, 3.0, 0.6, -9.999, 4.5, 8.0, 9, 15.0, 15.5),
+                (10.0, 1.0, 0.98, 0.1, 3.7, 4.3, 0, 5.2, 5.7), (10.0, 2.0, 0.6, -9.999, 4.4, 8.1, 9, 16.0, 16.5)]
+# the first ages end with stars that are more massive than any of the next age: they are dead there, with 999 for magnitudes, and
+# the last of them is carried to the last age
+BLACK_HOLES = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2),
+               (9.0, 3.0, 2.8, 1.5, 4.0, 3.8, 3, 2.0, 2.2), (9.0, 4.0, 3.7, 1.6, 4.1, 3.7, 3, 1.0, 1.2),
+               (10.0, 1.0, 0.98, 0.2, 3.7, 4.3, 0, 5.2, 5.7), (10.0, 2.0, 1.9, 0.9, 3.8, 4.1, 0, 3.1, 3.3),
+               (10.0, 3.0, 2.7, 1.2, 3.9, 3.9, 3, 2.1, 2.3),
+               (11.0, 1.0, 0.97, 0.3, 3.7, 4.2, 0, 5.4, 5.9), (11.0, 2.0, 0.6, -9.999, 4.4, 8.1, 9, 16.0, 16.5)]
+
+
+def consolidated(tmp_path, stars):
+    return Isochrone(isochrone_directory(tmp_path, 'X', {0.0152: stars})).consolidated_points_and_values
+
+
+def test_the_points_and_values_of_isochrones_that_end_with_white_dwarfs(tmp_path):
+    points, values = consolidated(tmp_path, WHITE_DWARFS)
+    np.testing.assert_allclose(points, [[0.0, 9.0, 1.0], [0.0, 9.0, 2.0], [0.0, 9.0, 3.0], [0.0, 10.0, 3.0],
+                                        [0.0, 10.0, 1.0], [0.0, 10.0, 2.0]])
+    np.testing.assert_allclose(values, [[5.0, 5.5], [3.0, 3.2], [15.0, 15.5], [15.0, 15.5], [5.2, 5.7], [16.0, 16.5]])
+
+
+def test_the_points_and_values_of_ages_that_end_with_stars_that_are_not_white_dwarfs(tmp_path):
+    points, values = consolidated(tmp_path, BLACK_HOLES)
+    np.testing.assert_allclose(points, [[0.0, 9.0, 1.0], [0.0, 9.0, 2.0], [0.0, 9.0, 3.0], [0.0, 9.0, 4.0],
+                                        [0.0, 10.0, 4.0], [0.0, 11.0, 4.0],
+                                        [0.0, 10.0, 1.0], [0.0, 10.0, 2.0], [0.0, 10.0, 3.0],
+                                        [0.0, 11.0, 3.0], [0.0, 11.0, 3.0],
+                                        [0.0, 11.0, 1.0], [0.0, 11.0, 2.0]])
+    np.testing.assert_allclose(values, [[5.0, 5.5], [3.0, 3.2], [2.0, 2.2], [1.0, 1.2], [999.0, 999.0], [999.0, 999.0],
+                                        [5.2, 5.7], [3.1, 3.3], [2.1, 2.3], [999.0, 999.0], [999.0, 999.0],
+                                        [5.4, 5.9], [16.0, 16.5]])
+
+
+@pytest.mark.xfail(raises=IndexError, reason="the oldest age is expected to end with a white dwarf: when it does not, the next age "
+                   "that the stars that are dead there would go to does not exist, and the lookup of it fails")
+def test_the_points_and_values_of_an_oldest_age_that_does_not_end_with_a_white_dwarf(tmp_path):
+    points, values = consolidated(tmp_path, [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2)])
+    assert points.shape == (2, 3)
+
+
+def test_points_and_values_have_the_dimensions_of_the_space_and_of_the_magnitudes(tmp_path):
+    points, values = consolidated(tmp_path, WHITE_DWARFS)
+    assert points.shape == (6, 3) and values.shape == (6, 2)
+
+
+if __name__ == '__main__':
+    pass

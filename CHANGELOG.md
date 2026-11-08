@@ -92,6 +92,15 @@ far as the commits of this package and of the backend say.
   of the first, a parameter that does not exist is not refused, no generation fails with a message
   that says nothing of the generations, and `n_gens` and `fsample` of a survey that was not made
   fail on `None`.
+- Tests of the files and layouts of the isochrones (`IsochroneFile`, `Formatting`, `Isochrone`):
+  the name of the files and the header that is read, the four layouts that are known, the tables
+  of a star for each age with the radius that is made from its mass and gravity, the descriptor
+  of an isochrone made in Python, and the points and values that are made of the tables. The
+  weaknesses that they found are expected failures: a header with white space at its ends (a tab
+  first, spaces or a tab last) has an empty name, an isochrone that is refused leaves its
+  directory behind and cannot be made again under its name, a system with a single magnitude gives
+  its column and not a tuple of columns, and an oldest age that does not end with a white dwarf
+  fails on an index.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
