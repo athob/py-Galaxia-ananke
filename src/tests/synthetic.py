@@ -81,11 +81,11 @@ def log_text(index=0, parameters=(('outputFile', 'survey'), ('fSample', '1'), ('
 
 def star_columns(keys, n, partitions=None, parents=None, first=0, **overrides):
     """The columns of n stars for the keys that Output exports: the numbers are simple functions of the index of the star,
-    which starts at `first`."""
+    which starts at `first` (the distance is a placeholder, which post-processing replaces with the real one)."""
     i = np.arange(n) + first
     x, y, z = 1.0 + i, 0.5 * i, 0.25 * i
     values = {'px': x, 'py': y, 'pz': z, 'vx': 10.0 * i, 'vy': -5.0 * i, 'vz': 2.0 * i,
-              'rad': np.sqrt(x**2 + y**2 + z**2), 'dmod': 10.0 + 0.1 * i, 'mtip': 1.5 + 0.01 * i, 'mact': 0.8 + 0.05 * i,
+              'rad': 99.0 + 0 * i, 'dmod': 10.0 + 0.1 * i, 'mtip': 1.5 + 0.01 * i, 'mact': 0.8 + 0.05 * i,
               'minit': 1.0 + i, 'age': 9.0 + 0.1 * i, 'grav': 4.0 + 0.05 * i, 'feh': -0.5 + 0.01 * i, 'teff': 3.7 + 0.01 * i,
               'lum': 0.1 * i, 'parentid': i % 3 if parents is None else np.asarray(parents),
               'partitionid': 0 * i if partitions is None else np.asarray(partitions), 'partid': 0 * i, 'satid': 0 * i}
@@ -118,6 +118,14 @@ def write_backend_output(survey, n_stars=5, partitions=None, parents=None, **ove
         columns = star_columns(output.export_keys, n_stars, partitions=partitions, parents=parents, first=n_stars * index, **overrides)
         written.append((write_ebf(path, columns, log=log_text(index)), columns))
     return written
+
+
+def read_output(tmp_path, monkeypatch, n_gens=(0,), max_pp_workers=1, pp_auto_flush=True, rule=None, **backend):
+    """A survey whose output is read: the files of the backend are made, and the output turns them into HDF5 files."""
+    survey = prepared_survey(tmp_path, monkeypatch, n_gens=n_gens)
+    written = write_backend_output(survey, **backend)
+    survey.output.read_galaxia_output(rule, max_pp_workers, pp_auto_flush)
+    return survey.output, written
 
 
 if __name__ == '__main__':
