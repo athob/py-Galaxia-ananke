@@ -105,8 +105,8 @@ def test_the_partitions_can_be_shared_between_the_processes_by_their_number_of_s
         assert stars(path)['z'].tolist() == (5 * columns['px'][rows]).tolist()
 
 
-@pytest.mark.xfail(strict=False, reason="PROBE, not known yet: without the partitions flushed by themselves, the pipeline is given what is iterated "
-                   "over in a dictionary of the partitions, which is their numbers and not their tables")
+@pytest.mark.xfail(raises=IndexError, reason="without the partitions flushed by themselves, the pipeline is applied to what is iterated over in "
+                   "the dictionary of the partitions, which is their numbers and not their tables: it fails on indexing a number")
 def test_a_pipeline_is_run_on_the_tables_when_the_partitions_are_not_flushed_by_themselves(tmp_path, monkeypatch):
     output, columns = read_output(tmp_path, monkeypatch, max_pp_workers=2, pp_auto_flush=False, n_stars=6, partitions=PARTITIONS)
     output.apply_post_process_pipeline_and_flush(add_column, 3)

@@ -128,7 +128,9 @@ far as the commits of this package and of the backend say.
   particles with the statistics of their stars worked out by hand, the use of an output like the
   vaex table that it holds, the pipelines of the user run on the file of each partition with
   their options, and the flushing of the columns of the loaded catalogue. The length of an
-  output, which is not the number of its stars, is an expected failure.
+  output, which is not the number of its stars, and the pipelines of a catalogue whose partitions
+  are not flushed by themselves, which are given the numbers of the partitions and not their
+  tables, are expected failures.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every

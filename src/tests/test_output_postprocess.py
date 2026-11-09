@@ -123,8 +123,9 @@ def test_each_pipeline_says_that_it_runs_when_the_survey_is_verbose(tmp_path, mo
                     "Running last_conversions post-processing pipeline"]
 
 
-@pytest.mark.xfail(strict=False, reason="PROBE, not known yet: without the partitions flushed by themselves, the pipelines are given what "
-                   "is iterated over in a dictionary of the partitions, which is their numbers and not their tables")
+@pytest.mark.xfail(raises=IndexError, reason="without the partitions flushed by themselves, the pipelines are applied to what is iterated over "
+                   "in the dictionary of the partitions, which is their numbers and not their tables: the first of them fails on "
+                   "indexing a number")
 def test_post_processing_works_when_the_partitions_are_not_flushed_by_themselves(tmp_path, monkeypatch):
     output, _ = post_processed(tmp_path, monkeypatch, pp_auto_flush=False)
     assert POSTPROCESS <= set(group(output._hdf5s[0], STARCATALOG_GROUP))
