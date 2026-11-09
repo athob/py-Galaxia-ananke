@@ -92,8 +92,9 @@ def test_the_file_of_the_stars_of_no_partition_has_datasets_without_stars(tmp_pa
     assert h5['groups'][PARENTPARTICLE_GROUP] == {} and isinstance(json.loads(h5['attrs']['Galaxia_ebf_output_logs']), (dict, list))
 
 
-@pytest.mark.xfail(strict=False, reason="PROBE, not known yet: the survey without a star that was run with the backend could not be "
-                   "post-processed, because of an index error from vaex that complained of a slice larger than the number of rows (0)")
+@pytest.mark.xfail(raises=IndexError, reason="vaex fails evaluating the columns of a catalogue without a row ('Slice end (1) if larger than number of "
+                   "rows: 0'), which stops the post-processing of a survey without a single star after the backend made it and the "
+                   "package converted it: the file of the partition of no star stays, empty")
 def test_a_catalogue_without_a_star_in_any_partition_can_be_post_processed(tmp_path, monkeypatch):
     output, _ = read_output(tmp_path, monkeypatch, n_stars=3, partitions=[-1, -1, -1], pp_auto_flush=True)
     output.post_process_output()

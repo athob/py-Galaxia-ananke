@@ -43,6 +43,15 @@ def forget_input(input):
     (GALAXIA_FILENAMES / f"{name_hash}.txt").unlink(missing_ok=True)
 
 
+def forget_inputs_named(simname):
+    """The same for the inputs of a name, for a run that failed before it could say which they were (the name has to be a test's)."""
+    assert simname.startswith('itest'), f"{simname} is not the name that a test gives to its input: it is not for the tests to remove it"
+    for entry in GALAXIA_NBODY1.glob(f"{simname}_*"):
+        shutil.rmtree(entry, ignore_errors=True)
+    for entry in GALAXIA_FILENAMES.glob(f"{simname}_*.txt"):
+        entry.unlink(missing_ok=True)
+
+
 def dummy_input():
     """The same particles and kernels each time."""
     np.random.seed(SEED)

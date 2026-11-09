@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke import Input, make_survey_from_particles
-from .real_backend import LIMITS, dummy_input, forget_input, real_survey          # noqa: F401 (the fixture)
+from .real_backend import LIMITS, dummy_input, forget_input, forget_inputs_named, real_survey          # noqa: F401 (the fixture)
 from .utils import needs_backend
 
 INPUT_MODULE = sys.modules[Input.__module__]
@@ -36,14 +36,20 @@ def run(tmp_path, monkeypatch):
     (tmp_path / 'in').mkdir()
     (tmp_path / 'out').mkdir()
     monkeypatch.setattr(INPUT_MODULE, 'GALAXIA_TMP', tmp_path / 'in')
-    outputs = []
+    outputs, simnames = [], []
 
     def run(*args, **kwargs):
+        if 'pname' not in kwargs:                    # the name of an input made from files is that of its files
+            simname = kwargs.get('simname', 'sim')
+            assert simname.startswith('itest'), "a test that runs the backend names its input itest...: it is cleaned up by that name"
+            simnames.append(simname)
         outputs.append(make_survey_from_particles(*args, **{'output_dir': tmp_path / 'out', 'verbose': False, **LIMITS, **kwargs}))
         return outputs[-1]
     yield run
     for output in outputs:
         forget_input(output.survey.input)
+    for simname in simnames:                        # a run that failed gave no output to ask which input it linked
+        forget_inputs_named(simname)
 
 
 @pytest.mark.integration
@@ -74,6 +80,17 @@ def test_the_files_of_an_input_make_the_same_survey_as_the_input(run, real_surve
     first, second = real_survey.output._vaex, again._vaex
     assert len(second) == len(first)
     assert np.sort(second['px'].to_numpy()).tolist() == np.sort(first['px'].to_numpy()).tolist()
+
+
+@pytest.mark.integration
+@needs_backend
+@pytest.mark.xfail(raises=IndexError, reason="a survey without a single star (the limit of the apparent magnitude is far brighter than any star) "
+                   "is made by the backend and converted, and then post-processing fails on the columns of a catalogue without a row "
+                   "(vaex: 'Slice end (1) if larger than number of rows: 0'), and leaves the file of the partition of no star, empty")
+def test_a_survey_without_a_single_star_can_be_made(run):
+    particles, kernels = dummy_input()
+    output = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30)
+    assert len(output._vaex) == 0
 
 
 @pytest.mark.xfail(raises=UnboundLocalError, reason="a call with the particles and no kernels is neither of the two documented calls, and "
