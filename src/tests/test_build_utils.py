@@ -311,9 +311,11 @@ def test_cleaning_up_when_nothing_was_put_aside_does_nothing(cache, tmp_path):
 def test_the_custom_photometric_systems_can_be_put_aside_between_two_file_systems(cache, tmp_path):
     make_old_installation(cache)
 
-    def rename_across_file_systems(source, destination, *args, **kwargs):
+    def across_file_systems(*arguments, **keywords):
         raise OSError(errno.EXDEV, 'Invalid cross-device link')
-    with mock.patch('os.rename', rename_across_file_systems):
+    # pathlib calls os.rename in the recent versions of python, and the function that it kept when it was imported in the older
+    # ones (3.9 and 3.10): the two are changed, so that nothing can be renamed across file systems, as shutil.move can cope with
+    with mock.patch('os.rename', across_file_systems), mock.patch.object(pathlib.Path, 'rename', across_file_systems):
         build.remove_existing_galaxia(tmp_path / 'kept')
     assert (tmp_path / 'kept' / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
 
