@@ -141,6 +141,9 @@ far as the commits of this package and of the backend say.
   that were asked for, the relations between the columns, the consistency of what is said of the
   parent particles, and that the files of the backend are laid out as the synthetic ones that the
   other tests of `Output` use.
+- Tests of `make_survey_from_particles`: it runs a survey end to end, the same input or the same
+  files make the same survey, and a call with the particles and no kernels, which fails on a
+  variable that was not made instead of saying what the calls are, is an expected failure.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
