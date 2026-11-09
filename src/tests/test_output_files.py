@@ -78,6 +78,12 @@ def test_the_keys_of_the_optional_properties_of_the_input_are_exported_and_the_i
     assert {'satid', 'dform'} <= set(survey.output.export_keys) and 'id' not in survey.output.export_keys
 
 
+def test_the_keys_of_the_optional_properties_of_the_input_are_in_the_catalogue_too(tmp_path, monkeypatch):
+    survey = prepared_survey(tmp_path, monkeypatch, input_particles=particles(id=np.array([1, 2, 3]), dform=np.zeros(3)))
+    assert {'satid', 'dform'} | POSTPROCESS <= set(survey.output.catalogue_keys) and 'id' not in survey.output.catalogue_keys
+    assert set(survey.output.catalogue_keys) == set(survey.output.export_keys) | POSTPROCESS
+
+
 def test_the_magnitudes_of_all_the_photometric_systems_are_exported(tmp_path, monkeypatch):
     survey = prepared_survey(tmp_path, monkeypatch, photo_sys=['padova/GAIA__DR2', 'padova/LSST'])
     assert set(survey.output.export_keys) == EXPORT | GAIA_MAGNITUDES | {'lsst_u', 'lsst_g'}
