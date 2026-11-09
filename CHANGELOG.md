@@ -156,6 +156,9 @@ far as the commits of this package and of the backend say.
   rules (two partitions across two generations, and a rule that leaves stars out), a survey that
   is run again with caching, which makes nothing again, and the photometric systems that the
   backend comes with.
+- Tests that use the network, only run where `GALAXIA_TEST_NETWORK` is set: the wavelengths and the
+  zero points that the SVO service gives for Gaia are those of the saved table that the other
+  tests replay, so that those do not go on checking a service that has changed.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
