@@ -80,6 +80,11 @@ def real_generations(tmp_path_factory):
 
 
 @pytest.fixture(scope='session')
+def real_systems(tmp_path_factory):
+    yield from real_run(tmp_path_factory, 'itest_systems', photo_sys=[DEFAULT_PSYS, 'padova/LSST'])
+
+
+@pytest.fixture(scope='session')
 def real_survey(tmp_path_factory):
     directory = tmp_path_factory.mktemp('integration')
     particles, kernels = dummy_input()
