@@ -81,6 +81,17 @@ def test_the_function_of_the_processes_says_nothing_when_it_is_not_asked_to(made
     assert capsys.readouterr().out == ''
 
 
+def test_the_function_of_the_processes_writes_a_file_without_stars_for_a_partition_without_stars(made, tmp_path):
+    output, written = made
+    path = tmp_path / 'without_stars.h5'
+    Output._singlethread_ebf_to_hdf5(0, -1, [-1], path, {}, {}, output._ebfs, output.export_keys, output.all_metadata, False)
+    h5 = read_h5(path)
+    stars = h5['groups'][STARCATALOG_GROUP]
+    assert set(stars) == set(output.export_keys) and all(column.shape == (0,) for column in stars.values())
+    assert all(stars[key].dtype == column.dtype for key, column in written[0][1].items())
+    assert h5['attrs']['Cat_partition_id'] == -1 and h5['groups'][PARTITIONING_GROUP]['partition_id'].tolist() == [-1]
+
+
 def test_the_file_of_the_stars_of_no_partition_has_datasets_without_stars(tmp_path, monkeypatch):
     output, written = read_output(tmp_path, monkeypatch, n_stars=3, partitions=[-1, -1, -1], pp_auto_flush=True)
     assert list(output._hdf5s) == [-1]
