@@ -25,7 +25,7 @@ import types
 import numpy as np
 import pytest
 
-from ..galaxia_ananke import Input, Survey
+from ..galaxia_ananke import DEFAULT_PSYS, Input, Survey
 from ..galaxia_ananke._constants import GALAXIA_FILENAMES, GALAXIA_NBODY1
 
 PARTICLES = 1000
@@ -56,6 +56,27 @@ def dummy_input():
     """The same particles and kernels each time."""
     np.random.seed(SEED)
     return Input.make_dummy_particles_input(PARTICLES), Input.make_dummy_kernels_input(PARTICLES)
+
+
+def real_run(tmp_path_factory, name, photo_sys=DEFAULT_PSYS, **kwargs):
+    """Runs a survey like that of real_survey, with other things that the test is about, and cleans up when it is done."""
+    directory = tmp_path_factory.mktemp(name)
+    (directory / 'in').mkdir()
+    (directory / 'out').mkdir()
+    particles, kernels = dummy_input()
+    input = Input(particles, kernels, input_dir=directory / 'in', name=name, ngb=64)
+    survey = Survey(input, photo_sys=photo_sys, surveyname=name, verbose=False)
+    try:
+        output = survey.make_survey(verbose=False, output_dir=directory / 'out', **{**LIMITS, **kwargs})
+        yield types.SimpleNamespace(survey=survey, output=output, particles=particles, kernels=kernels, directory=directory)
+    finally:
+        forget_input(input)
+        forget_inputs_named(name)
+
+
+@pytest.fixture(scope='session')
+def real_generations(tmp_path_factory):
+    yield from real_run(tmp_path_factory, 'itest_gens', n_gens=2)
 
 
 @pytest.fixture(scope='session')
