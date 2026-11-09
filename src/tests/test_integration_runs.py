@@ -25,7 +25,9 @@ import h5py
 import numpy as np
 import pytest
 
+from ..galaxia_ananke import Input, Survey, photometry
 from ..galaxia_ananke._constants import STARCATALOG_GROUP
+from .real_backend import LIMITS, dummy_input, forget_inputs_named
 from .real_backend import real_cut, real_generations, real_rules, real_systems          # noqa: F401 (the fixtures)
 from .synthetic import dtype_of
 from .utils import needs_backend
@@ -152,6 +154,43 @@ def test_the_stars_that_the_rule_gives_no_partition_are_left_out_of_the_catalogu
     assert set(partitionid.tolist()) == {-1, 0} and 0 < (px > 0).sum() < len(px)       # the backend files still have all the stars
     assert list(output._hdf5s) == [0] and list(output.output_dir.glob('*.-1.h5')) == []
     assert len(output._vaex) == (px > 0).sum() and (output._vaex['px'].to_numpy() > 0).all()
+
+
+# -- caching ------------------------------------------------------------------------
+
+def cached_run(directory):
+    particles, kernels = dummy_input()
+    input = Input(particles, kernels, input_dir=directory / 'in', name='itest_cache', ngb=64, caching=True)
+    return Survey(input, surveyname='itest_cache', verbose=False).make_survey(verbose=False, output_dir=directory / 'out', **LIMITS)
+
+
+def test_a_survey_that_is_run_again_with_caching_reuses_everything_that_was_made(tmp_path):
+    (tmp_path / 'in').mkdir()
+    (tmp_path / 'out').mkdir()
+    try:
+        first = cached_run(tmp_path)
+        stamps = {path.name: path.stat().st_mtime_ns for path in (tmp_path / 'out').iterdir()}
+        first_px = np.sort(first._vaex['px'].to_numpy())
+        second = cached_run(tmp_path)                                  # what a script that is run again does: new objects, same names
+        assert sorted(name.rsplit('.', 1)[1] for name in stamps) == ['ebf', 'h5', 'state']
+        assert {path.name: path.stat().st_mtime_ns for path in (tmp_path / 'out').iterdir()} == stamps     # nothing was made again
+        assert np.array_equal(np.sort(second._vaex['px'].to_numpy()), first_px)
+    finally:
+        forget_inputs_named('itest_cache')
+
+
+# -- the photometric systems of the installation ------------------------------------
+
+PADOVA = ['APO__SDSS', 'CTIO__DECam', 'DCMC', 'Euclid', 'GAIA__0', 'GAIA__0+TYCHO+2MASS', 'GAIA__DR2', 'Generic__Johnson_UBVRIJHK',
+          'Generic__Stroemgren', 'HST__WFC3', 'JWST__MIRI', 'JWST__NIRCam', 'LSST', 'LSST_DP0', 'Roman', 'WFIRST', 'WFIRST+HST__WFC3']
+
+
+def test_the_installation_offers_the_photometric_systems_that_the_backend_comes_with():
+    padova = photometry.available_photo_systems['padova']
+    assert set(PADOVA) <= set(padova)                                   # others can be there: the user's own are in another category
+    assert list(padova['GAIA__DR2'].mag_names) == ['G', 'Gbp', 'Grp']
+    assert list(padova['LSST'].mag_names) == ['u', 'g', 'r', 'i', 'z', 'Y']
+    assert list(padova['LSST'].to_export_keys) == ['lsst_u', 'lsst_g', 'lsst_r', 'lsst_i', 'lsst_z', 'lsst_y']
 
 
 if __name__ == '__main__':
