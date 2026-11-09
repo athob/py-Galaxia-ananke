@@ -131,6 +131,11 @@ far as the commits of this package and of the backend say.
   output, which is not the number of its stars, and the pipelines of a catalogue whose partitions
   are not flushed by themselves, which are given the numbers of the partitions and not their
   tables, are expected failures.
+- Tests of the two functions that the processes of `Output` run, called in the process of the
+  tests (the measure of the coverage does not follow a pool of processes): the HDF5 file of a
+  partition, checked against the one that the processes wrote, what it says when asked to, the file
+  of the stars that are in no partition, and the redefinition of the partitions with a rule. A
+  catalogue without any star is post-processed in a probe.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
