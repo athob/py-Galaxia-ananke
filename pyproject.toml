@@ -55,4 +55,4 @@ exclude_also = [
 ]
 # The floor of the coverage, by lines and branches, on the Python 3.12 run of CI, which fails under it. When the
 # coverage rises, raise it; a change that lowers it needs a test, not a lower floor.
-fail_under = 95
+fail_under = 98
