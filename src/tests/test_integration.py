@@ -93,10 +93,21 @@ def test_the_state_of_the_output_says_that_the_parent_data_was_exported(real_sur
 
 # -- what has to hold whatever the numbers are --------------------------------------
 
-def test_the_stars_respect_the_limits_that_were_asked_for(real_survey):
+def test_the_stars_respect_the_limits_that_were_asked_for_and_reach_them(real_survey):
+    # The magnitudes of the catalogue are absolute ones: the apparent magnitude of a star is its magnitude and the distance modulus.
+    # The limits are those of the sample, so its faintest stars are at them (here, to 0.011 and 0.006): a test that did not ask for
+    # that would pass whatever the way the magnitudes are given, and whether or not the limits did anything.
     g, dmod = column(real_survey, 'gaia__dr2_g'), column(real_survey, 'dmod')
-    assert np.isfinite(g).all() and g.max() <= LIMITS['app_mag_lim_hi'] + 1e-3          # apparent magnitude
-    assert (g - dmod).max() <= LIMITS['abs_mag_lim_hi'] + 1e-3                          # absolute magnitude
+    absolute, apparent = g, g + dmod
+    assert np.isfinite(g).all()
+    assert absolute.max() <= LIMITS['abs_mag_lim_hi'] + 1e-3 and apparent.max() <= LIMITS['app_mag_lim_hi'] + 1e-3
+    assert absolute.max() > LIMITS['abs_mag_lim_hi'] - 0.5 and apparent.max() > LIMITS['app_mag_lim_hi'] - 0.5
+
+
+def test_the_apparent_magnitude_that_the_backend_writes_is_the_absolute_one_and_the_distance_modulus(real_survey):
+    g, dmod = column(real_survey, 'gaia__dr2_g'), column(real_survey, 'dmod')
+    mag0 = ebf.read(str(real_survey.output._ebfs[0]), '/mag0')
+    assert mag0 == pytest.approx(g.astype(float) + dmod, abs=1e-5)
 
 
 def test_the_distance_modulus_is_that_of_the_distance(real_survey):
