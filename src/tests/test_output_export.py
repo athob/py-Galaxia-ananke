@@ -216,7 +216,8 @@ def test_the_empty_lines_of_the_parameters_are_left_out(tmp_path):
 
 
 def test_a_parameter_on_the_line_that_follows_the_tag_has_its_comment_sign_taken_for_its_name(tmp_path):
-    # How it is today: the signs that are removed are those that follow a line break, and the first parameter has none before it
+    # How it is today: the signs that are removed are those that follow a line break, and the first parameter has none before it.
+    # The log of the real backend does not come that way (its first parameter has no sign, see test_integration.py): it is latent.
     log = "# header\n# <parameterfile>\n# a\t1\n# b\t2\n# </parameterfile>\n# footer\n"
     parsed = parse(tmp_path, log)
     assert parsed['#'] == 'a 1' and parsed['b'] == '2' and 'a' not in parsed
