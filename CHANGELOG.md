@@ -152,7 +152,8 @@ far as the commits of this package and of the backend say.
 - Integration tests of the variants of a survey with the real backend: the files of the generations
   of a survey, and the stars of all of them in the file of the partition, with their logs kept and
   the keys that vary from one to the next, and a second photometric system that is appended to the
-  first (its keys, their types, the attributes that say which systems were used).
+  first (its keys, their types, the attributes that say which systems were used), and partitioning
+  rules (two partitions across two generations, and a rule that leaves stars out).
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every

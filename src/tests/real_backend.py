@@ -58,6 +58,16 @@ def dummy_input():
     return Input.make_dummy_particles_input(PARTICLES), Input.make_dummy_kernels_input(PARTICLES)
 
 
+def sign_of_pz(df):
+    """A partitioning rule: two partitions, the stars above the plane of the Galaxy and the others."""
+    return (df['pz'].to_numpy() > 0).astype(int)
+
+
+def px_above_zero(df):
+    """A partitioning rule that leaves stars out: those behind the Sun are in no partition."""
+    return np.where(df['px'].to_numpy() > 0, 0, -1)
+
+
 def real_run(tmp_path_factory, name, photo_sys=DEFAULT_PSYS, **kwargs):
     """Runs a survey like that of real_survey, with other things that the test is about, and cleans up when it is done."""
     directory = tmp_path_factory.mktemp(name)
@@ -82,6 +92,16 @@ def real_generations(tmp_path_factory):
 @pytest.fixture(scope='session')
 def real_systems(tmp_path_factory):
     yield from real_run(tmp_path_factory, 'itest_systems', photo_sys=[DEFAULT_PSYS, 'padova/LSST'])
+
+
+@pytest.fixture(scope='session')
+def real_rules(tmp_path_factory):
+    yield from real_run(tmp_path_factory, 'itest_rules', n_gens=2, max_pp_workers=2, partitioning_rule=sign_of_pz)
+
+
+@pytest.fixture(scope='session')
+def real_cut(tmp_path_factory):
+    yield from real_run(tmp_path_factory, 'itest_cut', partitioning_rule=px_above_zero)
 
 
 @pytest.fixture(scope='session')

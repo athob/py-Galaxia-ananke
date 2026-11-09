@@ -26,7 +26,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke._constants import STARCATALOG_GROUP
-from .real_backend import real_generations, real_systems                # noqa: F401 (the fixtures)
+from .real_backend import real_cut, real_generations, real_rules, real_systems          # noqa: F401 (the fixtures)
 from .synthetic import dtype_of
 from .utils import needs_backend
 
@@ -113,6 +113,45 @@ def test_the_second_system_is_appended_to_each_file_of_the_backend_and_the_catal
     output = real_systems.output
     assert len(output._ebfs) == 1
     assert all(len(ebf.read(str(output._ebfs[0]), f"/{key}")) == len(output._vaex) for key in LSST)
+
+
+# -- partitioning rules -------------------------------------------------------------
+
+def test_each_partition_has_a_file_with_its_stars_from_all_the_generations(real_rules):
+    output = real_rules.output
+    ids = in_files(output, 'partitionid')
+    assert list(output._hdf5s) == [0, 1]
+    assert [path.name.split('.')[-2] for path in output._hdf5s.values()] == ['0', '1']
+    for partition in (0, 1):
+        expected = sum(int((one == partition).sum()) for one in ids)
+        assert expected > 100 and len(in_partition(output._hdf5s[partition], 'px')) == expected
+    assert len(output._vaex) == sum(len(one) for one in ids)
+
+
+def test_the_stars_of_a_partition_are_those_that_the_rule_gave_to_it(real_rules):
+    hdf5s = real_rules.output._hdf5s
+    assert (in_partition(hdf5s[1], 'pz') > 0).all() and (in_partition(hdf5s[0], 'pz') <= 0).all()
+    for partition, path in hdf5s.items():
+        assert (in_partition(path, 'partitionid') == partition).all()
+
+
+def test_each_file_of_a_partition_says_which_partition_it_is_and_which_there_are(real_rules):
+    for partition, path in real_rules.output._hdf5s.items():
+        with h5py.File(path, 'r') as f5:
+            assert f5.attrs['Cat_partition_id'] == partition and f5['Partitioning']['partition_id'][...].tolist() == [0, 1]
+
+
+def test_the_files_of_the_backend_say_in_their_logs_that_they_were_modified(real_rules):
+    for path in real_rules.output._ebfs:
+        assert "Modified by" in str(ebf.read(str(path), '/log'))
+
+
+def test_the_stars_that_the_rule_gives_no_partition_are_left_out_of_the_catalogue(real_cut):
+    output = real_cut.output
+    px, partitionid = in_files(output, 'px')[0], in_files(output, 'partitionid')[0]
+    assert set(partitionid.tolist()) == {-1, 0} and 0 < (px > 0).sum() < len(px)       # the backend files still have all the stars
+    assert list(output._hdf5s) == [0] and list(output.output_dir.glob('*.-1.h5')) == []
+    assert len(output._vaex) == (px > 0).sum() and (output._vaex['px'].to_numpy() > 0).all()
 
 
 if __name__ == '__main__':
