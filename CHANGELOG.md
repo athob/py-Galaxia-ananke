@@ -122,6 +122,13 @@ far as the commits of this package and of the backend say.
   of each partition and the runs of them that are copied, the names of the HDF5 files, what those
   hold (the stars, the groups, the attributes, the logs of the backend), the redefinition of the
   partitions by a rule of the user, and the parser of the logs of the backend.
+- More tests of `Output` on synthetic output of the backend: the post-processing of the
+  catalogue end to end (the new columns checked against the pipelines applied to the table of
+  the stars, what is flushed into the files, what is said when it runs), the group of the parent
+  particles with the statistics of their stars worked out by hand, the use of an output like the
+  vaex table that it holds, the pipelines of the user run on the file of each partition with
+  their options, and the flushing of the columns of the loaded catalogue. The length of an
+  output, which is not the number of its stars, is an expected failure.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
