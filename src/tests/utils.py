@@ -27,6 +27,7 @@ import contextlib
 import functools
 
 import numpy as np
+import pytest
 
 
 FOURTHIRDPI = 4*np.pi/3
@@ -185,6 +186,14 @@ def write_catalogue_hdf5(path, columns, group='StarCatalog', attrs=None):
         for key, value in (attrs or {}).items():
             f5.attrs[key] = value
     return pathlib.Path(path)
+
+def backend_is_built():
+    from ..galaxia_ananke._constants import GALAXIA
+    return GALAXIA.exists() and os.access(GALAXIA, os.X_OK)
+
+
+needs_backend = pytest.mark.skipif(not backend_is_built(), reason="the backend is not built")
+needs_network = pytest.mark.skipif(not os.environ.get('GALAXIA_TEST_NETWORK'), reason="the network is only used where GALAXIA_TEST_NETWORK is set")
 
 class list_stdout(list):
     """
