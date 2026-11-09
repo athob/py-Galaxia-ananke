@@ -91,7 +91,7 @@ def real_generations(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def real_systems(tmp_path_factory):
-    yield from real_run(tmp_path_factory, 'itest_systems', photo_sys=[DEFAULT_PSYS, 'padova/LSST'])
+    yield from real_run(tmp_path_factory, 'itest_systems', photo_sys=['padova/GAIA__DR2', 'padova/LSST'])
 
 
 @pytest.fixture(scope='session')
