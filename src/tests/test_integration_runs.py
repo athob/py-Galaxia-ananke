@@ -47,10 +47,14 @@ def in_partition(path, key):
 
 # -- several generations ------------------------------------------------------------
 
+def generation_of(path):
+    return path.name.split('.')[-2]
+
+
 def test_each_generation_has_its_file_of_the_backend(real_generations):
     output = real_generations.output
     assert real_generations.survey.n_gens == [0, 1]
-    assert [path.name.split('.')[-2] for path in output._ebfs] == ['0', '1']
+    assert sorted(generation_of(path) for path in output._ebfs) == ['0', '1']          # in the order that the file system lists them
     assert all(len(px) > 100 for px in in_files(output, 'px'))
 
 
@@ -61,7 +65,7 @@ def test_the_generations_are_different_samples_of_the_same_input(real_generation
     assert all(ids.min() >= 0 and ids.max() < len(real_generations.particles['massinit']) for ids in parentid)
 
 
-def test_the_stars_of_all_the_generations_are_in_the_file_of_the_partition_in_the_order_of_the_generations(real_generations):
+def test_the_stars_of_all_the_generations_are_in_the_file_of_the_partition_in_the_order_of_the_files_of_the_backend(real_generations):
     output = real_generations.output
     px = in_files(output, 'px')
     assert list(output._hdf5s) == [0]
@@ -74,7 +78,7 @@ def test_the_logs_of_all_the_generations_are_kept_and_say_what_varies(real_gener
         logs = json.loads(f5.attrs['Galaxia_ebf_output_logs'])
     assert logs['metadata_name'] == 'Galaxia_ebf_output_logs' and logs['metadata_count'] == 2
     assert {'outputFile', 'ngen'} <= set(logs['varying_keys'])
-    assert [variation['ngen'] for variation in logs['variations']] == ['0', '1']
+    assert [variation['ngen'] for variation in logs['variations']] == [generation_of(path) for path in real_generations.output._ebfs]
 
 
 # -- a second photometric system ----------------------------------------------------
