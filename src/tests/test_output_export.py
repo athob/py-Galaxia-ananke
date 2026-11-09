@@ -119,6 +119,19 @@ def test_the_stars_of_several_files_of_the_backend_are_put_together_in_each_part
         assert len(stars['px']) == 4
 
 
+@pytest.mark.xfail(raises=AssertionError, reason="the files of the backend are listed with glob, whose order is that of the file system, and the generations are run "
+                   "together, so their files are not even made in the same order each time: the stars of a partition, and the logs, "
+                   "come in that order and not in that of the generations, and the files that the survey makes differ from a run to the next")
+def test_the_stars_of_the_generations_come_in_the_order_of_the_generations_whatever_the_order_the_files_are_listed_in(tmp_path, monkeypatch):
+    survey = prepared_survey(tmp_path, monkeypatch, n_gens=(0, 1))
+    written = write_backend_output(survey, n_stars=3)
+    listed = Output._ebf_glob.fget
+    monkeypatch.setattr(Output, '_ebf_glob', property(lambda self: iter(sorted(listed(self), reverse=True))))      # the last generation first
+    survey.output.read_galaxia_output(None, 1, False)
+    px = read_h5(survey.output._hdf5s[0])['groups'][STARCATALOG_GROUP]['px']
+    assert px.tolist() == np.concatenate([columns['px'] for _, columns in written]).tolist()
+
+
 def test_the_files_of_the_backend_are_read_from_a_different_one_for_each_partition(tmp_path, monkeypatch):
     output, written = read(tmp_path, monkeypatch, n_gens=(0, 1), n_stars=2, partitions=[0, 1])
     first_of = lambda partition: read_h5(output._hdf5s[partition])['groups'][STARCATALOG_GROUP]['px'][0]

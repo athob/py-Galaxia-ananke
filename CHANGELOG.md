@@ -159,6 +159,9 @@ far as the commits of this package and of the backend say.
 - Tests that use the network, only run where `GALAXIA_TEST_NETWORK` is set: the wavelengths and the
   zero points that the SVO service gives for Gaia are those of the saved table that the other
   tests replay, so that those do not go on checking a service that has changed.
+- An expected failure records that the stars of the generations of a survey, and their logs, come
+  in the files of the partitions in the order in which the file system lists the files of the
+  backend and not in that of the generations, which varies from a run to the next.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
