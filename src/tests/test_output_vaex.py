@@ -58,10 +58,10 @@ def test_a_column_that_is_set_goes_to_the_table(made):
 
 def test_what_is_listed_is_what_the_table_has_and_what_the_output_has(made):
     output, _ = made
-    listed = dir(output)
+    listed = output.__dir__()                  # dir() sorts what it is given: only the method itself can tell whether it sorts
     assert {'px', 'minit', 'to_pandas_df', 'get_column_names'} <= set(listed)           # the table
     assert {'export_keys', 'output_dir', 'read_galaxia_output', 'post_process_output'} <= set(listed)     # the output
-    assert listed == sorted(listed)
+    assert listed == sorted(listed) and set(dir(output)) == set(listed)
 
 
 def test_the_table_is_shown_as_html_in_notebooks(made):
