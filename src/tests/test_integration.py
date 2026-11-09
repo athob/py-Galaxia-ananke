@@ -29,7 +29,7 @@ import pytest
 from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP, PARTITIONING_GROUP, STARCATALOG_GROUP
 from ..galaxia_ananke.Output import Output
 from .real_backend import LIMITS, real_survey                 # noqa: F401 (the fixture)
-from .synthetic import INTEGER_KEYS
+from .synthetic import INTEGER_KEYS, dtype_of
 from .utils import needs_backend
 
 pytestmark = [pytest.mark.integration, needs_backend]
@@ -157,9 +157,9 @@ def test_the_file_of_the_backend_has_a_dataset_for_each_key_that_the_synthetic_f
     path = str(real_survey.output._ebfs[0])
     datasets = {key.decode().lstrip('/') for key in ebf._EbfMap.keys(path)}
     assert set(real_survey.output.export_keys) <= datasets and 'log' in datasets
+    magnitudes = {key for photosystem in real_survey.output.photosystems for key in photosystem.to_export_keys}
     for key in real_survey.output.export_keys:
-        expected = np.dtype('int64' if key in INTEGER_KEYS else 'float32')
-        assert ebf.getHeader(path, f"/{key}").get_dtype() == expected, key
+        assert ebf.getHeader(path, f"/{key}").get_dtype() == dtype_of(key, magnitudes), key
 
 
 def test_the_log_of_the_backend_is_made_of_a_header_the_parameters_and_a_footer(real_survey):

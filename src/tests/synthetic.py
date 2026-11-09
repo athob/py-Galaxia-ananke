@@ -31,6 +31,14 @@ from ..galaxia_ananke.photometry.Photometry import nested_dict
 from .utils import patch_nbody1
 
 INTEGER_KEYS = ('parentid', 'partid', 'partitionid', 'satid')
+SINGLE_PRECISION_KEYS = ('grav', 'lum', 'mact', 'mtip', 'teff')     # and the magnitudes: all the other keys have double precision
+
+
+def dtype_of(key, magnitudes=()):
+    """The type that the backend gives to a key in its files (found by comparing with the real ones, which test_integration.py does)."""
+    if key in INTEGER_KEYS:
+        return np.dtype('int64')
+    return np.dtype('float32' if key in SINGLE_PRECISION_KEYS or key in magnitudes else 'float64')
 
 
 def photo_system(name, mag_names):
@@ -79,9 +87,10 @@ def log_text(index=0, parameters=(('outputFile', 'survey'), ('fSample', '1'), ('
             f"# End of the log number {index}\n")
 
 
-def star_columns(keys, n, partitions=None, parents=None, first=0, **overrides):
-    """The columns of n stars for the keys that Output exports: the numbers are simple functions of the index of the star,
-    which starts at `first` (the distance is a placeholder, which post-processing replaces with the real one)."""
+def star_columns(keys, n, partitions=None, parents=None, first=0, magnitudes=(), **overrides):
+    """The columns of n stars for the keys that Output exports, with the types that the backend gives them (`magnitudes` are the
+    keys that are magnitudes): the numbers are simple functions of the index of the star, which starts at `first` (the distance
+    is a placeholder, which post-processing replaces with the real one)."""
     i = np.arange(n) + first
     x, y, z = 1.0 + i, 0.5 * i, 0.25 * i
     values = {'px': x, 'py': y, 'pz': z, 'vx': 10.0 * i, 'vy': -5.0 * i, 'vz': 2.0 * i,
@@ -92,7 +101,7 @@ def star_columns(keys, n, partitions=None, parents=None, first=0, **overrides):
     columns = {}
     for k, key in enumerate(keys):
         data = overrides[key] if key in overrides else values.get(key, 15.0 + 0.1 * i + k)       # a magnitude, or another optional key
-        columns[key] = np.asarray(data, dtype='int64' if key in INTEGER_KEYS else 'float32')
+        columns[key] = np.asarray(data, dtype=dtype_of(key, magnitudes))
     return columns
 
 
@@ -113,9 +122,11 @@ def write_backend_output(survey, n_stars=5, partitions=None, parents=None, **ove
     written, in the order of the generations.
     """
     output, written = survey.output, []
+    magnitudes = {key for photosystem in output.photosystems for key in photosystem.to_export_keys}
     for index, generation in enumerate(survey.n_gens):
         path = output.output_dir / f"{output.output_name}.{generation}.ebf"
-        columns = star_columns(output.export_keys, n_stars, partitions=partitions, parents=parents, first=n_stars * index, **overrides)
+        columns = star_columns(output.export_keys, n_stars, partitions=partitions, parents=parents, first=n_stars * index,
+                               magnitudes=magnitudes, **overrides)
         written.append((write_ebf(path, columns, log=log_text(index)), columns))
     return written
 
