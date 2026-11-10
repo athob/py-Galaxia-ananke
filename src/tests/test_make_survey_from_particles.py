@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke import Input, make_survey_from_particles
-from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP
+from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP, STARCATALOG_GROUP
 from .real_backend import LIMITS, dummy_input, forget_input, forget_inputs_named, real_survey          # noqa: F401 (the fixture)
 from .utils import needs_backend
 
@@ -90,13 +90,16 @@ def test_a_survey_without_a_single_star_has_an_empty_catalogue_with_the_columns_
     particles, kernels = dummy_input()
     output, other = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30), real_survey.output       # no star is that bright
     assert len(output._vaex) == 0 and list(output._hdf5s) == [-1]
+    assert set(output._vaex.get_column_names()) == set(other._vaex.get_column_names())
 
-    def types(catalogue):
-        return {key: str(catalogue[key].to_numpy().dtype) for key in catalogue.get_column_names()}
-    assert types(output._vaex) == types(other._vaex)
-    with h5py.File(output._hdf5s[-1], 'r') as empty, h5py.File(other._hdf5s[0], 'r') as full:
-        assert {key: str(empty[PARENTPARTICLE_GROUP][key].dtype) for key in empty[PARENTPARTICLE_GROUP]} == {
-            key: str(full[PARENTPARTICLE_GROUP][key].dtype) for key in full[PARENTPARTICLE_GROUP]}
+    # The types are those of the files: vaex gives a column that has no row the type that numpy gives an empty array, float64, whatever
+    # the type of the column is, so `to_numpy()` of an empty catalogue says nothing of the types of its columns.
+    def types(path, group):
+        with h5py.File(path, 'r') as f5:
+            return {key: str(f5[group][key].dtype) for key in f5[group]}
+    for group in (STARCATALOG_GROUP, PARENTPARTICLE_GROUP):
+        assert types(output._hdf5s[-1], group) == types(other._hdf5s[0], group), group
+    with h5py.File(output._hdf5s[-1], 'r') as empty:
         assert all(len(empty[PARENTPARTICLE_GROUP][key]) == 0 for key in empty[PARENTPARTICLE_GROUP])
 
 
