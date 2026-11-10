@@ -30,6 +30,7 @@ from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
 from ..galaxia_ananke.photometry.Formatting import (default_formatting, oldpadova_fomatting, oldpadova_fomatting_withlogage,
                                                     padova_formatting)
 from ..galaxia_ananke.photometry.Isochrone import Isochrone
+from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import custom_isochrone_data as custom_data, write_isochrone_file
 
 ISOCHRONE_MODULE = sys.modules[Isochrone.__module__]
@@ -124,6 +125,7 @@ def test_an_isochrone_that_exists_can_be_made_again_over_the_old_one(isochrones_
 def refused(isochrones_path, data, error):
     with pytest.raises(ValueError, match=error):
         Isochrone('mine', data)
+    assert not (isochrones_path / CUSTOM_PHOTOCAT / 'mine').exists()                 # nothing is left behind
 
 
 def test_data_that_misses_a_metallicity_is_refused(isochrones_path):
@@ -154,14 +156,21 @@ def test_data_without_magnitudes_is_refused(isochrones_path):
     refused(isochrones_path, data, "have no magnitude columns")
 
 
-@pytest.mark.xfail(raises=FileExistsError, reason="the directory of the isochrone is made before its data is looked at: data that "
-                   "is refused leaves the directory behind, empty, and the name cannot be used again without `overwrite`")
-def test_an_isochrone_that_is_refused_leaves_nothing_behind(isochrones_path):
+def test_a_name_that_was_refused_can_be_used_again_without_overwrite(isochrones_path):
     data = custom_data()
     incomplete = {metallicity: table for metallicity, table in data.items() if metallicity != 0.0001}
     with pytest.raises(ValueError):
         Isochrone('mine', incomplete)
     assert Isochrone('mine', data).has_file_descriptor
+
+
+def test_what_cannot_be_written_leaves_nothing_behind_either(isochrones_path, monkeypatch):
+    def cannot_write(*args, **kwargs):
+        raise OSError("no room left")
+    monkeypatch.setattr(IsochroneFile, '__init__', cannot_write)
+    with pytest.raises(OSError, match="no room left"):
+        Isochrone('mine', custom_data())
+    assert not (isochrones_path / CUSTOM_PHOTOCAT / 'mine').exists()
 
 
 # -- what the descriptor says -------------------------------------------------------

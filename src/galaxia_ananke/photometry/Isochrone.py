@@ -71,10 +71,14 @@ class Isochrone:
     
     def _write_isochrone_files(self, isochrone_data: dict):
         self.path.mkdir(parents=True, exist_ok=True)
-        iso_column_order = self._write_file_descriptor(isochrone_data)
-        for feh, iso in isochrone_data.items():
-            path = self._path / IsochroneFile._file_format.format(format(feh, '.6f'))
-            _temp = IsochroneFile(path, iso[iso_column_order], isochrone=self)
+        try:
+            iso_column_order = self._write_file_descriptor(isochrone_data)
+            for feh, iso in isochrone_data.items():
+                path = self._path / IsochroneFile._file_format.format(format(feh, '.6f'))
+                _temp = IsochroneFile(path, iso[iso_column_order], isochrone=self)
+        except BaseException:  # data that is refused, or files that cannot be written: nothing is left of what was started
+            shutil.rmtree(self.path, ignore_errors=True)
+            raise
 
     def _write_file_descriptor(self, isochrone_data):
         metallicities, headers = zip(*[(feh, list(iso.keys())) for feh, iso in isochrone_data.items()])
