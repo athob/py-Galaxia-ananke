@@ -115,9 +115,6 @@ def test_the_present_day_mass_next_to_the_initial_mass_is_refused():
         Input(particles, minimal_kernels())
 
 
-@pytest.mark.xfail(raises=ModuleNotFoundError, reason="the explanation of the change of the mass keys starts with an import "
-                   "of __metadata__ that is not a relative import, so a script that gives only `mass` gets "
-                   "'No module named __metadata__' instead of the explanation")
 def test_the_present_day_mass_alone_is_refused_with_an_explanation_of_the_change():
     particles = minimal_particles()
     particles['mass'] = particles.pop('massinit')

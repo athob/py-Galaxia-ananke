@@ -489,7 +489,7 @@ class Input:
     @classmethod
     def __verify_particles(cls, particles: Dict[str, NDArray]):
         if cls._mass in particles and cls._massinit not in particles:
-            from __metadata__ import __email__
+            from .__metadata__ import __email__
             raise KeyError(f"BACKWARD INCOMPATIBILITY: please note of recent changes in the py-Galaxia-ananke implementation.\nFrom now on, the input must include the initial mass as well as the present-day mass of the parent particles. Also this quantity should be stored in the input dictionary under key '{cls._massinit}', while keeping the present-day mass under key '{cls._mass}'.\nPlease contact {__email__} if you have any question regarding that change.")
         compare_given_and_required(particles.keys(), cls._required_keys_in_particles, cls._optional_keys_in_particles,
                                    error_message="Given particle data covers wrong set of keys")
