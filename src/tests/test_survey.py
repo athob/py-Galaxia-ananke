@@ -341,7 +341,9 @@ def test_a_survey_that_is_made_again_with_other_parameters_has_another_name(an_i
 
 
 def test_a_survey_of_an_input_that_was_not_given_a_number_of_neighbours_has_the_default_one(directories):
-    survey = prepare(Survey(Input(minimal_particles(), minimal_kernels(), input_dir=directories[0], name='sim')), directories)
+    inp = Input(minimal_particles(), minimal_kernels(), input_dir=directories[0], name='sim')          # no ngb
+    inp.input_sorter = None                           # as a survey does when it runs, before anything asks the input for its hash
+    survey = prepare(Survey(inp), directories)
     assert survey.ngb == 64 and survey.fileparam[FTTAGS.nres] == 64
 
 
