@@ -93,9 +93,8 @@ far as the commits of this package and of the backend say.
   of an isochrone made in Python, and the points and values that are made of the tables. The
   weaknesses that they found are expected failures: a header with white space at its ends (a tab
   first, spaces or a tab last) has an empty name, an isochrone that is refused leaves its
-  directory behind and cannot be made again under its name, a system with a single magnitude gives
-  its column and not a tuple of columns, and an oldest age that does not end with a white dwarf
-  fails on an index.
+  directory behind and cannot be made again under its name, and a system with a single magnitude
+  gives its column and not a tuple of columns.
 - Tests of the photometric systems, without the network: the registry that is read from the
   installation, the dictionary with slashes that it is made of, the isochrones that are added
   and the clearing of them, what a system says about itself and the check of the colors of a
@@ -235,6 +234,10 @@ far as the commits of this package and of the backend say.
 - `make_survey_from_particles` called in a way that is none of the two documented ones (the
   particles and the kernels, or `pname` and `kname`) failed with `UnboundLocalError`: it raises a
   `TypeError` that says what the calls are.
+- An isochrone whose oldest age does not end with a white dwarf (luminosity -9.999) failed on an
+  index when its points and values were made: it raises a `ValueError` that says what the
+  isochrone needs, an oldest age old enough for its most massive star to have died as a white
+  dwarf, as completing the (mass, age) space assumes.
 
 ## [0.8.0] - 2026-08-10
 

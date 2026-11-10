@@ -269,11 +269,11 @@ def test_the_points_and_values_of_ages_that_end_with_stars_that_are_not_white_dw
                                         [5.4, 5.9], [16.0, 16.5]])
 
 
-@pytest.mark.xfail(raises=IndexError, reason="the oldest age is expected to end with a white dwarf: when it does not, the next age "
-                   "that the stars that are dead there would go to does not exist, and the lookup of it fails")
-def test_the_points_and_values_of_an_oldest_age_that_does_not_end_with_a_white_dwarf(tmp_path):
-    points, values = consolidated(tmp_path, [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2)])
-    assert points.shape == (2, 3)
+def test_an_oldest_age_that_does_not_end_with_a_white_dwarf_is_refused_with_what_the_isochrone_needs(tmp_path):
+    # Completing the (mass, age) space takes the stars that are dead at an age for white dwarfs below a mass and for black holes above it,
+    # which needs the oldest age to be one where the most massive star of the track has died as a white dwarf.
+    with pytest.raises(ValueError, match="oldest age of the isochrone .* at metallicity .* does not end with a white dwarf"):
+        consolidated(tmp_path, [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.0, 2.0, 1.9, 1.0, 3.9, 4.0, 0, 3.0, 3.2)])
 
 
 def test_points_and_values_have_the_dimensions_of_the_space_and_of_the_magnitudes(tmp_path):

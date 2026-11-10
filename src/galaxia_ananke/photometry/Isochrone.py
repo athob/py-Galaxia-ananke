@@ -191,6 +191,10 @@ class Isochrone:
         for metallicity, unique_ages in self.qtables_unique_ages_dictionary.items():
             unique_ages = list(unique_ages)
             qtables = self.qtables_dictionary[metallicity]
+            if qtables[unique_ages[-1]][-1][self._lum].value != -9.999:  # the same marker as below for the white dwarfs
+                raise ValueError(f"The oldest age of the isochrone (log age {unique_ages[-1]}) at metallicity {metallicity} does not end with a white dwarf "
+                                 f"(luminosity -9.999): completing the (mass, age) space needs an oldest age old enough for its most massive star to have "
+                                 f"died as a white dwarf, please add older ages to the isochrone")
             for i_age, age in enumerate(unique_ages):
                 qtable = qtables[age]
                 list_of_points.append(qtable[[self._zini, self._age, self._mini]].to_pandas().to_numpy())
