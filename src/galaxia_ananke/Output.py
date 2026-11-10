@@ -1006,6 +1006,12 @@ class Output:
 
     @property
     def _parent_stats_per_partitionid(self) -> Dict[int, pd.DataFrame]:
+        if len(self._vaex) == 0:  # vaex cannot group a table without a row: no parent has a star, and each statistic is an empty column
+            no_stars = pd.DataFrame({'star_count': np.empty(0, dtype='int64'), f'{self._minit}_sum': np.empty(0, dtype='float64'),
+                                     'parent_partition_count': np.empty(0, dtype='int64'), 'parent_star_count': np.empty(0, dtype='int64'),
+                                     f'parent_{self._minit}_sum': np.empty(0, dtype='float64')},
+                                    index=pd.Index(np.empty(0, dtype='int64'), name=self._parentid))
+            return {partitionid: no_stars for partitionid in self._hdf5s}
         groupby: vaex.dataframe.DataFrameLocal = self._vaex.groupby(
             [self._partitionid, self._parentid],
             agg={'star_count': vaex.agg.count(), f'{self._minit}_sum': vaex.agg.sum(self._minit)},

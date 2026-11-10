@@ -20,10 +20,12 @@ sense of. The runs use the compiled backend (and clean up what they leave in the
 """
 import sys
 
+import h5py
 import numpy as np
 import pytest
 
 from ..galaxia_ananke import Input, make_survey_from_particles
+from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP
 from .real_backend import LIMITS, dummy_input, forget_input, forget_inputs_named, real_survey          # noqa: F401 (the fixture)
 from .utils import needs_backend
 
@@ -84,13 +86,18 @@ def test_the_files_of_an_input_make_the_same_survey_as_the_input(run, real_surve
 
 @pytest.mark.integration
 @needs_backend
-@pytest.mark.xfail(raises=IndexError, reason="a survey without a single star (the limit of the apparent magnitude is far brighter than any star) "
-                   "is made by the backend and converted, and then post-processing fails on the columns of a catalogue without a row "
-                   "(vaex: 'Slice end (1) if larger than number of rows: 0'), and leaves the file of the partition of no star, empty")
-def test_a_survey_without_a_single_star_can_be_made(run):
+def test_a_survey_without_a_single_star_has_an_empty_catalogue_with_the_columns_and_the_types_of_any_other(run, real_survey):
     particles, kernels = dummy_input()
-    output = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30)
-    assert len(output._vaex) == 0
+    output, other = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30), real_survey.output       # no star is that bright
+    assert len(output._vaex) == 0 and list(output._hdf5s) == [-1]
+
+    def types(catalogue):
+        return {key: str(catalogue[key].to_numpy().dtype) for key in catalogue.get_column_names()}
+    assert types(output._vaex) == types(other._vaex)
+    with h5py.File(output._hdf5s[-1], 'r') as empty, h5py.File(other._hdf5s[0], 'r') as full:
+        assert {key: str(empty[PARENTPARTICLE_GROUP][key].dtype) for key in empty[PARENTPARTICLE_GROUP]} == {
+            key: str(full[PARENTPARTICLE_GROUP][key].dtype) for key in full[PARENTPARTICLE_GROUP]}
+        assert all(len(empty[PARENTPARTICLE_GROUP][key]) == 0 for key in empty[PARENTPARTICLE_GROUP])
 
 
 @pytest.mark.xfail(raises=UnboundLocalError, reason="a call with the particles and no kernels is neither of the two documented calls, and "

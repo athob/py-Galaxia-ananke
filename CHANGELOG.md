@@ -131,17 +131,17 @@ far as the commits of this package and of the backend say.
 - Tests of the two functions that the processes of `Output` run, called in the process of the
   tests (the measure of the coverage does not follow a pool of processes): the HDF5 file of a
   partition, checked against the one that the processes wrote, what it says when asked to, the file
-  of the stars that are in no partition, and the redefinition of the partitions with a rule. A
-  catalogue without any star, which cannot be post-processed, is an expected failure.
+  of the stars that are in no partition, and the redefinition of the partitions with a rule, and
+  the post-processing of a catalogue without any star.
 - Integration tests that run a small survey with the compiled backend (skipped where it is not
   built), once for all the tests: the files, the keys and the types of the catalogue, the limits
   that were asked for, the relations between the columns, the consistency of what is said of the
   parent particles, and that the files of the backend are laid out as the synthetic ones that the
   other tests of `Output` use.
 - Tests of `make_survey_from_particles`: it runs a survey end to end, the same input or the same
-  files make the same survey, and two expected failures: a call with the particles and no
-  kernels, which fails on a variable that was not made instead of saying what the calls are, and
-  a survey without a single star, which the backend makes and post-processing cannot read.
+  files make the same survey, a survey without a single star, which has an empty catalogue, and
+  an expected failure: a call with the particles and no kernels, which fails on a variable that
+  was not made instead of saying what the calls are.
 - The synthetic output of the backend that the tests of `Output` use has the types of the real
   one, as found by comparing the two in an integration test: double precision for the positions,
   the velocities, the distance, the masses, the age and the abundances, single precision for the
@@ -221,6 +221,10 @@ far as the commits of this package and of the backend say.
   pipelines were applied to the numbers of the partitions and not to their tables.
 - `apply_post_process_pipeline_and_flush` ignored its `update_metadata` when the partitions are
   not flushed by themselves: they are flushed at the end, which did not pass it on.
+- A survey without a single star (or whose partitioning rule gives every star no partition)
+  failed at the last step of the post-processing, after the backend had run, because vaex cannot
+  group a table without a row, and left an incomplete file behind. It returns an empty catalogue
+  with all its columns, and the datasets of its parent particles are empty.
 
 ## [0.8.0] - 2026-08-10
 

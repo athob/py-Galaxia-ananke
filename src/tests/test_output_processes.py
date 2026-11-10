@@ -103,13 +103,19 @@ def test_the_file_of_the_stars_of_no_partition_has_datasets_without_stars(tmp_pa
     assert h5['groups'][PARENTPARTICLE_GROUP] == {} and isinstance(json.loads(h5['attrs']['Galaxia_ebf_output_logs']), (dict, list))
 
 
-@pytest.mark.xfail(raises=IndexError, reason="vaex fails evaluating the columns of a catalogue without a row ('Slice end (1) if larger than number of "
-                   "rows: 0'), which stops the post-processing of a survey without a single star after the backend made it and the "
-                   "package converted it: the file of the partition of no star stays, empty")
-def test_a_catalogue_without_a_star_in_any_partition_can_be_post_processed(tmp_path, monkeypatch):
+def test_a_catalogue_without_a_star_in_any_partition_is_post_processed_into_an_empty_catalogue_with_all_its_columns(tmp_path, monkeypatch):
     output, _ = read_output(tmp_path, monkeypatch, n_stars=3, partitions=[-1, -1, -1], pp_auto_flush=True)
     output.post_process_output()
-    assert set(read_h5(output._hdf5s[-1])['groups'][STARCATALOG_GROUP]) == set(output.catalogue_keys)
+    h5 = read_h5(output._hdf5s[-1])
+    stars, parents = h5['groups'][STARCATALOG_GROUP], h5['groups'][PARENTPARTICLE_GROUP]
+    assert set(stars) == set(output.catalogue_keys) and all(column.shape == (0,) for column in stars.values())
+    assert set(parents) == {'parentid', 'pos3', 'vel3', 'massinit', 'age', 'feh', 'h_cubic', 'star_count', 'minit_sum',
+                            'parent_partition_count', 'parent_star_count', 'parent_minit_sum'}
+    assert all(len(dataset) == 0 for dataset in parents.values()) and parents['pos3'].shape == (0, 3) and parents['vel3'].shape == (0, 3)
+    assert {key: str(parents[key].dtype) for key in ('parentid', 'star_count', 'parent_partition_count', 'parent_star_count')} == {
+        'parentid': 'int64', 'star_count': 'int64', 'parent_partition_count': 'int64', 'parent_star_count': 'int64'}
+    assert str(parents['minit_sum'].dtype) == 'float64' and str(parents['parent_minit_sum'].dtype) == 'float64'
+    assert len(output._vaex) == 0 and set(output._vaex.get_column_names()) == set(output.catalogue_keys)
 
 
 # -- redefining the partitions of a file of the backend -----------------------------
