@@ -105,13 +105,11 @@ def test_a_survey_without_a_single_star_has_an_empty_catalogue_with_the_columns_
         assert all(len(empty[PARENTPARTICLE_GROUP][key]) == 0 for key in empty[PARENTPARTICLE_GROUP])
 
 
-@pytest.mark.xfail(raises=UnboundLocalError, reason="a call with the particles and no kernels is neither of the two documented calls, and "
-                   "the function goes on with no input, which fails on a variable that was not made, where the message should say "
-                   "what the calls are")
-def test_a_call_that_is_none_of_the_documented_ones_says_what_the_calls_are(tmp_path):
-    particles, _ = dummy_input()
-    with pytest.raises((TypeError, ValueError), match="particles"):
-        make_survey_from_particles(particles, output_dir=tmp_path)
+@pytest.mark.parametrize("args, keywords", [((0,), {}), ((0, 1, 2), {}), ((), {'pname': 'sim_abcdef0.ebf'}), ((), {})],
+                         ids=["the particles only", "three arguments", "pname only", "nothing"])
+def test_a_call_that_is_none_of_the_documented_ones_says_what_the_calls_are(args, keywords):
+    with pytest.raises(TypeError, match="takes the particles and the kernels as its two arguments, or the keywords pname and kname together"):
+        make_survey_from_particles(*args, **keywords)
 
 
 if __name__ == '__main__':

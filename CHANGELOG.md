@@ -136,8 +136,8 @@ far as the commits of this package and of the backend say.
   other tests of `Output` use.
 - Tests of `make_survey_from_particles`: it runs a survey end to end, the same input or the same
   files make the same survey, a survey without a single star, which has an empty catalogue, and
-  an expected failure: a call with the particles and no kernels, which fails on a variable that
-  was not made instead of saying what the calls are.
+  a call that is none of the two documented ones, which is refused with a message that says what
+  the calls are.
 - The synthetic output of the backend that the tests of `Output` use has the types of the real
   one, as found by comparing the two in an integration test: double precision for the positions,
   the velocities, the distance, the masses, the age and the abundances, single precision for the
@@ -232,6 +232,9 @@ far as the commits of this package and of the backend say.
   properties, to run `make_survey` first.
 - A survey with no generation (`n_gens=()` or `n_gens=0`) failed on the largest of nothing: it
   raises a `ValueError` that says that `n_gens` must hold at least one generation.
+- `make_survey_from_particles` called in a way that is none of the two documented ones (the
+  particles and the kernels, or `pname` and `kname`) failed with `UnboundLocalError`: it raises a
+  `TypeError` that says what the calls are.
 
 ## [0.8.0] - 2026-08-10
 

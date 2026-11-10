@@ -145,6 +145,10 @@ def make_survey_from_particles(*args, pname=None, kname=None, photo_sys=DEFAULT_
         input = Input(pname=pname, kname=kname, caching=caching)
     elif len(args) == 2:
         input = Input(*args,  name=simname, ngb=ngb, k_factor=k_factor, caching=caching)
+    else:
+        raise TypeError("make_survey_from_particles takes the particles and the kernels as its two arguments, or the keywords pname and kname together, "
+                        f"and not {len(args)} arguments with pname {'given' if pname is not None else 'unset'} and kname {'given' if kname is not None else 'unset'}: "
+                        f"please consult its help")
     survey = Survey(input, photo_sys=photo_sys, surveyname=surveyname)
     output = survey.make_survey(cmd_magnames=cmd_magnames, fsample=fsample, **kwargs)
     return output
