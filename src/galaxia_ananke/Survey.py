@@ -24,7 +24,6 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Set, Dict, Iterable
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
-from functools import cached_property
 import re
 import pathlib
 from pprint import PrettyPrinter
@@ -344,8 +343,8 @@ class Survey:
     def fsample(self) -> float:
         return len(self.n_gens)*self.fileparam[FTTAGS.fsample]
 
-    @cached_property
-    def _surveyhash(self) -> bytes:
+    @property
+    def _surveyhash(self) -> bytes:  # not cached: the parameters change each time the survey is made
         return hash_iterable(map(lambda el: str(el).encode(HASH_ENCODING),
                                  lexicalorder_dict(self.parameters).values()))
 

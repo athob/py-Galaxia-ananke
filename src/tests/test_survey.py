@@ -327,14 +327,19 @@ def test_surveys_with_the_same_parameters_have_the_same_hash(an_input, directori
     assert prepare(Survey(an_input), directories).hash == prepare(Survey(an_input), directories).hash
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the hash is made once, the first time it is asked for, and not again when "
-                   "the survey is made again with other parameters: the second survey is written under the name of the "
-                   "first one (and with caching, taken for it)")
 def test_a_survey_that_is_made_again_with_other_parameters_has_another_name(an_input, directories):
     survey = prepare(Survey(an_input), directories, fsample=1)
     first = survey.surveyname_hash
     prepare(survey, directories, fsample=0.5)
     assert survey.surveyname_hash != first
+    assert survey.output.output_name == f"{survey.surveyname_hash}.{an_input.name_hash}"
+
+
+def test_a_survey_that_is_made_again_with_the_same_parameters_keeps_its_name(an_input, directories):
+    survey = prepare(Survey(an_input), directories, fsample=1)
+    first = survey.surveyname_hash
+    prepare(survey, directories, fsample=1)
+    assert survey.surveyname_hash == first
 
 
 def test_the_metadata_of_a_survey_is_its_name_and_its_hash(an_input, directories):

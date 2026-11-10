@@ -88,10 +88,9 @@ far as the commits of this package and of the backend say.
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
   with and without caching, and what making a survey does in what order. The weaknesses that they
-  found are expected failures: a survey that is made again with other parameters keeps the name
-  of the first, a parameter that does not exist is not refused, no generation fails with a message
-  that says nothing of the generations, and `n_gens` and `fsample` of a survey that was not made
-  fail on `None`.
+  found are expected failures: a parameter that does not exist is not refused, no generation
+  fails with a message that says nothing of the generations, and `n_gens` and `fsample` of a
+  survey that was not made fail on `None`.
 - Tests of the files and layouts of the isochrones (`IsochroneFile`, `Formatting`, `Isochrone`):
   the name of the files and the header that is read, the four layouts that are known, the tables
   of a star for each age with the radius that is made from its mass and gravity, the descriptor
@@ -215,6 +214,9 @@ far as the commits of this package and of the backend say.
   3.12.
 - The Zenodo record declared the license GPL-3.0-or-later: the package is
   AGPL-3.0-or-later.
+- A survey that was made again with other parameters kept the name of the first one (the hash
+  that is part of it was made once): the second survey was written under the name of the first
+  and, with caching, taken for it. The hash is made again each time it is asked for.
 
 ## [0.8.0] - 2026-08-10
 
