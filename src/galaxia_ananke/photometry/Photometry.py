@@ -91,7 +91,7 @@ class Photometry(nested_dict, metaclass=Singleton):
     def add_isochrone(self, name, isochrone_data, **kwargs):
         if '/' in name:
             raise ValueError()
-        self[CUSTOM_PHOTOCAT][name] = Isochrone(name, isochrone_data, **kwargs)
+        self[CUSTOM_PHOTOCAT][name] = PhotoSystem(Isochrone(name, isochrone_data, **kwargs))
 
     def _purge(self, hard=False, yes=False):
         if hard and (True if yes else (input("WARNING!! This will remove all the isochrones cached in your installation. Are you certain (y/[n])? ").lower() in ['y', 'yes'])):

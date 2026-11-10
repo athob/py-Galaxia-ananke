@@ -188,12 +188,12 @@ def test_an_isochrone_that_was_added_can_only_be_added_again_over_the_old_one(is
     assert list(registry[CUSTOM_PHOTOCAT]) == ['mine']
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="what is added is the isochrone and not a photometric system made of it, as the "
-                   "other entries of the registry are: a survey that is given it fails on the first thing that it asks of it")
-def test_an_isochrone_that_was_added_is_a_photometric_system(isochrones_path):
+def test_an_isochrone_that_was_added_is_a_photometric_system_like_the_other_entries(isochrones_path):
     registry = scan()
     registry.add_isochrone('mine', custom_isochrone_data())
-    assert isinstance(registry[CUSTOM_PHOTOCAT]['mine'], PhotoSystem)
+    system = registry[CUSTOM_PHOTOCAT]['mine']
+    assert isinstance(system, PhotoSystem) and (system.category, system.name) == (CUSTOM_PHOTOCAT, 'mine')
+    assert registry[f"{CUSTOM_PHOTOCAT}/mine"] is system
 
 
 # -- the dictionary with slashes ----------------------------------------------------
