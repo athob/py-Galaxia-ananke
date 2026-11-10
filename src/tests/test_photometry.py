@@ -215,13 +215,31 @@ def test_a_name_without_a_slash_is_set_as_in_any_dictionary():
     assert nested == {'a': {'b': 1}}
 
 
-@pytest.mark.xfail(raises=KeyError, reason="a name with a slash is set in a copy of the dictionary that it goes down to, and the "
-                   "dictionary itself does not get it: reading it back finds nothing")
 @pytest.mark.parametrize("start", [{}, {'a': {'x': 1}}], ids=["a new category", "an existing category"])
 def test_a_name_with_a_slash_can_be_set(start):
     nested = nested_dict(start)
     nested['a/b'] = 2
-    assert nested['a/b'] == 2
+    assert nested['a/b'] == 2 and nested['a'] == {**start.get('a', {}), 'b': 2}
+
+
+def test_a_name_with_several_slashes_makes_the_dictionaries_on_the_way():
+    nested = nested_dict({'d': 2})
+    nested['a/b/c'] = 3
+    nested['a/b/e'] = 4
+    assert nested == {'d': 2, 'a': {'b': {'c': 3, 'e': 4}}} and nested['a/b/c'] == 3
+
+
+def test_a_name_with_a_slash_is_set_in_the_dictionary_that_is_there_and_not_in_a_copy_of_it():
+    inner = {'x': 1}
+    nested = nested_dict({'a': inner})
+    nested['a/b'] = 2
+    assert inner == {'x': 1, 'b': 2} and nested['a'] is inner
+
+
+def test_a_system_can_be_set_in_a_category_of_the_registry_by_its_path(isochrones_path):
+    registry = scan()
+    registry[f"{CUSTOM_PHOTOCAT}/Mine"] = 'a system'
+    assert registry[CUSTOM_PHOTOCAT] == {'Mine': 'a system'} and registry[f"{CUSTOM_PHOTOCAT}/Mine"] == 'a system'
 
 
 # -- clearing the isochrones --------------------------------------------------------

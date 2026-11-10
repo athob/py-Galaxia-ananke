@@ -29,6 +29,17 @@ from .PhotoSystem import PhotoSystem
 __all__ = ['Photometry']
 
 
+def _set_with_slashes(dictionary: dict, key: str, value) -> None:
+    """Sets `value` where the name with slashes `key` goes down to in `dictionary`, which is changed itself, making the dictionaries on the way."""
+    head, *rest = key.split('/', 1)
+    if not rest:
+        dict.__setitem__(dictionary, head, value)
+    else:
+        if head not in dictionary:
+            dict.__setitem__(dictionary, head, {})
+        _set_with_slashes(dict.__getitem__(dictionary, head), rest[0], value)
+
+
 class nested_dict(dict):
     def __getitem__(self, __key):
         _key = __key.split('/')
@@ -36,13 +47,13 @@ class nested_dict(dict):
         return _temp if len(_key) == 1 else nested_dict(_temp)['/'.join(_key[1:])]
     
     def __setitem__(self, __key, __value):
-        _key = __key.split('/')
+        _key = __key.split('/', 1)
         if len(_key) == 1:
             return super().__setitem__(_key[0], __value)
         else:
             if _key[0] not in self.keys():
                 super().__setitem__(_key[0], {})
-            return nested_dict(super().__getitem__(_key[0])).__setitem__('/'.join(_key[1:]), __value)
+            return _set_with_slashes(super().__getitem__(_key[0]), _key[1], __value)  # in the dictionary that is there, not in a copy of it
     
     # def __delitem__(self, __key):
     #     return super().__delitem__(__key)
