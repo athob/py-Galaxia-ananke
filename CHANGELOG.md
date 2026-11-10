@@ -84,8 +84,7 @@ far as the commits of this package and of the backend say.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
-  with and without caching, and what making a survey does in what order. The weaknesses that they
-  found are expected failures: a parameter that does not exist is not refused.
+  with and without caching, and what making a survey does in what order.
 - Tests of the files and layouts of the isochrones (`IsochroneFile`, `Formatting`, `Isochrone`):
   the name of the files and the header that is read, the four layouts that are known, the tables
   of a star for each age with the radius that is made from its mass and gravity, the descriptor
@@ -187,6 +186,10 @@ far as the commits of this package and of the backend say.
   refuses anything that is not what the lock says. The Pythons past their end of life, 3.9
   and 3.10, use a lock of their own for the test tools. So does the CD workflow with the
   tools that build the sdist.
+- A survey parameter that does not exist (a misspelled `rand_seeed`, say) is refused with a
+  `TypeError` that names it and lists the parameters of a survey. It used to be put in the
+  parameters, ignored by the parameter file and counted in the hash of the survey, so a typo
+  silently changed nothing but its name.
 
 ### Fixed
 

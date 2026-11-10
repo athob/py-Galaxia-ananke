@@ -241,12 +241,20 @@ def test_the_colors_are_those_of_the_first_photometric_system(an_input, director
         prepare(survey, directories, cmd='g,r-i')                        # those of LSST, which is the second one
 
 
-@pytest.mark.xfail(raises=pytest.fail.Exception, reason="the parameters that are given are put in the parameters whatever their "
-                   "name, and the parameter file ignores those that it has no place for: a misspelled one (rand_seeed) is "
-                   "silently not used, and changes the hash of the survey")
-def test_a_parameter_that_does_not_exist_is_refused(an_input, directories):
-    with pytest.raises((TypeError, ValueError, KeyError)):
+def test_a_parameter_that_does_not_exist_is_refused_and_the_parameters_are_listed(an_input, directories):
+    with pytest.raises(TypeError, match=r"Unknown survey parameter\(s\) \['rand_seeed'\].*'rand_seed'") as refused:
         prepare(Survey(an_input), directories, rand_seeed=5)
+    assert all(f"'{key}'" in str(refused.value) for key in DEFAULTS_FOR_PARFILE)
+
+
+def test_all_the_parameters_that_do_not_exist_are_named_and_only_them(an_input, directories):
+    with pytest.raises(TypeError, match=r"\['rand_seeed', 'seed_rand'\]"):
+        prepare(Survey(an_input), directories, rand_seed=5, seed_rand=1, rand_seeed=5)    # one that exists, two that do not
+
+
+@pytest.mark.parametrize("key", sorted(DEFAULTS_FOR_PARFILE))
+def test_every_parameter_that_has_a_default_can_be_given(key, an_input, directories):
+    assert prepare(Survey(an_input), directories, **{key: DEFAULTS_FOR_PARFILE[key]}).fileparam[key] == DEFAULTS_FOR_PARFILE[key]
 
 
 # -- the generations and the other photometric systems ------------------------------
