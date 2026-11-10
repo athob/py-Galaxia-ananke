@@ -66,9 +66,10 @@ def test_the_post_processed_files_have_every_key_of_a_catalogue(tmp_path, monkey
     assert POSTPROCESS < set(output.catalogue_keys)
 
 
+@pytest.mark.parametrize("pp_auto_flush", [True, False])
 @pytest.mark.parametrize("max_pp_workers", [1, 2])
-def test_the_columns_that_post_processing_makes_or_changes_are_those_of_the_pipelines(max_pp_workers, tmp_path, monkeypatch):
-    output, columns = post_processed(tmp_path, monkeypatch, max_pp_workers=max_pp_workers)
+def test_the_columns_that_post_processing_makes_or_changes_are_those_of_the_pipelines(max_pp_workers, pp_auto_flush, tmp_path, monkeypatch):
+    output, columns = post_processed(tmp_path, monkeypatch, pp_auto_flush=pp_auto_flush, max_pp_workers=max_pp_workers)
     expected = pipelines_applied_to(columns)
     for partition, path in output._hdf5s.items():
         stars = group(path, STARCATALOG_GROUP)
@@ -123,14 +124,6 @@ def test_each_pipeline_says_that_it_runs_when_the_survey_is_verbose(tmp_path, mo
                     "Running last_conversions post-processing pipeline"]
 
 
-@pytest.mark.xfail(raises=IndexError, reason="without the partitions flushed by themselves, the pipelines are applied to what is iterated over "
-                   "in the dictionary of the partitions, which is their numbers and not their tables: the first of them fails on "
-                   "indexing a number")
-def test_post_processing_works_when_the_partitions_are_not_flushed_by_themselves(tmp_path, monkeypatch):
-    output, _ = post_processed(tmp_path, monkeypatch, pp_auto_flush=False)
-    assert POSTPROCESS <= set(group(output._hdf5s[0], STARCATALOG_GROUP))
-
-
 # -- the parent particles -----------------------------------------------------------
 
 def expected_parents(rows):
@@ -148,8 +141,9 @@ STATISTICS = {   # the stars of the partition, per parent and in all, as worked 
 }
 
 
-def test_the_group_of_the_parent_particles_has_what_the_input_says_of_them_and_what_their_stars_are(tmp_path, monkeypatch):
-    output, _ = post_processed(tmp_path, monkeypatch)
+@pytest.mark.parametrize("pp_auto_flush", [True, False])
+def test_the_group_of_the_parent_particles_has_what_the_input_says_of_them_and_what_their_stars_are(pp_auto_flush, tmp_path, monkeypatch):
+    output, _ = post_processed(tmp_path, monkeypatch, pp_auto_flush=pp_auto_flush)
     for partition, rows in {0: [0, 1], 1: [1, 2]}.items():
         parents = group(output._hdf5s[partition], PARENTPARTICLE_GROUP)
         assert set(parents) == {'parentid', 'pos3', 'vel3', 'massinit', 'age', 'feh', 'h_cubic', 'star_count', 'minit_sum',

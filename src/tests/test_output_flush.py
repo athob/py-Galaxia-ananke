@@ -105,12 +105,37 @@ def test_the_partitions_can_be_shared_between_the_processes_by_their_number_of_s
         assert stars(path)['z'].tolist() == (5 * columns['px'][rows]).tolist()
 
 
-@pytest.mark.xfail(raises=IndexError, reason="without the partitions flushed by themselves, the pipeline is applied to what is iterated over in "
-                   "the dictionary of the partitions, which is their numbers and not their tables: it fails on indexing a number")
-def test_a_pipeline_is_run_on_the_tables_when_the_partitions_are_not_flushed_by_themselves(tmp_path, monkeypatch):
-    output, columns = read_output(tmp_path, monkeypatch, max_pp_workers=2, pp_auto_flush=False, n_stars=6, partitions=PARTITIONS)
+@pytest.fixture
+def unflushed(tmp_path, monkeypatch):
+    """An output whose partitions are not flushed by themselves: the pipelines are run on the tables, and flushed afterwards."""
+    output, written = read_output(tmp_path, monkeypatch, max_pp_workers=2, pp_auto_flush=False, n_stars=6, partitions=PARTITIONS)
+    return output, written[0][1]
+
+
+def test_a_pipeline_is_run_on_the_tables_when_the_partitions_are_not_flushed_by_themselves(unflushed):
+    output, columns = unflushed
     output.apply_post_process_pipeline_and_flush(add_column, 3)
-    assert all('z' in stars(path) for path in output._hdf5s.values())
+    for partition, path in output._hdf5s.items():
+        rows = np.asarray(columns['partitionid']) == partition
+        assert stars(path)['z'].tolist() == (3 * columns['px'][rows]).tolist()
+    assert output._vaex['z'].to_numpy().tolist() == (3 * columns['px']).tolist()
+
+
+def test_the_flushing_can_be_held_until_the_tables_are_flushed_by_hand(unflushed):
+    output, columns = unflushed
+    output.apply_post_process_pipeline_and_flush(add_column, 3, hold_flush=True, hold_reload=True)
+    assert not any('z' in stars(path) for path in output._hdf5s.values())                      # not in the files yet,
+    assert all('z' in table.column_names for table in output._vaex_per_partition.values())    # but in the tables
+    output.flush_extra_columns_to_hdf5()
+    for partition, path in output._hdf5s.items():
+        rows = np.asarray(columns['partitionid']) == partition
+        assert stars(path)['z'].tolist() == (3 * columns['px'][rows]).tolist()
+
+
+def test_the_columns_that_are_asked_for_are_overwritten_in_the_files_when_the_partitions_are_not_flushed_by_themselves(unflushed):
+    output, columns = unflushed
+    output.apply_post_process_pipeline_and_flush(double_px, flush_with_columns=['px'])
+    assert np.concatenate([stars(path)['px'] for path in output._hdf5s.values()]).tolist() == (2 * columns['px']).tolist()
 
 
 # -- flushing what the loaded catalogue has made ------------------------------------

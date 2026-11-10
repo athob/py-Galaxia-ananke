@@ -711,7 +711,7 @@ class Output:
                                                                     update_metadata=update_metadata,
                                                                     verbose=self.verbose),
                                         vaex_df_or_hdf5, *args)
-                        for vaex_df_or_hdf5 in vaex_df_or_hdf5_or_list_s]
+                        for vaex_df_or_hdf5 in vaex_df_or_hdf5_or_list_s.values()]
                 # Collect the results
                 _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush) and not(self._pp_auto_flush):

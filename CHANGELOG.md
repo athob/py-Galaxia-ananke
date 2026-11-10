@@ -127,9 +127,7 @@ far as the commits of this package and of the backend say.
   particles with the statistics of their stars worked out by hand, the use of an output like the
   vaex table that it holds, the pipelines of the user run on the file of each partition with
   their options, and the flushing of the columns of the loaded catalogue. The length of an
-  output, which is not the number of its stars, and the pipelines of a catalogue whose partitions
-  are not flushed by themselves, which are given the numbers of the partitions and not their
-  tables, are expected failures.
+  output, which is not the number of its stars, is an expected failure.
 - Tests of the two functions that the processes of `Output` run, called in the process of the
   tests (the measure of the coverage does not follow a pool of processes): the HDF5 file of a
   partition, checked against the one that the processes wrote, what it says when asked to, the file
@@ -218,6 +216,9 @@ far as the commits of this package and of the backend say.
   partitions keep, came in the order in which the file system listed the files of the generations
   (the generations run together, so even the order of their creation changes): the output of a
   survey differed from a run to the next. They come in the order of the generations.
+- Post-processing a survey whose partitions are not flushed by themselves (`pp_auto_flush=False`),
+  with `post_process_output` or with `apply_post_process_pipeline_and_flush`, failed: the
+  pipelines were applied to the numbers of the partitions and not to their tables.
 
 ## [0.8.0] - 2026-08-10
 
