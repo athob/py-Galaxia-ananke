@@ -120,13 +120,17 @@ def test_the_names_of_the_columns_are_in_the_last_comment_of_the_header(header, 
     assert IsochroneFile(path, isochrone=ISOCHRONE).column_names == ['a', 'b', 'c']
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the spaces around the names are stripped before the tabs are made spaces, and the "
-                   "newline that closes the line is stripped after them: a tab at the start, or spaces or a tab at the end, "
-                   "leave an empty name, and every column is one off")
-@pytest.mark.parametrize("header", ["#\ta\tb\tc", "# a b c   ", "# a b c\t"], ids=["a tab at the start", "spaces at the end", "a tab at the end"])
+@pytest.mark.parametrize("header", ["#\ta\tb\tc", "# a b c   ", "# a b c\t", "#  a b c  ", "# a b c \t "],
+                         ids=["a tab at the start", "spaces at the end", "a tab at the end", "spaces at both ends", "a tab and spaces at the end"])
 def test_a_header_with_white_space_at_its_ends_has_no_empty_name(header, tmp_path):
     path = tmp_path / 'output_0.019000.dat'
     path.write_text(f"{header}\n1 2 3\n")
+    assert IsochroneFile(path, isochrone=ISOCHRONE).column_names == ['a', 'b', 'c']
+
+
+def test_a_header_at_the_end_of_a_file_without_a_newline_is_read_too(tmp_path):
+    path = tmp_path / 'output_0.019000.dat'
+    path.write_text("# a b c")                                    # nothing after it, not even the newline
     assert IsochroneFile(path, isochrone=ISOCHRONE).column_names == ['a', 'b', 'c']
 
 

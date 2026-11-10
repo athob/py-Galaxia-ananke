@@ -89,8 +89,7 @@ far as the commits of this package and of the backend say.
   the name of the files and the header that is read, the four layouts that are known, the tables
   of a star for each age with the radius that is made from its mass and gravity, the descriptor
   of an isochrone made in Python, and the points and values that are made of the tables. The
-  weaknesses that they found are expected failures: a header with white space at its ends (a tab
-  first, spaces or a tab last) has an empty name, and a system with a single magnitude gives its
+  weaknesses that they found are expected failures: a system with a single magnitude gives its
   column and not a tuple of columns.
 - Tests of the photometric systems, without the network: the registry that is read from the
   installation, the dictionary with slashes that it is made of, the isochrones that are added
@@ -266,6 +265,9 @@ far as the commits of this package and of the backend say.
 - An isochrone made from Python data that was refused (a missing metallicity, a missing column...)
   left its directory behind, empty, and its name could not be used again without `overwrite`: the
   directory is removed, and so is what a failure to write the files had started.
+- The names of the columns of an isochrone file were read wrongly when its header had white space
+  at its ends (a tab first, spaces or a tab last): an empty name made every column one off. They
+  are read whatever the white space is.
 
 ## [0.8.0] - 2026-08-10
 

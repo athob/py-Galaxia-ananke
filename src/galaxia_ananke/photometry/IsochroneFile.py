@@ -85,10 +85,7 @@ class IsochroneFile:
                 _temp = f.readline()
                 if (_temp[0] == '#') if _temp else False:
                     header = _temp
-        header = header.strip('#').strip(' ').strip('\n').replace('\t',' ')
-        while header.count('  '):
-            header = header.replace('  ', ' ')
-        return header.split(' ')
+        return header.strip('#').split()  # whatever the white space is, and wherever: tabs, spaces, the newline that ends the line
 
     @cached_property
     def data(self) -> ascii.core.Table:
