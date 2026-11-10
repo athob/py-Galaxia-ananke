@@ -266,11 +266,10 @@ def test_the_generations_come_back_in_the_order_of_their_tags(an_input, director
     assert prepare(Survey(an_input), directories, n_gens=(7, 2, 9)).n_gens == [7, 2, 9]
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="no generation at all fails on the largest of none, with a message that "
-                   "says nothing of the generations")
-def test_no_generation_is_refused_with_a_message_about_the_generations(an_input, directories):
-    with pytest.raises(ValueError, match='n_gens'):
-        prepare(Survey(an_input), directories, n_gens=())
+@pytest.mark.parametrize("n_gens", [(), [], 0])
+def test_no_generation_is_refused_with_a_message_about_the_generations(n_gens, an_input, directories):
+    with pytest.raises(ValueError, match='n_gens must hold at least one generation'):
+        Survey(an_input)._vanilla_survey(n_gens=n_gens, output_dir=directories[1])
 
 
 def test_the_photometric_systems_after_the_first_are_in_the_parameters_by_number(an_input, directories):

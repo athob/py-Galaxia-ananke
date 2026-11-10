@@ -98,6 +98,8 @@ class Survey:
         return cls.prepare_photosystems(photo_sys)
 
     def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], n_gens: Iterable[int], **kwargs) -> None:
+        if len(n_gens) == 0:
+            raise ValueError("n_gens must hold at least one generation (or be an integer above 0), but none is given")
         photosys = self.photosystems[0]
         cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()

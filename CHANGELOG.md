@@ -86,8 +86,7 @@ far as the commits of this package and of the backend say.
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
   with and without caching, and what making a survey does in what order. The weaknesses that they
-  found are expected failures: a parameter that does not exist is not refused, and no
-  generation fails with a message that says nothing of the generations.
+  found are expected failures: a parameter that does not exist is not refused.
 - Tests of the files and layouts of the isochrones (`IsochroneFile`, `Formatting`, `Isochrone`):
   the name of the files and the header that is read, the four layouts that are known, the tables
   of a star for each age with the radius that is made from its mass and gravity, the descriptor
@@ -231,6 +230,8 @@ far as the commits of this package and of the backend say.
   there must be, and the backend was given files that do not match: it raises a `ValueError`.
 - `n_gens` and `fsample` of a survey that was not made failed on `None`: they say, like the other
   properties, to run `make_survey` first.
+- A survey with no generation (`n_gens=()` or `n_gens=0`) failed on the largest of nothing: it
+  raises a `ValueError` that says that `n_gens` must hold at least one generation.
 
 ## [0.8.0] - 2026-08-10
 
