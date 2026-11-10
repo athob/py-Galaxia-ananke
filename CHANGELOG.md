@@ -219,6 +219,8 @@ far as the commits of this package and of the backend say.
 - Post-processing a survey whose partitions are not flushed by themselves (`pp_auto_flush=False`),
   with `post_process_output` or with `apply_post_process_pipeline_and_flush`, failed: the
   pipelines were applied to the numbers of the partitions and not to their tables.
+- `apply_post_process_pipeline_and_flush` ignored its `update_metadata` when the partitions are
+  not flushed by themselves: they are flushed at the end, which did not pass it on.
 
 ## [0.8.0] - 2026-08-10
 

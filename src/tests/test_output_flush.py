@@ -121,6 +121,13 @@ def test_a_pipeline_is_run_on_the_tables_when_the_partitions_are_not_flushed_by_
     assert output._vaex['z'].to_numpy().tolist() == (3 * columns['px']).tolist()
 
 
+def test_the_metadata_that_it_is_asked_to_update_is_updated_in_every_file_when_the_partitions_are_not_flushed_by_themselves(unflushed):
+    output, _ = unflushed
+    output.apply_post_process_pipeline_and_flush(add_column, 1, update_metadata={'checked': 7, 'next': lambda a: a['Cat_partition_id'] + 100})
+    for partition, path in output._hdf5s.items():
+        assert attrs(path)['checked'] == 7 and attrs(path)['next'] == partition + 100
+
+
 def test_the_flushing_can_be_held_until_the_tables_are_flushed_by_hand(unflushed):
     output, columns = unflushed
     output.apply_post_process_pipeline_and_flush(add_column, 3, hold_flush=True, hold_reload=True)

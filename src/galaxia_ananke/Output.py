@@ -715,7 +715,7 @@ class Output:
                 # Collect the results
                 _ = [future.result() for future in concurrent.futures.as_completed(futures)]
         if not(hold_flush) and not(self._pp_auto_flush):
-            self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns)
+            self.flush_extra_columns_to_hdf5(with_columns=flush_with_columns, update_metadata=update_metadata)
         if not(hold_reload):
             self.__reload_vaex()
 
