@@ -146,17 +146,24 @@ def test_kernels_that_are_not_as_many_as_the_particles_are_refused(kernels):
         Input(minimal_particles(), kernels)
 
 
-@pytest.mark.xfail(raises=AttributeError, reason="the kernels are used as an array whatever the documentation says (array_like): "
-                   "a list has no ndim")
-def test_kernels_given_as_a_list_are_accepted():
-    assert Input(minimal_particles(), minimal_kernels().tolist()).hdim == 6
+def test_kernels_given_as_a_list_are_accepted_and_are_an_array_of_the_same_values():
+    inp = Input(minimal_particles(), minimal_kernels().tolist())
+    assert inp.hdim == 6 and isinstance(inp.kernels, np.ndarray) and inp.kernels.tolist() == minimal_kernels().tolist()
 
 
-@pytest.mark.xfail(raises=AttributeError, reason="the particles are used as arrays whatever the documentation says (array_like): "
-                   "a list has no shape")
-def test_particles_given_as_lists_are_accepted():
+def test_particles_given_as_lists_are_accepted_and_are_arrays_of_the_same_values():
     particles = {key: value.tolist() for key, value in minimal_particles().items()}
-    assert Input(particles, minimal_kernels()).length == 2
+    inp = Input(particles, minimal_kernels())
+    assert inp.length == 2
+    assert all(isinstance(array, np.ndarray) for array in inp.particles.values())
+    assert {key: array.tolist() for key, array in inp.particles.items() if key in particles} == particles
+
+
+def test_what_is_given_as_lists_makes_the_same_input_as_what_is_given_as_arrays():
+    of_arrays = make()
+    of_lists = Input({key: value.tolist() for key, value in minimal_particles().items()}, minimal_kernels().tolist())
+    of_arrays.input_sorter = of_lists.input_sorter = None
+    assert of_lists.hash == of_arrays.hash                    # the same hash: the same name in the cache
 
 
 # -- the kernels --------------------------------------------------------------------

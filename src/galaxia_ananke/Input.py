@@ -156,10 +156,10 @@ class Input:
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
         # verify and assign attributes based on kwargs
-        self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
+        self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict({key: np.asarray(value) for key, value in kwargs['particles'].items()})
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__kernels: NDArray = self.__conform_kernels(kwargs['kernels'], self.particles[self._massinit].shape[0])
+        self.__kernels: NDArray = self.__conform_kernels(np.asarray(kwargs['kernels']), self.particles[self._massinit].shape[0])
         self.__input_dir: pathlib.Path = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)

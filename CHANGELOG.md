@@ -80,8 +80,7 @@ far as the commits of this package and of the backend say.
   since it names the cache of an input), the names of the files that follow from it, the files
   that it writes and how it prepares them for the backend. The weaknesses that they found are
   expected failures: the default number of neighbours is the name of its tag, an input that was
-  just made cannot say its hash, a name with a dot loses its hash in the names of its files, and
-  the kernels and the particles cannot be given as lists.
+  just made cannot say its hash, and a name with a dot loses its hash in the names of its files.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
@@ -238,6 +237,8 @@ far as the commits of this package and of the backend say.
   index when its points and values were made: it raises a `ValueError` that says what the
   isochrone needs, an oldest age old enough for its most massive star to have died as a white
   dwarf, as completing the (mass, age) space assumes.
+- The particles and the kernels of an `Input` can be given as lists, as their documentation says
+  (`array_like`): they failed on the shape of a list.
 
 ## [0.8.0] - 2026-08-10
 
