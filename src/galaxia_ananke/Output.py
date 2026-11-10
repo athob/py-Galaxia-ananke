@@ -356,7 +356,10 @@ class Output:
     
     def __setitem__(self, item: str, value):
         self._vaex[item] = value
-    
+
+    def __len__(self) -> int:
+        return len(self._vaex)
+
     def __getattr__(self, item: str):
         if (item in self.__vaex.__dir__() and not item.startswith('_')) or (item in self._vaex_under_list and self.__vaex is not None):
             return getattr(self.__vaex, item)

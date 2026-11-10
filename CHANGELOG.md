@@ -119,8 +119,7 @@ far as the commits of this package and of the backend say.
   the stars, what is flushed into the files, what is said when it runs), the group of the parent
   particles with the statistics of their stars worked out by hand, the use of an output like the
   vaex table that it holds, the pipelines of the user run on the file of each partition with
-  their options, and the flushing of the columns of the loaded catalogue. The length of an
-  output, which is not the number of its stars, is an expected failure.
+  their options, and the flushing of the columns of the loaded catalogue.
 - Tests of the two functions that the processes of `Output` run, called in the process of the
   tests (the measure of the coverage does not follow a pool of processes): the HDF5 file of a
   partition, checked against the one that the processes wrote, what it says when asked to, the file
@@ -242,6 +241,10 @@ far as the commits of this package and of the backend say.
   dwarf, as completing the (mass, age) space assumes.
 - The particles and the kernels of an `Input` can be given as lists, as their documentation says
   (`array_like`): they failed on the shape of a list.
+- `len(output)` failed with a `TypeError`, as Python does not pass the methods that it looks up in
+  the class on to the table that an `Output` holds: it is the number of stars. An output is false
+  when it has no star, as an empty table is (its length and its truth need its catalogue to be
+  loaded).
 
 ## [0.8.0] - 2026-08-10
 

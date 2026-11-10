@@ -81,11 +81,17 @@ def test_the_private_attributes_of_the_table_are_not_those_of_the_output(made):
         output._get_column_names_that_do_not_exist
 
 
-@pytest.mark.xfail(raises=TypeError, reason="the methods that python looks up in the class and not in the object, such as the one of `len`, are "
-                   "not passed on to the table by the output the way its other attributes are: the number of stars is `shape[0]`")
 def test_the_length_of_an_output_is_the_number_of_stars(made):
     output, _ = made
-    assert len(output) == 6
+    assert len(output) == 6 == output.shape[0] == len(output._vaex)
+    assert bool(output) is True                          # as for any container, what has something in it is true
+
+
+def test_the_length_and_the_truth_of_an_output_need_its_catalogue_to_be_loaded(tmp_path, monkeypatch):
+    output, _ = read_output(tmp_path, monkeypatch, n_stars=6, partitions=[0, 0, 0, 1, 1, 1], pp_auto_flush=True)       # nothing loaded yet
+    for ask in (len, bool):
+        with pytest.raises(RuntimeError, match="Don't attempt creating an Output object on your own"):
+            ask(output)
 
 
 if __name__ == '__main__':

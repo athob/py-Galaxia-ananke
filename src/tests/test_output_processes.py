@@ -117,6 +117,7 @@ def test_a_catalogue_without_a_star_in_any_partition_is_post_processed_into_an_e
         'parentid': 'int64', 'star_count': 'int64', 'parent_partition_count': 'int64', 'parent_star_count': 'int64'}
     assert str(parents['minit_sum'].dtype) == 'float64' and str(parents['parent_minit_sum'].dtype) == 'float64'
     assert len(output._vaex) == 0 and set(output._vaex.get_column_names()) == set(output.catalogue_keys)
+    assert len(output) == 0 and not output                                  # as an empty table is: an output without a star is false
 
 
 # -- redefining the partitions of a file of the backend -----------------------------
