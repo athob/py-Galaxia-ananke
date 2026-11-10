@@ -159,7 +159,7 @@ class Input:
         self.__particles: OrderedDict[str, NDArray] = lexicalorder_dict(kwargs['particles'].copy())
         self.__verify_particles(self.particles)
         self.__complete_particles(self.particles)
-        self.__kernels: NDArray = self.__conform_kernels(kwargs['kernels'])
+        self.__kernels: NDArray = self.__conform_kernels(kwargs['kernels'], self.particles[self._massinit].shape[0])
         self.__input_dir: pathlib.Path = pathlib.Path(kwargs.get('input_dir', GALAXIA_TMP))
         self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
@@ -506,7 +506,7 @@ class Input:
         #     particles[cls._dform] = 0*particles[cls._massinit]
 
     @classmethod
-    def __conform_kernels(cls, kernels: NDArray) -> NDArray:
+    def __conform_kernels(cls, kernels: NDArray, n_particles: int) -> NDArray:
         if kernels.ndim == 2:
             if kernels.shape[1] == 1:
                 kernels = kernels.flatten()
@@ -514,6 +514,8 @@ class Input:
                 raise ValueError(f"Given 2D-array kernels is (Nx{kernels.shape[1]}) but should be either (Nx1) (position space) or (Nx2) (phase space)")
         if kernels.ndim not in [1,2]:
             raise ValueError(f"Given kernels ndim is {kernels.ndim} but should be either 1 (position space) or 2 (phase space)")
+        if kernels.shape[0] != n_particles:
+            raise ValueError(f"Given kernels are {kernels.shape[0]} but should be as many as the particles, {n_particles}")
         return kernels
 
     @classmethod

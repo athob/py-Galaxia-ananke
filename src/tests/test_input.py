@@ -140,11 +140,10 @@ def test_kernels_that_are_not_one_or_two_dimensional_are_refused():
         Input(minimal_particles(), np.ones((2, 2, 2)))
 
 
-@pytest.mark.xfail(raises=pytest.fail.Exception, reason="nothing checks that there are as many kernels as particles, as the "
-                   "documentation says there must be: the backend is given files that do not match")
-def test_kernels_that_are_not_as_many_as_the_particles_are_refused():
-    with pytest.raises(ValueError):
-        Input(minimal_particles(), np.ones((3, 2)))
+@pytest.mark.parametrize("kernels", [np.ones((3, 2)), np.ones(1)], ids=["more", "fewer"])
+def test_kernels_that_are_not_as_many_as_the_particles_are_refused(kernels):
+    with pytest.raises(ValueError, match="Given kernels are .* but should be as many as the particles, 2"):
+        Input(minimal_particles(), kernels)
 
 
 @pytest.mark.xfail(raises=AttributeError, reason="the kernels are used as an array whatever the documentation says (array_like): "

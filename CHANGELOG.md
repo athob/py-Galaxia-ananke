@@ -80,9 +80,8 @@ far as the commits of this package and of the backend say.
   since it names the cache of an input), the names of the files that follow from it, the files
   that it writes and how it prepares them for the backend. The weaknesses that they found are
   expected failures: the default number of neighbours is the name of its tag, an input that was
-  just made cannot say its hash, a name with a dot loses its hash in the names of its files, the
-  kernels and the particles cannot be given as lists, and the kernels are not checked to be as
-  many as the particles.
+  just made cannot say its hash, a name with a dot loses its hash in the names of its files, and
+  the kernels and the particles cannot be given as lists.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
@@ -229,6 +228,8 @@ far as the commits of this package and of the backend say.
   with "No active exception to reraise": it raises a `TypeError` that says what it takes.
 - A script that gave `Input` the present-day `mass` and not the initial mass got "No module named
   `__metadata__`" instead of the explanation of the change of the mass keys: it gets the explanation.
+- `Input` did not check that there are as many kernels as particles, as its documentation says
+  there must be, and the backend was given files that do not match: it raises a `ValueError`.
 
 ## [0.8.0] - 2026-08-10
 
