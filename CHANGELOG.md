@@ -224,7 +224,8 @@ far as the commits of this package and of the backend say.
 - A survey without a single star (or whose partitioning rule gives every star no partition)
   failed at the last step of the post-processing, after the backend had run, because vaex cannot
   group a table without a row, and left an incomplete file behind. It returns an empty catalogue
-  with all its columns, and the datasets of its parent particles are empty.
+  with all its columns, the datasets of its parent particles are empty, and a warning says that
+  the survey has no star.
 
 ## [0.8.0] - 2026-08-10
 

@@ -88,7 +88,9 @@ def test_the_files_of_an_input_make_the_same_survey_as_the_input(run, real_surve
 @needs_backend
 def test_a_survey_without_a_single_star_has_an_empty_catalogue_with_the_columns_and_the_types_of_any_other(run, real_survey):
     particles, kernels = dummy_input()
-    output, other = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30), real_survey.output       # no star is that bright
+    with pytest.warns(UserWarning, match="no star in any partition"):
+        output = run(particles, kernels, simname='itest_empty', app_mag_lim_hi=-30)       # no star is that bright
+    other = real_survey.output
     assert len(output._vaex) == 0 and list(output._hdf5s) == [-1]
     assert set(output._vaex.get_column_names()) == set(other._vaex.get_column_names())
 

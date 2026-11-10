@@ -105,7 +105,8 @@ def test_the_file_of_the_stars_of_no_partition_has_datasets_without_stars(tmp_pa
 
 def test_a_catalogue_without_a_star_in_any_partition_is_post_processed_into_an_empty_catalogue_with_all_its_columns(tmp_path, monkeypatch):
     output, _ = read_output(tmp_path, monkeypatch, n_stars=3, partitions=[-1, -1, -1], pp_auto_flush=True)
-    output.post_process_output()
+    with pytest.warns(UserWarning, match="no star in any partition"):
+        output.post_process_output()
     h5 = read_h5(output._hdf5s[-1])
     stars, parents = h5['groups'][STARCATALOG_GROUP], h5['groups'][PARENTPARTICLE_GROUP]
     assert set(stars) == set(output.catalogue_keys) and all(column.shape == (0,) for column in stars.values())

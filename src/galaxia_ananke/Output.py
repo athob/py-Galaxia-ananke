@@ -724,6 +724,9 @@ class Output:
         self.check_state_before_running(description="pp_galactic_to_icrs", level=1)(self._pp_convert_galactic_to_icrs)(hold_reload=True)
         self.check_state_before_running(description="pp_last_conversions", level=1)(self._pp_last_conversions)(hold_reload=True)
         self.__reload_vaex()
+        if len(self._vaex) == 0:
+            warn("The survey has no star in any partition, its catalogue is empty: check the limits of the survey (magnitudes, colors), "
+                 "its input and its partitioning rule", UserWarning)
         self.check_state_before_running(description="export_parent_data", level=1)(self.__export_parent_particles_data)()
 
     def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:

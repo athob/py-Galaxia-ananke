@@ -20,6 +20,7 @@ themselves), what is flushed into the files, the group of the parent particles w
 of it. The stars are those of synthetic.py: six stars of three parents in two partitions, whose statistics are worked out by hand.
 """
 import json
+import warnings
 
 import h5py
 import numpy as np
@@ -106,6 +107,13 @@ def test_the_catalogue_that_is_loaded_afterwards_has_the_new_columns(tmp_path, m
     assert POSTPROCESS <= set(output._vaex.get_column_names())
     assert len(output._vaex) == 6 and sorted(output._vaex_per_partition) == [0, 1]
     assert output._vaex['pi'].to_numpy() == pytest.approx(1.0 / output._vaex['rad'].to_numpy())
+
+
+def test_a_catalogue_with_stars_is_post_processed_without_a_word_of_it_being_empty(tmp_path, monkeypatch):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        post_processed(tmp_path, monkeypatch)
+    assert not [warning for warning in caught if 'no star' in str(warning.message)]
 
 
 def test_what_was_post_processed_is_in_the_state_of_the_output(tmp_path, monkeypatch):
