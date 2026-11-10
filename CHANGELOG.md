@@ -189,6 +189,10 @@ far as the commits of this package and of the backend say.
   `TypeError` that names it and lists the parameters of a survey. It used to be put in the
   parameters, ignored by the parameter file and counted in the hash of the survey, so a typo
   silently changed nothing but its name.
+- `Input`, `Survey` and `Output` are among the public names of the package (its `__all__`), as
+  well as the functions that were: `from galaxia_ananke import *` provides them, and so do
+  documentation tools and type checkers (which take a name imported in the package and not in its
+  `__all__` for private).
 
 ### Fixed
 

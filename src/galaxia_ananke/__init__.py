@@ -33,7 +33,7 @@ from .Input import Input
 from .Survey import Survey
 from .Output import Output
 
-__all__ = ['make_dummy_particles_input', 'make_dummy_kernels_input', 'make_survey_from_particles']
+__all__ = ['Input', 'Survey', 'Output', 'make_dummy_particles_input', 'make_dummy_kernels_input', 'make_survey_from_particles']
 
 
 # check Galaxia installation

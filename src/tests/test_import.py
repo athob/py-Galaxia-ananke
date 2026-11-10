@@ -25,6 +25,7 @@ import sys
 
 import vaex
 
+from .. import galaxia_ananke
 from ..galaxia_ananke import _patch_vaex
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -40,6 +41,15 @@ def test_importing_the_package_warns_about_the_patch_it_makes_to_vaex():
 def test_importing_the_package_replaces_how_vaex_reads_and_opens_files():
     assert vaex.hdf5.dataset.Hdf5MemoryMapped._load is _patch_vaex.new_hdf5_load
     assert vaex.open_many is _patch_vaex.new_open_many
+
+
+def test_the_public_names_of_the_package_are_its_three_classes_and_its_functions():
+    assert galaxia_ananke.__all__ == ['Input', 'Survey', 'Output', 'make_dummy_particles_input', 'make_dummy_kernels_input',
+                                      'make_survey_from_particles']
+
+
+def test_every_public_name_of_the_package_exists():
+    assert all(hasattr(galaxia_ananke, name) for name in galaxia_ananke.__all__)          # or `import *` fails on the one that does not
 
 
 def test_importing_the_package_silences_the_logging_of_vaex():
