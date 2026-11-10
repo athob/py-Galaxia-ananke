@@ -79,11 +79,10 @@ far as the commits of this package and of the backend say.
 - Tests of `Input`: how it is made, what it refuses and what it completes, its hash (pinned,
   since it names the cache of an input), the names of the files that follow from it, the files
   that it writes and how it prepares them for the backend. The weaknesses that they found are
-  expected failures: the explanation of the change of the mass keys fails on an import, a wrong
-  number of arguments reaches a bare `raise`, the default number of neighbours is the name of its
-  tag, an input that was just made cannot say its hash, a name with a dot loses its hash in the
-  names of its files, the kernels and the particles cannot be given as lists, and the kernels are
-  not checked to be as many as the particles.
+  expected failures: the explanation of the change of the mass keys fails on an import, the
+  default number of neighbours is the name of its tag, an input that was just made cannot say its
+  hash, a name with a dot loses its hash in the names of its files, the kernels and the particles
+  cannot be given as lists, and the kernels are not checked to be as many as the particles.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
@@ -226,6 +225,8 @@ far as the commits of this package and of the backend say.
   group a table without a row, and left an incomplete file behind. It returns an empty catalogue
   with all its columns, the datasets of its parent particles are empty, and a warning says that
   the survey has no star.
+- `Input` given a number of arguments that is not two (the particles and the kernels) failed
+  with "No active exception to reraise": it raises a `TypeError` that says what it takes.
 
 ## [0.8.0] - 2026-08-10
 

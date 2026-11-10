@@ -82,11 +82,9 @@ def test_a_wrong_signature_is_a_value_error_that_says_so(arguments, keywords):
         Input(*arguments, **keywords)
 
 
-@pytest.mark.xfail(raises=RuntimeError, reason="a number of arguments that is not two reaches a bare `raise`, which fails "
-                   "with 'No active exception to reraise' instead of saying what is wrong")
 @pytest.mark.parametrize("arguments", [(1,), (1, 2, 3)])
-def test_a_wrong_number_of_arguments_is_a_type_or_value_error(arguments):
-    with pytest.raises((TypeError, ValueError)):
+def test_a_wrong_number_of_arguments_is_a_type_error_that_says_what_the_input_takes(arguments):
+    with pytest.raises(TypeError, match="takes the particles and the kernels as its two arguments"):
         Input(*arguments)
 
 

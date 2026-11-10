@@ -135,7 +135,8 @@ class Input:
         self.__append_hash: bool = kwargs.get('append_hash', True)
         # check which args/kwargs signature case and populate kwargs accordingly
         if args:
-            if len(args) not in [2]: raise  # TODO mix & match args & kwargs for particles and kernels
+            if len(args) not in [2]:  # TODO mix & match args & kwargs for particles and kernels
+                raise TypeError(f"Input takes the particles and the kernels as its two arguments, and not {len(args)}: please consult help of the Input constructor")
             kwargs['particles'] = args[0]
             kwargs['kernels'] = args[1]
             self.__input_files_exist: bool = False
