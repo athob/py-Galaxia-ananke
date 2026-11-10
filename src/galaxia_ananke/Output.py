@@ -933,9 +933,15 @@ class Output:
         _temp = self._ebf_glob_pattern
         return _temp.parent.glob(_temp.name)
     
+    @staticmethod
+    def _ebf_generation_key(path: pathlib.Path) -> Tuple[int, Union[int, str]]:
+        """What puts the files of the backend in the order of their generations: they are named {name of the output}.{generation}.ebf"""
+        generation = path.stem.rsplit('.', 1)[-1]
+        return (0, int(generation)) if generation.isdigit() else (1, generation)
+
     @cached_property
     def _ebfs(self):
-        ebfs = list(self._ebf_glob)
+        ebfs = sorted(self._ebf_glob, key=self._ebf_generation_key)  # not in the order that the file system lists them in, which can change
         if not ebfs:
             raise RuntimeError("Galaxia didn't return any ebf output files")
         return ebfs

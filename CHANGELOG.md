@@ -158,9 +158,6 @@ far as the commits of this package and of the backend say.
 - Tests that use the network, only run where `GALAXIA_TEST_NETWORK` is set: the wavelengths and the
   zero points that the SVO service gives for Gaia are those of the saved table that the other
   tests replay, so that those do not go on checking a service that has changed.
-- An expected failure records that the stars of the generations of a survey, and their logs, come
-  in the files of the partitions in the order in which the file system lists the files of the
-  backend and not in that of the generations, which varies from a run to the next.
 - The classifiers of the package list the Python versions it supports, 3.9 to 3.12, so that
   PyPI shows them.
 - CodeQL code scanning of the Python source, on `develop`, on its pull requests and every
@@ -217,6 +214,10 @@ far as the commits of this package and of the backend say.
 - A survey that was made again with other parameters kept the name of the first one (the hash
   that is part of it was made once): the second survey was written under the name of the first
   and, with caching, taken for it. The hash is made again each time it is asked for.
+- The stars of a survey of several generations, and the logs of the backend that the files of the
+  partitions keep, came in the order in which the file system listed the files of the generations
+  (the generations run together, so even the order of their creation changes): the output of a
+  survey differed from a run to the next. They come in the order of the generations.
 
 ## [0.8.0] - 2026-08-10
 
