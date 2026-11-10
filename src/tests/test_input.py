@@ -246,11 +246,12 @@ def test_the_defaults_of_an_input():
     assert inp._input_dir == pathlib.Path(GALAXIA_TMP)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the default number of neighbours is the name of the tag that holds it ('nres'), "
-                   "not its value, 64: a survey of an Input that was not given ngb is written with `nres nres`, which "
-                   "the backend cannot read (make_survey_from_particles always gives ngb, which hides it)")
 def test_the_default_number_of_neighbours_is_64():
     assert make().ngb == 64
+
+
+def test_the_documentation_of_input_gives_the_default_number_of_neighbours_and_not_the_name_of_its_tag():
+    assert "ngb=64" in Input.__init__.__doc__ and "Default to 64." in Input.__init__.__doc__ and "ngb=nres" not in Input.__init__.__doc__
 
 
 def test_what_is_given_is_what_the_input_says():

@@ -340,6 +340,11 @@ def test_a_survey_that_is_made_again_with_other_parameters_has_another_name(an_i
     assert survey.output.output_name == f"{survey.surveyname_hash}.{an_input.name_hash}"
 
 
+def test_a_survey_of_an_input_that_was_not_given_a_number_of_neighbours_has_the_default_one(directories):
+    survey = prepare(Survey(Input(minimal_particles(), minimal_kernels(), input_dir=directories[0], name='sim')), directories)
+    assert survey.ngb == 64 and survey.fileparam[FTTAGS.nres] == 64
+
+
 def test_a_survey_that_is_made_again_with_the_same_parameters_keeps_its_name(an_input, directories):
     survey = prepare(Survey(an_input), directories, fsample=1)
     first = survey.surveyname_hash

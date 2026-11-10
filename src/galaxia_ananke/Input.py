@@ -164,7 +164,7 @@ class Input:
         self.__name: str = kwargs.get('name', DEFAULT_SIMNAME)
         self.__pname: Optional[pathlib.Path] = kwargs.get('pname', None)
         self.__kname: Optional[pathlib.Path] = kwargs.get('kname', None)
-        self.__ngb: int = kwargs.get('ngb', FTTAGS.nres)  # TODO Galaxia makes no use of it, need to remove in the future
+        self.__ngb: int = kwargs.get('ngb', DEFAULTS_FOR_PARFILE[FTTAGS.nres])  # TODO Galaxia makes no use of it, need to remove in the future
         self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1.)
 
     @classproperty
@@ -576,7 +576,7 @@ class Input:
 
 Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
                                                        DEFAULT_SIMNAME=DEFAULT_SIMNAME,
-                                                       TTAGS_nres=FTTAGS.nres,
+                                                       TTAGS_nres=DEFAULTS_FOR_PARFILE[FTTAGS.nres],
                                                        particles_dictionary_description=Input.particles_dictionary_description)
 
 Input.make_dummy_particles_input.__func__.__doc__ = Input.make_dummy_particles_input.__doc__.format(

@@ -79,8 +79,8 @@ far as the commits of this package and of the backend say.
 - Tests of `Input`: how it is made, what it refuses and what it completes, its hash (pinned,
   since it names the cache of an input), the names of the files that follow from it, the files
   that it writes and how it prepares them for the backend. The weaknesses that they found are
-  expected failures: the default number of neighbours is the name of its tag, an input that was
-  just made cannot say its hash, and a name with a dot loses its hash in the names of its files.
+  expected failures: an input that was just made cannot say its hash, and a name with a dot
+  loses its hash in the names of its files.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
@@ -249,6 +249,11 @@ far as the commits of this package and of the backend say.
   the class on to the table that an `Output` holds: it is the number of stars. An output is false
   when it has no star, as an empty table is (its length and its truth need its catalogue to be
   loaded).
+- The default number of neighbours of an `Input` was the name of the tag that holds it (`nres`)
+  and not its value: a survey of an `Input` that was not given `ngb` was written with
+  `nres nres`, which the backend cannot read, and the documentation of `Input` showed `ngb=nres`
+  (`make_survey_from_particles` always gives `ngb`, which hid it). It is the default of the
+  parameter file, 64.
 
 ## [0.8.0] - 2026-08-10
 
