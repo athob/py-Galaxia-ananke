@@ -37,6 +37,7 @@ from ..galaxia_ananke.utils import hash_iterable
 from .utils import minimal_kernels, minimal_particles, patch_nbody1
 
 SURVEY_MODULE = sys.modules[Survey.__module__]
+SURVEY_PARAMETERS = sorted(set(DEFAULTS_FOR_PARFILE) - {FTTAGS.nres})      # the number of neighbours is that of the input
 
 
 class FakeSystem:
@@ -244,7 +245,7 @@ def test_the_colors_are_those_of_the_first_photometric_system(an_input, director
 def test_a_parameter_that_does_not_exist_is_refused_and_the_parameters_are_listed(an_input, directories):
     with pytest.raises(TypeError, match=r"Unknown survey parameter\(s\) \['rand_seeed'\].*'rand_seed'") as refused:
         prepare(Survey(an_input), directories, rand_seeed=5)
-    assert all(f"'{key}'" in str(refused.value) for key in DEFAULTS_FOR_PARFILE)
+    assert all(f"'{key}'" in str(refused.value) for key in SURVEY_PARAMETERS) and f"'{FTTAGS.nres}'" not in str(refused.value)
 
 
 def test_all_the_parameters_that_do_not_exist_are_named_and_only_them(an_input, directories):
@@ -252,8 +253,13 @@ def test_all_the_parameters_that_do_not_exist_are_named_and_only_them(an_input, 
         prepare(Survey(an_input), directories, rand_seed=5, seed_rand=1, rand_seeed=5)    # one that exists, two that do not
 
 
-@pytest.mark.parametrize("key", sorted(DEFAULTS_FOR_PARFILE))
-def test_every_parameter_that_has_a_default_can_be_given(key, an_input, directories):
+def test_the_number_of_neighbours_is_not_a_parameter_of_a_survey_but_that_of_its_input(an_input, directories):
+    with pytest.raises(TypeError, match=r"number of neighbours of a survey is that of its input \(64\).*give ngb to the input and not nres"):
+        prepare(Survey(an_input), directories, nres=32)
+
+
+@pytest.mark.parametrize("key", SURVEY_PARAMETERS)
+def test_every_parameter_that_has_a_default_but_the_neighbours_can_be_given(key, an_input, directories):
     assert prepare(Survey(an_input), directories, **{key: DEFAULTS_FOR_PARFILE[key]}).fileparam[key] == DEFAULTS_FOR_PARFILE[key]
 
 

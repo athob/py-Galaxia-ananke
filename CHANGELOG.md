@@ -254,6 +254,9 @@ far as the commits of this package and of the backend say.
   `nres nres`, which the backend cannot read, and the documentation of `Input` showed `ngb=nres`
   (`make_survey_from_particles` always gives `ngb`, which hid it). It is the default of the
   parameter file, 64.
+- Giving `nres` to a survey failed with "got multiple values for keyword argument": the number of
+  neighbours of a survey is that of its input (`ngb`), so it is refused with a `TypeError` that
+  says so.
 
 ## [0.8.0] - 2026-08-10
 
