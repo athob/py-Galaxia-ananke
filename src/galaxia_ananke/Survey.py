@@ -325,6 +325,8 @@ class Survey:
 
     @property
     def _extraparam(self) -> Dict[str, Union[str,float,int]]:
+        if self.has_no_fileparam:
+            raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         return self.__extraparam
 
     @property

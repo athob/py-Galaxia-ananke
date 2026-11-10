@@ -171,8 +171,6 @@ def test_a_survey_that_was_not_made_says_to_make_it_first(attribute, an_input):
         getattr(Survey(an_input), attribute)
 
 
-@pytest.mark.xfail(raises=AttributeError, reason="the generations are looked for in parameters that do not exist yet: the error is "
-                   "that None has no items, where the other properties of a survey that was not made say to make it first")
 @pytest.mark.parametrize("attribute", ["n_gens", "fsample"])
 def test_a_survey_that_was_not_made_says_to_make_it_first_for_its_generations_too(attribute, an_input):
     with pytest.raises(RuntimeError, match="hasn't been made yet"):
