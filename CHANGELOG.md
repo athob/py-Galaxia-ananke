@@ -98,11 +98,10 @@ far as the commits of this package and of the backend say.
   and the clearing of them, what a system says about itself and the check of the colors of a
   diagram, the instruments that a system is asked about, and the effective wavelengths and zero
   points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
-  weaknesses that they found are expected failures: the protection of the padova category compares
-  by identity, a name with a slash is set in a copy, an isochrone that is added is not a
-  photometric system, the filters of LSST are eight for six magnitudes, the tables of an
-  isochrone that is made in Python fail on duplicate column names, and the particles that share
-  their nearest metallicity fail on an index.
+  weaknesses that they found are expected failures: a name with a slash is set in a copy, an
+  isochrone that is added is not a photometric system, the filters of LSST are eight for six
+  magnitudes, the tables of an isochrone that is made in Python fail on duplicate column names,
+  and the particles that share their nearest metallicity fail on an index.
 - Tests of what `Output` is made of that needs no survey: the longitude within bounds, the
   partitions shared between processes, the keys of a catalogue, the conversions of the coordinates
   (checked against physics: a star at 1 kpc that moves across the sky at 4.74 km/s moves by 1
@@ -257,6 +256,9 @@ far as the commits of this package and of the backend say.
 - Giving `nres` to a survey failed with "got multiple values for keyword argument": the number of
   neighbours of a survey is that of its input (`ngb`), so it is refused with a `TypeError` that
   says so.
+- The protection of the `padova` category of the registry compared the name by identity: it only
+  held for the very same string, so a name made another way, or a path to a system in the
+  category (`padova/Mine`), went through. It compares by value.
 
 ## [0.8.0] - 2026-08-10
 

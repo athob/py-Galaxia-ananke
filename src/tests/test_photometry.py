@@ -142,15 +142,20 @@ def test_the_padova_category_can_be_set_when_it_is_not_there(isochrones_path):
     assert registry[LEGACY_PHOTOCAT] == {'one': 1}
 
 
-@pytest.mark.xfail(raises=pytest.fail.Exception, reason="the protection compares the category with the name of the legacy one by identity: "
-                   "it only holds for a string that is the same object, so a name that is made in another way, or a path to a "
-                   "system in it, goes through")
 @pytest.mark.parametrize("key", [''.join(['pad', 'ova']), f"{LEGACY_PHOTOCAT}/Mine"], ids=["a name made another way", "a path"])
 def test_the_padova_category_is_protected_whatever_the_way_it_is_named(key, isochrones_path):
     make_system(isochrones_path, LEGACY_PHOTOCAT, 'LSST')
     registry = scan()
     with pytest.raises(ValueError, match="is protected"):
         registry[key] = {}
+
+
+@pytest.mark.parametrize("key", [f"{LEGACY_PHOTOCAT}_two", f"two_{LEGACY_PHOTOCAT}", f"{LEGACY_PHOTOCAT}_two/Mine"])
+def test_a_category_that_is_only_named_like_the_padova_one_is_not_protected(key, isochrones_path):
+    make_system(isochrones_path, LEGACY_PHOTOCAT, 'LSST')
+    registry = scan()
+    registry[key] = {'one': 1}                                # is not refused,
+    assert key.split('/')[0] in registry                      # and its category is there
 
 
 def test_nothing_can_be_deleted_from_the_registry(isochrones_path):

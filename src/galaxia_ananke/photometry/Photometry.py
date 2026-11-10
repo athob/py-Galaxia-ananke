@@ -67,7 +67,7 @@ class Photometry(nested_dict, metaclass=Singleton):
     
     def __setitem__(self, __key, __value) -> None:
         __key_split = __key.split('/')
-        if __key_split[0] is LEGACY_PHOTOCAT and LEGACY_PHOTOCAT in self.keys():
+        if __key_split[0] == LEGACY_PHOTOCAT and LEGACY_PHOTOCAT in self.keys():
             raise ValueError(f"The '{LEGACY_PHOTOCAT}' entry is protected")
         # elif len(__key_split) == 1:
         #         __key = f"{CUSTOM_CATEGORY}/{__key}"
