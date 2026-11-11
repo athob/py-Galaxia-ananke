@@ -19,11 +19,13 @@ import_source_file and classproperty. The first two are the ones that py-EnBiD-a
 """
 import subprocess
 import sys
+from operator import itemgetter
 from unittest import mock
 
+import numpy as np
 import pytest
 
-from ..galaxia_ananke._builtin_utils import classproperty, get_version_of_command, import_source_file
+from ..galaxia_ananke._builtin_utils import classproperty, get_version_of_command, import_source_file, tuple_itemgetter
 from .utils import in_tmp_wd, fake_commands
 
 
@@ -123,3 +125,28 @@ def test_a_classproperty_sees_the_class_it_is_read_from():
 
 if __name__ == '__main__':
     pass
+
+
+# -- the items that are always a tuple ----------------------------------------------
+
+@pytest.mark.parametrize("indices", [(1,), (0, 2), (2, 0, 1)], ids=["one", "two", "three"])
+def test_the_items_are_always_given_as_a_tuple(indices):
+    items = ['a', 'b', 'c']
+    assert tuple_itemgetter(*indices)(items) == tuple(items[i] for i in indices)
+
+
+def test_a_single_index_gives_a_tuple_of_one_where_itemgetter_gives_the_item():
+    assert itemgetter(1)(['a', 'b']) == 'b' and tuple_itemgetter(1)(['a', 'b']) == ('b',)
+
+
+def test_the_indices_can_be_arrays_as_the_groups_of_particles_are():
+    ages = np.array([9.1, 8.2, 7.3])
+    (group,) = tuple_itemgetter(np.array([2, 0]))(ages)
+    assert group.tolist() == [7.3, 9.1]
+    first, second = tuple_itemgetter(np.array([2, 0]), np.array([1]))(ages)
+    assert first.tolist() == [7.3, 9.1] and second.tolist() == [8.2]
+
+
+def test_no_index_is_a_type_error():
+    with pytest.raises(TypeError):
+        tuple_itemgetter()

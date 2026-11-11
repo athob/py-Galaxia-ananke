@@ -88,17 +88,15 @@ far as the commits of this package and of the backend say.
 - Tests of the files and layouts of the isochrones (`IsochroneFile`, `Formatting`, `Isochrone`):
   the name of the files and the header that is read, the four layouts that are known, the tables
   of a star for each age with the radius that is made from its mass and gravity, the descriptor
-  of an isochrone made in Python, and the points and values that are made of the tables. The
-  weaknesses that they found are expected failures: a system with a single magnitude gives its
-  column and not a tuple of columns.
+  of an isochrone made in Python, and the points and values that are made of the tables.
 - Tests of the photometric systems, without the network: the registry that is read from the
   installation, the dictionary with slashes that it is made of, the isochrones that are added
   and the clearing of them, what a system says about itself and the check of the colors of a
   diagram, the instruments that a system is asked about, and the effective wavelengths and zero
   points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
   weaknesses that they found are expected failures: the filters of LSST are eight for six
-  magnitudes, the tables of an isochrone that is made in Python fail on duplicate column names,
-  and the particles that share their nearest metallicity fail on an index.
+  magnitudes, and the tables of an isochrone that is made in Python fail on duplicate column
+  names.
 - Tests of what `Output` is made of that needs no survey: the longitude within bounds, the
   partitions shared between processes, the keys of a catalogue, the conversions of the coordinates
   (checked against physics: a star at 1 kpc that moves across the sky at 4.74 km/s moves by 1
@@ -268,6 +266,10 @@ far as the commits of this package and of the backend say.
 - The names of the columns of an isochrone file were read wrongly when its header had white space
   at its ends (a tab first, spaces or a tab last): an empty name made every column one off. They
   are read whatever the white space is.
+- A photometric system with a single magnitude gave its column and not a tuple of columns, and
+  particles that all have the same nearest metallicity got too few tables: `itemgetter` gives the
+  item itself, and not a tuple of one, when it has a single index. A helper that always gives a
+  tuple is used at both places.
 
 ## [0.8.0] - 2026-08-10
 

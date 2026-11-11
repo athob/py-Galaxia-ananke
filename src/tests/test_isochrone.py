@@ -190,8 +190,6 @@ def test_a_directory_without_a_descriptor_is_not_a_photometric_system(tmp_path):
         iso.file_descriptor_content
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="itemgetter with one index gives the element and not a tuple of one: a system with a "
-                   "single magnitude gives its column and not the columns of its magnitudes")
 def test_the_magnitudes_of_a_system_with_a_single_one_are_a_tuple(tmp_path):
     directory = isochrone_directory(tmp_path, 'Single', {0.0152: []}, descriptor='Single 8 7 1 G')
     assert Isochrone(directory).magnitude_itemgetter([f"column{i}" for i in range(8)]) == ('column7',)

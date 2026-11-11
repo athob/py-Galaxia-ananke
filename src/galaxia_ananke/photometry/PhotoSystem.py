@@ -19,7 +19,6 @@ Docstring
 from typing import Union, List, Dict
 from numpy.typing import ArrayLike
 from functools import cached_property
-from operator import itemgetter
 import re
 
 import numpy as np
@@ -27,7 +26,7 @@ from astropy import table, units
 
 from .._constants import *
 from .._defaults import *
-from ..utils import compare_given_and_required
+from ..utils import compare_given_and_required, tuple_itemgetter
 from .Isochrone import Isochrone
 from .InterfaceSvoFpsDriver import InterfaceSvoFpsDriver
 
@@ -125,7 +124,7 @@ class PhotoSystem:
         nearest_z_keys = z_keys[np.digitize(metallicities, (z_keys[:-1]+z_keys[1:])/2)]
         nearest_z_sorter = np.argsort(nearest_z_keys)
         unique_z_keys, index_z_keys = np.unique(nearest_z_keys[nearest_z_sorter], return_index=True)
-        split_per_nearest_z_keys = itemgetter(*tuple(np.split(nearest_z_sorter, index_z_keys[1:])))
+        split_per_nearest_z_keys = tuple_itemgetter(*tuple(np.split(nearest_z_sorter, index_z_keys[1:])))
         nearest_ages_per_z_keys = {z_key: age_keys[np.digitize(sub_ages, (age_keys[:-1]+age_keys[1:])/2)]
                                    for z_key, sub_ages in zip(unique_z_keys, split_per_nearest_z_keys(ages))
                                    if (age_keys:=np.array(list(self._isochrone.qtables_unique_ages_dictionary[z_key]))) is not None}

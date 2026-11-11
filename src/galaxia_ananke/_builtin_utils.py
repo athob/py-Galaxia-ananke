@@ -27,6 +27,7 @@ from collections import OrderedDict as ODict
 from collections import Counter, defaultdict
 from functools import cached_property, total_ordering
 from itertools import zip_longest
+from operator import itemgetter
 import dataclasses as dc
 import subprocess
 import importlib.util
@@ -35,7 +36,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'tuple_itemgetter', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
 
 
 class Singleton(type):
@@ -206,6 +207,14 @@ def confirm_equal_length_arrays_in_dict(dictionary: dict, control: str = None, e
         if len(dictionary[key]) != len(dictionary[control]): wrong_keys.append(key)
     if wrong_keys:
         raise ValueError(f"Array{'' if len(wrong_keys)==1 else 's'} representing propert{'y' if len(wrong_keys)==1 else 'ies'} {set(wrong_keys)} in the provided {error_message_dict_name + bool(error_message_dict_name)*' '}input dictionary do{'es' if len(wrong_keys)==1 else ''} not have the same length as property {control}.")
+
+
+def tuple_itemgetter(*items) -> Callable[[Any], tuple]:
+    """
+    operator.itemgetter that always gives a tuple: itemgetter gives the item itself, and not a tuple of one, when it is given a single one
+    """
+    getter = itemgetter(*items)
+    return getter if len(items) != 1 else (lambda obj: (getter(obj),))
 
 
 def common_entries(*dcts: Dict):

@@ -17,17 +17,16 @@
 Docstring
 """
 import sys
-from typing import Tuple, List
+from typing import Tuple, List, Callable, Sequence
 from numpy.typing import NDArray
 from functools import cached_property
-from operator import itemgetter
 import pathlib
 import shutil
 
 import numpy as np
 
 from .._constants import *
-from ..utils import compare_given_and_required
+from ..utils import compare_given_and_required, tuple_itemgetter
 from .IsochroneFile import IsochroneFile
 from .Formatting import *
 
@@ -149,8 +148,8 @@ class Isochrone:
         return int(self.file_descriptor_content[3])
     
     @cached_property
-    def magnitude_itemgetter(self) -> itemgetter:
-        return itemgetter(*range(self._fd_startid, self._fd_startid+self._fd_nmags))
+    def magnitude_itemgetter(self) -> Callable[[Sequence], tuple]:
+        return tuple_itemgetter(*range(self._fd_startid, self._fd_startid+self._fd_nmags))
 
     @cached_property
     def mag_names(self) -> List[str]:
