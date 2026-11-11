@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke import Input
+from ..galaxia_ananke._constants import HASH_EXT
 from .utils import minimal_kernels, minimal_particles, patch_nbody1
 
 # The hashes of the smallest inputs, worked out outside Input: the sha256 of the hashes of the arrays in the order that the
@@ -161,13 +162,28 @@ def test_the_hash_can_be_left_out_of_the_names(tmp_path):
     assert inp.name_hash == 'sim' and inp.pname == tmp_path / 'sim.ebf'
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the names of the files are made by replacing the suffix of the name with the "
-                   "extension, and a name with a dot (m12i.res7100, for one) has its hash as its suffix: the files of two "
-                   "inputs of that name have the same names, whatever their hash")
 @pytest.mark.parametrize("name", ["run.v2", "m12i.res7100"])
 def test_a_name_with_a_dot_keeps_its_hash_in_the_names_of_its_files(name, tmp_path):
     inp = make(tmp_path, name=name)
-    assert inp.pname.name == f"{inp.name_hash}.ebf"
+    assert inp.pname.name == f"{inp.name_hash}.ebf" and inp._hashname.name == f"{inp.name_hash}.{HASH_EXT}"
+    assert inp.kname.name == f"{inp.name_hash}_d{inp.hdim}n{inp.ngb}_den.ebf"
+
+
+def test_two_inputs_with_the_same_name_with_a_dot_do_not_share_their_files(tmp_path):
+    changed = minimal_particles()
+    changed['age'][0] = 9.75
+    first, second = make(tmp_path, name='m12i.res7100'), make(tmp_path, changed, name='m12i.res7100')
+    assert first.hash != second.hash
+    for name in ('pname', 'kname', '_hashname'):
+        assert getattr(first, name) != getattr(second, name), name
+
+
+def test_the_backend_finds_the_files_of_a_name_with_a_dot_through_a_list_that_keeps_the_hash(tmp_path, nbody1):
+    inp = make(tmp_path, name='m12i.res7100')
+    listing = inp._write_ebf_files()
+    assert listing == nbody1 / 'filenames' / f"{inp.name_hash}.txt"
+    assert listing.read_text() == f"nbody1/{inp.name_hash}/\n\t1\t1\n{inp.pname.name}\n"
+    assert all((nbody1 / inp.name_hash / path.name).is_symlink() for path in (inp.pname, inp.kname))
 
 
 # -- the files ----------------------------------------------------------------------

@@ -65,6 +65,15 @@ def test_the_function_runs_a_survey_and_gives_its_output(run):
 
 @pytest.mark.integration
 @needs_backend
+def test_an_input_with_a_dot_in_its_name_makes_a_survey_too(run):
+    particles, kernels = dummy_input()
+    output = run(particles, kernels, simname='itest.dotted')
+    assert output.survey.input.name == 'itest.dotted' and len(output._vaex) > 100
+    assert output._hdf5s[0].name.startswith(f"{output.survey.surveyname_hash}.itest.dotted_")
+
+
+@pytest.mark.integration
+@needs_backend
 def test_the_same_input_and_parameters_make_the_same_survey(run, real_survey):
     particles, kernels = dummy_input()
     again = run(particles, kernels, simname='itest_again', surveyname='itest_again')

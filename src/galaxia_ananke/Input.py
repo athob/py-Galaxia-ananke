@@ -387,12 +387,12 @@ class Input:
 
     @property
     def _hashname(self) -> pathlib.Path:
-        return self._base_inputfile.with_suffix(f".{HASH_EXT}")
+        return self._base_inputfile.with_name(f"{self._base_inputfile.name}.{HASH_EXT}")      # added to the name, which can hold dots
 
     @property
     def pname(self) -> pathlib.Path:
         if self.__pname is None:
-            self.__pname = self._base_inputfile.with_suffix(".ebf")
+            self.__pname = self._base_inputfile.with_name(f"{self._base_inputfile.name}.ebf")
         return self.__pname
 
     @property
@@ -482,7 +482,7 @@ class Input:
         temp_dir.mkdir(parents=True, exist_ok=True)
         make_symlink(kname, temp_dir)
         make_symlink(pname, temp_dir)
-        temp_filename = (GALAXIA_FILENAMES / self.name_hash).with_suffix('.txt')
+        temp_filename = GALAXIA_FILENAMES / f"{self.name_hash}.txt"
         temp_filename.write_text(FILENAME_TEMPLATE.substitute(name=self.name_hash, pname=pname.name))
         return temp_filename
     

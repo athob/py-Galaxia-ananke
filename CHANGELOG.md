@@ -79,8 +79,7 @@ far as the commits of this package and of the backend say.
 - Tests of `Input`: how it is made, what it refuses and what it completes, its hash (pinned,
   since it names the cache of an input), the names of the files that follow from it, the files
   that it writes and how it prepares them for the backend. The weaknesses that they found are
-  expected failures: an input that was just made cannot say its hash, and a name with a dot
-  loses its hash in the names of its files.
+  expected failures: an input that was just made cannot say its hash.
 - Tests of `Survey`, without running the backend: its parameters and the colors of its diagram,
   the photometric systems after the first, the generations, the name that follows from its hash,
   the parameter file, the commands that run the backend and append a photometric system, running
@@ -270,6 +269,10 @@ far as the commits of this package and of the backend say.
   particles that all have the same nearest metallicity got too few tables: `itemgetter` gives the
   item itself, and not a tuple of one, when it has a single index. A helper that always gives a
   tuple is used at both places.
+- A name with a dot (`m12i.res7100`, say) lost its hash in the names of the files of its input:
+  the extensions replaced the last suffix of the name, which the hash is part of, so the particles,
+  the kernels, the hash and the list of the files that the backend reads had the same names for
+  two inputs of that name, whatever their content. The extensions are added to the name.
 
 ## [0.8.0] - 2026-08-10
 
