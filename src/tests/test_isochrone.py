@@ -216,6 +216,26 @@ def test_the_layout_of_the_files_is_that_of_the_category_and_the_name(category, 
     assert Isochrone(pathlib.Path('nowhere') / category / name).formatting is expected
 
 
+# What the backend reads of each system (IsochroneBase::readfile of Galaxia-ananke, src/IsochroneBase.cpp): the column of the age and
+# whether it is linear (the backend takes the log of it), then those of the initial mass, the current mass, the luminosity, the
+# temperature and the gravity. The backend recognises the systems made in Python by the descriptor that starts with Python (the package
+# by their category), the ones of this list by their name, and goes through the same branch as the systems made in Python for the others.
+BACKEND_READS = [
+    ('py_custom', 'Test', (0, False, 1, 2, 3, 4, 5)),
+    *[('padova', name, (0, False, 1, 2, 3, 4, 5)) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
+    ('padova', 'WFIRST+HST__WFC3', (1, False, 2, 3, 4, 5, 6)),
+    *[('padova', name, (1, True, 2, 3, 4, 5, 6)) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, (2, False, 3, 5, 6, 7, 8)) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
+]
+
+
+@pytest.mark.parametrize("category, name, reads", BACKEND_READS, ids=[f"{category}/{name}" for category, name, _ in BACKEND_READS])
+def test_the_package_lays_each_system_out_as_the_backend_reads_it(category, name, reads):
+    formatting = Isochrone(pathlib.Path('nowhere') / category / name).formatting
+    assert (formatting.i_age, formatting.lin_age, formatting.i_mini, formatting.i_mact, formatting.i_lum, formatting.i_teff,
+            formatting.i_grav) == reads
+
+
 # -- the tables ---------------------------------------------------------------------
 
 STARS = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5),
