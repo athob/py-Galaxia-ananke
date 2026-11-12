@@ -38,7 +38,7 @@ __all__ = ['default_formatting', 'padova_formatting', 'oldpadova_fomatting', 'ol
 
 
 units.Zsun = units.def_unit('Zsun') # TODO could define PhysicalType "abundance" ?
-units.integer = units.Quantity(1, dtype='int') # units.def_unit('integer', units.Quantity(1, dtype='int')) # TODO pull issue in astropy for integer dtype unit?
+# CMD2-label: units.integer = units.Quantity(1, dtype='int') # units.def_unit('integer', units.Quantity(1, dtype='int')) # TODO pull issue in astropy for integer dtype unit?
 
 
 class _BaseFormatting:
@@ -57,8 +57,8 @@ class _BaseFormatting:
     _unit_temp = units.LogUnit(units.Kelvin)
     _grav = 'Grav'
     _unit_grav = units.LogUnit(units.Gal)
-    _label = 'Label'
-    _unit_label = units.integer
+    # CMD2-label: _label = 'Label'
+    # CMD2-label: _unit_label = units.integer
     @classproperty
     def units_mapper(cls):
         return {
@@ -70,13 +70,20 @@ class _BaseFormatting:
             cls._lum: cls._unit_lum,
             cls._teff: cls._unit_temp,
             cls._grav: cls._unit_grav,
-            cls._label: cls._unit_label
+            # CMD2-label: cls._label: cls._unit_label
         }
 
 @dc.dataclass()
 class Formatting(_BaseFormatting):
     """
-    Formatting object
+    Formatting object: where the columns that the package needs are in the files of the isochrones of a photometric system. The files of
+    the systems were made at different times by different versions of the CMD service, so their layouts differ. The magnitudes are not
+    part of it: the descriptor of the system says where they start.
+
+    The label is retired for now: the column that the layouts took for it is a label in the files of CMD 3.x, but the bolometric magnitude
+    in the files of CMD 2.x (and so for the default layout), and neither the package nor the backend uses it. Its logic is commented out,
+    here, in the layouts below and in the tests, with the mark `CMD2-label`: uncomment it, and drop what replaces it, once the systems of
+    CMD 2.x are retired (`grep -rn CMD2-label src/` lists it all).
     """
     i_age: int
     i_mini: int
@@ -84,7 +91,7 @@ class Formatting(_BaseFormatting):
     i_lum: int
     i_teff: int
     i_grav: int
-    i_label: int
+    # CMD2-label: i_label: int
     lin_age: bool = False
     feh_sun: float = 0.0152  # TODO figure out that conversion situation
 
@@ -97,7 +104,7 @@ class Formatting(_BaseFormatting):
             self.i_lum: self._lum,
             self.i_teff: self._teff,
             self.i_grav: self._grav,
-            self.i_label: self._label
+            # CMD2-label: self.i_label: self._label
             }
 
     @cached_property
@@ -129,10 +136,15 @@ class Formatting(_BaseFormatting):
             }
 
 
-default_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False)  # Python and others
-padova_formatting = Formatting(2, 3, 5, 6, 7, 8, 9, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
-oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
-oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, 7, False)  # WFIRST+HST__WFC3
+# The columns that each layout takes are the ones that the backend reads (IsochroneBase::readfile of Galaxia-ananke), and the tests pin them
+# CMD2-label: default_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False)  # Python and others
+# CMD2-label: padova_formatting = Formatting(2, 3, 5, 6, 7, 8, 9, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
+# CMD2-label: oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
+# CMD2-label: oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, 7, False)  # WFIRST+HST__WFC3
+default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python and others
+padova_formatting = Formatting(2, 3, 5, 6, 7, 8, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
+oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
+oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, False)  # WFIRST+HST__WFC3
 
 
 if __name__ == '__main__':

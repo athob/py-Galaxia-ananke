@@ -94,8 +94,7 @@ far as the commits of this package and of the backend say.
   diagram, the instruments that a system is asked about, and the effective wavelengths and zero
   points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
   weaknesses that they found are expected failures: the filters of LSST are eight for six
-  magnitudes, and the tables of an isochrone that is made in Python fail on duplicate column
-  names.
+  magnitudes.
 - Tests of what `Output` is made of that needs no survey: the longitude within bounds, the
   partitions shared between processes, the keys of a catalogue, the conversions of the coordinates
   (checked against physics: a star at 1 kpc that moves across the sky at 4.74 km/s moves by 1
@@ -186,6 +185,12 @@ far as the commits of this package and of the backend say.
   well as the functions that were: `from galaxia_ananke import *` provides them, and so do
   documentation tools and type checkers (which take a name imported in the package and not in its
   `__all__` for private).
+- The tables that an isochrone makes (`qtables_dictionary`) have no `Label` column for now: the
+  column that the layouts took for it is not a label in all the files (it is the bolometric
+  magnitude in the files of the systems of CMD 2.x), and neither the package nor the backend uses
+  it. Its logic is commented out in `Formatting` and in its tests, with the mark `CMD2-label`, to
+  be restored once the systems of CMD 2.x are retired. The layouts of `Formatting` take one index
+  fewer, and importing the package no longer adds `integer` to `astropy.units`.
 
 ### Fixed
 
@@ -273,6 +278,9 @@ far as the commits of this package and of the backend say.
   the extensions replaced the last suffix of the name, which the hash is part of, so the particles,
   the kernels, the hash and the list of the files that the backend reads had the same names for
   two inputs of that name, whatever their content. The extensions are added to the name.
+- The tables of an isochrone made in Python could not be made: its magnitudes start at the column
+  that the layout took for the label, so the first one was selected twice and astropy refused the
+  duplicate column names.
 
 ## [0.8.0] - 2026-08-10
 

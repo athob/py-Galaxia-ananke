@@ -34,7 +34,7 @@ from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import custom_isochrone_data as custom_data, write_isochrone_file
 
 ISOCHRONE_MODULE = sys.modules[Isochrone.__module__]
-HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of default_formatting
+HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of default_formatting, with a column that it does not take
 
 
 @pytest.fixture
@@ -231,9 +231,6 @@ def test_the_tables_are_for_each_metallicity_in_log_and_then_each_age(tmp_path):
     assert [list(ages) for ages in iso.qtables_unique_ages_dictionary.values()] == [[9.0, 10.0], [9.0, 10.0]]
 
 
-@pytest.mark.xfail(raises=ValueError, reason="the descriptor of an isochrone made in Python says that its magnitudes start at the column that "
-                   "the default layout takes for the label, so the first magnitude is picked twice and the selection of the columns "
-                   "fails on duplicate column names: no table can be made of it")
 def test_the_tables_of_an_isochrone_made_in_python_hold_its_magnitudes(isochrones_path):
     iso = Isochrone('mine', custom_data())
     table = next(iter(iso.qtables_dictionary.values()))[9.0]
