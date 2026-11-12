@@ -19,6 +19,7 @@ the columns, then a row for each star) and writes them for the isochrones that a
 """
 import types
 
+import numpy as np
 import pandas as pd
 import pytest
 from astropy.table import Table
@@ -91,6 +92,30 @@ def test_a_table_is_written_in_the_order_of_the_ages_and_then_the_masses(kind, t
     assert read.data['M_ini'].tolist() == [1.0, 2.0, 1.0]
     assert read.data['M_act'].tolist() == [0.1, 0.2, 0.3]                       # the rows kept together
     assert read.data['G'].tolist() == [7.0, 6.0, 5.0]
+
+
+def tied_rows(n=4000):
+    """Many rows that share their age and their mass (about twenty each), and the order in which they are given in M_act."""
+    rng = np.random.default_rng(7)
+    return {'Age': 9.0 + rng.integers(0, 5, n), 'M_ini': rng.integers(0, 40, n) / 10.0, 'M_act': np.arange(n, dtype=float), 'G': rng.random(n)}
+
+
+@pytest.mark.parametrize("kind", ["pandas", "astropy"])
+def test_the_rows_that_share_their_age_and_their_mass_keep_the_order_they_were_given(kind, tmp_path):
+    rows = tied_rows()
+    data = pd.DataFrame(rows) if kind == "pandas" else Table(rows)
+    path = tmp_path / 'output_0.019000.dat'
+    IsochroneFile(path, data, isochrone=ISOCHRONE)
+    expected = sorted(range(len(rows['Age'])), key=lambda i: (rows['Age'][i], rows['M_ini'][i]))                   # python sorts are stable
+    read = IsochroneFile(path, isochrone=ISOCHRONE).data
+    assert read['M_act'].tolist() == [float(i) for i in expected]
+    np.testing.assert_allclose(read['G'], np.asarray(rows['G'])[expected], rtol=0, atol=1e-12)                    # the rows kept together
+
+
+def test_the_table_that_is_given_is_not_sorted_in_place(tmp_path):
+    table = Table(ROWS)
+    IsochroneFile(tmp_path / 'output_0.019000.dat', table, isochrone=ISOCHRONE)
+    assert table['Age'].tolist() == ROWS['Age'] and table['M_act'].tolist() == ROWS['M_act']
 
 
 def test_the_header_of_a_written_file_is_a_comment_with_the_names(tmp_path):

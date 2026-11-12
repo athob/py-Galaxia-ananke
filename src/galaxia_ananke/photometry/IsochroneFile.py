@@ -22,6 +22,7 @@ from functools import cached_property
 import pathlib
 import re
 
+import numpy as np
 import pandas as pd
 from astropy.io import ascii
 
@@ -58,7 +59,7 @@ class IsochroneFile:
             data = ascii.core.Table.from_pandas(data)
         elif not isinstance(data, ascii.core.Table):
             raise ValueError("Given data should either be a pandas DataFrame or an astropy Table")
-        data.sort([self.isochrone._age, self.isochrone._mini])
+        data = data[np.lexsort((data[self.isochrone._mini], data[self.isochrone._age]))]  # age first, then mass; stable, unlike Table.sort, and not in place
         data.write(self.path, format='ascii.commented_header')
 
     def _open(self, *args, **kwargs):

@@ -281,6 +281,10 @@ far as the commits of this package and of the backend say.
 - The tables of an isochrone made in Python could not be made: its magnitudes start at the column
   that the layout took for the label, so the first one was selected twice and astropy refused the
   duplicate column names.
+- The rows of an isochrone made in Python that share their age and their initial mass were written
+  in another order than they were given, as the sort of the writer was not stable (5513 of the
+  933476 rows of a copy of `GAIA__DR2` moved), so its tables differed from those of the original:
+  the order is kept. A table that is given to the writer is no longer sorted in place.
 
 ## [0.8.0] - 2026-08-10
 
