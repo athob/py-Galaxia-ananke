@@ -896,13 +896,14 @@ class Output:
                     if (where_slice_change:=np.where(np.diff(indices)>1)[0]) is not None}
                 for i,indices_per_ebf in self.__ebfs_partitions.items()}
 
-    @cached_property
-    def __vaex_partitions(self) -> Dict[int, NDArray]:
-        return self._vaex[self._partitionid].to_pandas_series().to_frame().groupby([0]).indices
+    # (nothing uses the two properties below: commented out, with the mark UNUSED, to be removed after v1)
+    # UNUSED: @cached_property
+    # UNUSED: def __vaex_partitions(self) -> Dict[int, NDArray]:
+    # UNUSED:     return self._vaex[self._partitionid].to_pandas_series().to_frame().groupby([0]).indices
 
-    @cached_property
-    def __vaex_partition_slices(self) -> Dict[int, slice]:
-        return {i: slice(indices[0], indices[-1]+1) for i,indices in self.__vaex_partitions.items()}
+    # UNUSED: @cached_property
+    # UNUSED: def __vaex_partition_slices(self) -> Dict[int, slice]:
+    # UNUSED:     return {i: slice(indices[0], indices[-1]+1) for i,indices in self.__vaex_partitions.items()}
 
     @property
     def _vaex(self) -> vaex.dataframe.DataFrameLocal:
