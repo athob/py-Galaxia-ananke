@@ -134,13 +134,14 @@ class Isochrone:
         else:
             raise NotImplementedError("Photometric system doesn't have an IsoFileDescriptor.txt file")
     
-    @cached_property
-    def __fd_photosysname(self) -> str:
-        return self.file_descriptor_content[0]
+    # (nothing uses the two properties below: commented out, with the mark UNUSED, to be removed after v1)
+    # UNUSED: @cached_property
+    # UNUSED: def __fd_photosysname(self) -> str:
+    # UNUSED:     return self.file_descriptor_content[0]
     
-    @cached_property
-    def __fd_fields(self) -> int:
-        return int(self.file_descriptor_content[1])
+    # UNUSED: @cached_property
+    # UNUSED: def __fd_fields(self) -> int:
+    # UNUSED:     return int(self.file_descriptor_content[1])
     
     @cached_property
     def _fd_startid(self) -> int:
