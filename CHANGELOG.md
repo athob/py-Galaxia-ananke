@@ -151,6 +151,9 @@ far as the commits of this package and of the backend say.
 - A contributing guide, `CONTRIBUTING.md`: the branches, how to set up a copy with the C++
   backend that is a git submodule, how the package is built, what CI does, and how versions
   and releases work.
+- A check in the `conftest.py` of the tests that fails the test that leaves a file in the directory
+  that pytest was run from, where the package makes its files by default (the report names the
+  file, and the file is removed): a test works in its own temporary directory.
 
 ### Changed
 

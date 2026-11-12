@@ -22,8 +22,12 @@ the seed of a test that fails is in its report. The dummy inputs of the package 
 and `make_dummy_kernels_input`) draw from the global state of NumPy, which nothing else seeds.
 
 GALAXIA_TEST_SEED=N shifts all the seeds, to try other draws.
+
+A test works in its own temporary directory, and not in the directory that pytest was run from (where the package makes its
+files by default): a test that leaves a file there fails, with the name of the file in its report, and the file is removed.
 """
 import os
+import pathlib
 import random
 import zlib
 
@@ -33,6 +37,27 @@ import pytest
 def seed_of(nodeid, shift=0):
     """The seed of the test of that name: a 32 bit number that only the name and the shift determine."""
     return (zlib.crc32(nodeid.encode("utf-8")) + shift) % 2**32
+
+
+def left_in(directory, before):
+    """The entries that are in the directory and were not there before (their names), leaving out the hidden ones, which pytest and
+    coverage keep there, and the caches of Python."""
+    return sorted(path for path in pathlib.Path(directory).iterdir()
+                  if path.name not in before and not path.name.startswith('.') and path.name != '__pycache__')
+
+
+@pytest.fixture(autouse=True)
+def nothing_is_left_where_pytest_runs_from(request):
+    directory = pathlib.Path(request.config.invocation_params.dir)
+    before = {path.name for path in directory.iterdir()}
+    yield
+    left = left_in(directory, before)
+    for path in left:
+        if path.is_file() or path.is_symlink():
+            path.unlink()                # so that the next test that leaves the same file is reported too, and the directory stays clean
+    if left:
+        pytest.fail(f"this test left {', '.join(path.name for path in left)} in {directory}, where pytest runs from: "
+                    f"a test works in its own temporary directory (tmp_path)", pytrace=False)
 
 
 @pytest.fixture(autouse=True)
