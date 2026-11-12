@@ -54,12 +54,12 @@ class Isochrone:
             self._path = pathlib.Path(args[0])
         elif len(args) == 2:
             self._path = ISOCHRONES_PATH / CUSTOM_PHOTOCAT / args[0]
+            if self.path.exists() and not overwrite:
+                raise FileExistsError(f"Isochrone '{args[0]}' already exists at '{self.path}' (use `overwrite` kwarg to ignore)")
+            iso_column_order = self._check_isochrone_data(args[1])  # before the isochrone that is to be replaced is removed
             if self.path.exists():
-                if overwrite:
-                    shutil.rmtree(self.path)
-                else:
-                    raise FileExistsError(f"Isochrone '{args[0]}' already exists at '{self.path}' (use `overwrite` kwarg to ignore)")
-            self._write_isochrone_files(args[1])
+                shutil.rmtree(self.path)
+            self._write_isochrone_files(args[1], iso_column_order)
         else:
             raise TypeError(f"Too many arguments ({len(args)} given)")
     
@@ -68,10 +68,10 @@ class Isochrone:
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['category', 'name']])
         return f'{cls}({description})'
     
-    def _write_isochrone_files(self, isochrone_data: dict):
+    def _write_isochrone_files(self, isochrone_data: dict, iso_column_order: list):
         self.path.mkdir(parents=True, exist_ok=True)
         try:
-            iso_column_order = self._write_file_descriptor(isochrone_data)
+            self._write_file_descriptor(iso_column_order)
             for feh, iso in isochrone_data.items():
                 path = self._path / IsochroneFile._file_format.format(format(feh, '.6f'))
                 _temp = IsochroneFile(path, iso[iso_column_order], isochrone=self)
@@ -79,7 +79,8 @@ class Isochrone:
             shutil.rmtree(self.path, ignore_errors=True)
             raise
 
-    def _write_file_descriptor(self, isochrone_data):
+    def _check_isochrone_data(self, isochrone_data: dict) -> list:
+        """The order of the columns of the files of the isochrone, if its data is as it must be (it is refused if not): nothing is written."""
         metallicities, headers = zip(*[(feh, list(iso.keys())) for feh, iso in isochrone_data.items()])
         compare_given_and_required(metallicities, self._required_metallicities, error_message="Given isochrone data covers wrong set of metallicities")
         check = []
@@ -94,10 +95,12 @@ class Isochrone:
         magnames = sorted(list(set(header).difference(self._required_keys)))
         if not magnames:
             raise ValueError(f"Given isochrone dataframes have no magnitude columns")
-        iso_column_order = self._required_keys + magnames
+        return self._required_keys + magnames
+
+    def _write_file_descriptor(self, iso_column_order: list):
+        magnames = iso_column_order[len(self._required_keys):]
         with self.file_descriptor_path.open('w') as f: f.write(
             f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}\n\n")
-        return iso_column_order
 
     @property
     def path(self):

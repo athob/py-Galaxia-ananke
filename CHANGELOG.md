@@ -288,6 +288,8 @@ far as the commits of this package and of the backend say.
   in another order than they were given, as the sort of the writer was not stable (5513 of the
   933476 rows of a copy of `GAIA__DR2` moved), so its tables differed from those of the original:
   the order is kept. A table that is given to the writer is no longer sorted in place.
+- An isochrone made from Python data that was refused with `overwrite` took away the isochrone that
+  it was to replace: the data is checked before anything is removed.
 
 ## [0.8.0] - 2026-08-10
 

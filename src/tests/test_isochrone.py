@@ -126,6 +126,11 @@ def refused(isochrones_path, data, error):
     with pytest.raises(ValueError, match=error):
         Isochrone('mine', data)
     assert not (isochrones_path / CUSTOM_PHOTOCAT / 'mine').exists()                 # nothing is left behind
+    old = Isochrone('mine', custom_data())                                           # and the one that is to be replaced is not taken away
+    before = sorted((path.name, path.read_bytes()) for path in old.path.iterdir())
+    with pytest.raises(ValueError, match=error):
+        Isochrone('mine', data, overwrite=True)
+    assert sorted((path.name, path.read_bytes()) for path in old.path.iterdir()) == before
 
 
 def test_data_that_misses_a_metallicity_is_refused(isochrones_path):
