@@ -260,7 +260,9 @@ def test_the_number_of_neighbours_is_not_a_parameter_of_a_survey_but_that_of_its
 
 @pytest.mark.parametrize("key", SURVEY_PARAMETERS)
 def test_every_parameter_that_has_a_default_but_the_neighbours_can_be_given(key, an_input, directories):
-    assert prepare(Survey(an_input), directories, **{key: DEFAULTS_FOR_PARFILE[key]}).fileparam[key] == DEFAULTS_FOR_PARFILE[key]
+    # the default output directory is where the tests run from, and the output makes its files in the one that it is given
+    given = directories[1] if key == FTTAGS.output_dir else DEFAULTS_FOR_PARFILE[key]
+    assert prepare(Survey(an_input), directories, **{key: given}).fileparam[key] == given
 
 
 # -- the generations and the other photometric systems ------------------------------
