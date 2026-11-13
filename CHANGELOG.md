@@ -290,6 +290,10 @@ far as the commits of this package and of the backend say.
   the order is kept. A table that is given to the writer is no longer sorted in place.
 - An isochrone made from Python data that was refused with `overwrite` took away the isochrone that
   it was to replace: the data is checked before anything is removed.
+- An isochrone made from Python data whose metallicities do not have the same ages was given to
+  the backend, which aborts without a message when the numbers of ages differ and reads the ages
+  of the first metallicity for all of them when only those in the middle differ: it is refused
+  with a `ValueError` that names the metallicities.
 
 ## [0.8.0] - 2026-08-10
 

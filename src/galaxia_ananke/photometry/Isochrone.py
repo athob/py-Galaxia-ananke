@@ -95,7 +95,18 @@ class Isochrone:
         magnames = sorted(list(set(header).difference(self._required_keys)))
         if not magnames:
             raise ValueError(f"Given isochrone dataframes have no magnitude columns")
+        # the backend takes the ages of the first metallicity for all of them, and only checks how many there are and the first and last ones
+        ages = [self._ages_as_the_backend_reads_them(iso) for iso in isochrone_data.values()]
+        for feh, others in zip(metallicities[1:], ages[1:]):
+            if not np.array_equal(ages[0], others):
+                raise ValueError(f"Given isochrone dataframes do not have the same ages: the metallicity {metallicities[0]} has {len(ages[0])} and "
+                                 f"the metallicity {feh} has {len(others)}" + ("" if len(ages[0]) != len(others) else ", at other values"))
         return self._required_keys + magnames
+
+    def _ages_as_the_backend_reads_them(self, table) -> NDArray:
+        """The distinct ages of a table as the backend counts them: as floats, and leaving out the rows that have no current mass."""
+        with_mass = ~np.isnan(np.asarray(table[self._mact], dtype=float))
+        return np.unique(np.asarray(table[self._age], dtype=np.float32)[with_mass])
 
     def _write_file_descriptor(self, iso_column_order: list):
         magnames = iso_column_order[len(self._required_keys):]

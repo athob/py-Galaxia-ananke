@@ -24,6 +24,7 @@ import re
 import sys
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
@@ -131,6 +132,39 @@ def refused(isochrones_path, data, error):
     with pytest.raises(ValueError, match=error):
         Isochrone('mine', data, overwrite=True)
     assert sorted((path.name, path.read_bytes()) for path in old.path.iterdir()) == before
+
+
+def three_ages():
+    """The data of custom_data, with a third age (9.5) in every table."""
+    return {feh: pd.concat([table, table.iloc[[0]].assign(Age=9.5)], ignore_index=True) for feh, table in custom_data().items()}
+
+
+def test_data_whose_metallicities_do_not_have_the_same_number_of_ages_is_refused(isochrones_path):
+    data = three_ages()
+    first = min(data)
+    data[first] = data[first][data[first]['Age'] != 9.5]
+    refused(isochrones_path, data, f"do not have the same ages: the metallicity {first} has 2 and the metallicity .* has 3")
+
+
+def test_data_whose_ages_differ_in_the_middle_only_are_refused(isochrones_path):
+    data = three_ages()
+    last = max(data)
+    data[last] = data[last].replace({'Age': {9.5: 9.6}})
+    refused(isochrones_path, data, "do not have the same ages: .* has 3 and .* has 3, at other values")
+
+
+def test_ages_that_the_backend_cannot_tell_apart_are_the_same_ages(isochrones_path):
+    data = three_ages()
+    last = max(data)
+    data[last] = data[last].replace({'Age': {9.5: 9.5 + 1e-9}})                      # the same float for the backend, not for a double
+    assert Isochrone('mine', data).has_file_descriptor
+
+
+def test_a_row_without_current_mass_does_not_make_an_age_as_the_backend_skips_it(isochrones_path):
+    data = three_ages()
+    last = max(data)
+    data[last] = pd.concat([data[last], data[last].iloc[[0]].assign(Age=9.7, M_act=float('nan'))], ignore_index=True)
+    assert Isochrone('mine', data).has_file_descriptor
 
 
 def test_data_that_misses_a_metallicity_is_refused(isochrones_path):
