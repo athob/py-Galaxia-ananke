@@ -154,6 +154,9 @@ far as the commits of this package and of the backend say.
 - A check in the `conftest.py` of the tests that fails the test that leaves a file in the directory
   that pytest was run from, where the package makes its files by default (the report names the
   file, and the file is removed): a test works in its own temporary directory.
+- The layout of the files of `Pan_STARRS1` (CMD 3.0, as `GAIA__DR2` and `WFIRST`) is known to the
+  package, so that its isochrones can be read once the system has a descriptor and the backend a
+  branch for it.
 
 ### Changed
 

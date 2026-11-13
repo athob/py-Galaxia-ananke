@@ -178,7 +178,7 @@ class Isochrone:
             #         return cmd_2_1_formatting
             #     case 'WFIRST+HST__WFC3' if self.category == 'padova':
             #         return oldpadova_fomatting_withlogage
-            #     case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2') if self.category == 'padova':
+            #     case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2' | 'HST__WFC3' | 'Pan_STARRS1') if self.category == 'padova':
             #         return oldpadova_fomatting
             #     case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST') if self.category == 'padova':
             #         return padova_formatting
@@ -188,7 +188,7 @@ class Isochrone:
         else:
             if self.name == 'WFIRST+HST__WFC3' and self.category == 'padova':
                 return oldpadova_fomatting_withlogage
-            if self.name in ['WFIRST','LSST','GAIA__0','GAIA__DR2','HST__WFC3'] and self.category == 'padova':
+            if self.name in ['WFIRST','LSST','GAIA__0','GAIA__DR2','HST__WFC3','Pan_STARRS1'] and self.category == 'padova':
                 return oldpadova_fomatting
             if self.name in ['APO__SDSS','DCMC','Generic__Johnson_UBVRIJHK','Generic__Stroemgren'] and self.category == 'padova':
                 return cmd_2_1_formatting

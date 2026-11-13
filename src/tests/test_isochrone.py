@@ -246,7 +246,7 @@ def test_the_isochrone_files_are_those_of_the_directory_in_the_order_of_their_na
 @pytest.mark.parametrize("category, name, expected", [
     *[('padova', name, cmd_2_1_formatting) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
     ('padova', 'WFIRST+HST__WFC3', oldpadova_fomatting_withlogage),
-    *[('padova', name, oldpadova_fomatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, oldpadova_fomatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3', 'Pan_STARRS1')],
     *[('padova', name, padova_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
     ('padova', 'Another', default_formatting),
     ('py_custom', 'LSST', default_formatting),                      # the names are those of padova only
@@ -265,7 +265,7 @@ BACKEND_READS = [
     ('py_custom', 'Test', (0, False, 1, 2, 3, 4, 5)),
     *[('padova', name, (0, False, 1, 2, 3, 4, 5)) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
     ('padova', 'WFIRST+HST__WFC3', (1, False, 2, 3, 4, 5, 6)),
-    *[('padova', name, (1, True, 2, 3, 4, 5, 6)) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, (1, True, 2, 3, 4, 5, 6)) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3', 'Pan_STARRS1')],   # Pan_STARRS1: once the backend has its branch
     *[('padova', name, (2, False, 3, 5, 6, 7, 8)) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
 ]
 

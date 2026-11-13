@@ -140,13 +140,13 @@ class Formatting(_BaseFormatting):
 # CMD2-label: default_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False)  # Python and others
 # CMD2-label: cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False, feh_sun=0.019)  # APO__SDSS, DCMC, Generic__Johnson_UBVRIJHK, Generic__Stroemgren
 # CMD2-label: padova_formatting = Formatting(2, 3, 5, 6, 7, 8, 9, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
-# CMD2-label: oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
+# CMD2-label: oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2, HST__WFC3, Pan_STARRS1
 # CMD2-label: oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, 7, False)  # WFIRST+HST__WFC3
 default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python, and any other system that is not known
 # the same columns, and the solar metallicity of the models of Marigo et al. (2008): CMD 2.1 and 2.2, the only systems of the original Galaxia
 cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, False, feh_sun=0.019)  # APO__SDSS, DCMC, Generic__Johnson_UBVRIJHK, Generic__Stroemgren
 padova_formatting = Formatting(2, 3, 5, 6, 7, 8, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
-oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
+oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2, HST__WFC3, Pan_STARRS1
 oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, False)  # WFIRST+HST__WFC3
 
 
