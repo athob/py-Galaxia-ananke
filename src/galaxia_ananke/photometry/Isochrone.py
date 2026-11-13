@@ -37,13 +37,13 @@ class Isochrone:
     """
     Ages need to be in log scale
     """
-    _zini = default_formatting._zini
-    _age = default_formatting._age
-    _mini = default_formatting._mini
-    _mact = default_formatting._mact
-    _lum = default_formatting._lum
-    _teff = default_formatting._teff
-    _grav = default_formatting._grav
+    _zini = python_formatting._zini
+    _age = python_formatting._age
+    _mini = python_formatting._mini
+    _mact = python_formatting._mact
+    _lum = python_formatting._lum
+    _teff = python_formatting._teff
+    _grav = python_formatting._grav
     _required_keys = [_age, _mini, _mact, _lum, _teff, _grav]
     _required_metallicities = {0.0001, 0.0002, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0022, 0.0024, 0.0026, 0.003, 0.0034, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.024, 0.028, 0.03}
     _file_descriptor = "IsoFileDescriptor.txt"
@@ -177,25 +177,25 @@ class Isochrone:
             #     case ('APO__SDSS' | 'DCMC' | 'Generic__Johnson_UBVRIJHK' | 'Generic__Stroemgren') if self.category == 'padova':
             #         return cmd_2_1_formatting
             #     case 'WFIRST+HST__WFC3' if self.category == 'padova':
-            #         return oldpadova_fomatting_withlogage
+            #         return cmd_2_8_formatting
             #     case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2' | 'HST__WFC3' | 'Pan_STARRS1') if self.category == 'padova':
-            #         return oldpadova_fomatting
+            #         return cmd_3_0_formatting
             #     case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST') if self.category == 'padova':
-            #         return padova_formatting
+            #         return cmd_3_6_formatting
             #     case _:
-            #         return default_formatting
+            #         return python_formatting
             pass
         else:
             if self.name == 'WFIRST+HST__WFC3' and self.category == 'padova':
-                return oldpadova_fomatting_withlogage
+                return cmd_2_8_formatting
             if self.name in ['WFIRST','LSST','GAIA__0','GAIA__DR2','HST__WFC3','Pan_STARRS1'] and self.category == 'padova':
-                return oldpadova_fomatting
+                return cmd_3_0_formatting
             if self.name in ['APO__SDSS','DCMC','Generic__Johnson_UBVRIJHK','Generic__Stroemgren'] and self.category == 'padova':
                 return cmd_2_1_formatting
             if self.name in ['CTIO__DECam','LSST_DP0','Roman','Euclid','JWST__NIRCam','JWST__MIRI'] and self.category == 'padova':
-                return padova_formatting
+                return cmd_3_6_formatting
             else:
-                return default_formatting
+                return python_formatting  # what is made in Python, and a system that is not known
 
     @cached_property
     def qtables_dictionary(self):  # by log10(Z/Zsun), with the Zsun of the layout

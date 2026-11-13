@@ -28,14 +28,14 @@ import pandas as pd
 import pytest
 
 from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
-from ..galaxia_ananke.photometry.Formatting import (cmd_2_1_formatting, default_formatting, oldpadova_fomatting,
-                                                    oldpadova_fomatting_withlogage, padova_formatting)
+from ..galaxia_ananke.photometry.Formatting import (cmd_2_1_formatting, python_formatting, cmd_3_0_formatting,
+                                                    cmd_2_8_formatting, cmd_3_6_formatting)
 from ..galaxia_ananke.photometry.Isochrone import Isochrone
 from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import custom_isochrone_data as custom_data, write_isochrone_file
 
 ISOCHRONE_MODULE = sys.modules[Isochrone.__module__]
-HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of default_formatting, with a column that it does not take
+HEADER = ['Age', 'M_ini', 'M_act', 'Lum', 'T_eff', 'Grav', 'Label', 'G', 'BP']          # the layout of python_formatting, with a column that it does not take
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def isochrones_path(tmp_path, monkeypatch):
 
 
 def isochrone_directory(base, name, stars_by_metallicity, descriptor='X 9 7 2 G BP', category='mine'):
-    """An isochrone as a directory of the installation has it, with the layout of default_formatting."""
+    """An isochrone as a directory of the installation has it, with the layout of python_formatting."""
     directory = base / category / name
     directory.mkdir(parents=True)
     if descriptor is not None:
@@ -245,13 +245,13 @@ def test_the_isochrone_files_are_those_of_the_directory_in_the_order_of_their_na
 
 @pytest.mark.parametrize("category, name, expected", [
     *[('padova', name, cmd_2_1_formatting) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
-    ('padova', 'WFIRST+HST__WFC3', oldpadova_fomatting_withlogage),
-    *[('padova', name, oldpadova_fomatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3', 'Pan_STARRS1')],
-    *[('padova', name, padova_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
-    ('padova', 'Another', default_formatting),
-    ('py_custom', 'LSST', default_formatting),                      # the names are those of padova only
-    ('py_custom', 'DCMC', default_formatting),                      # also when it is made in Python, with the solar metallicity of PARSEC
-    ('elsewhere', 'GAIA__DR2', default_formatting),
+    ('padova', 'WFIRST+HST__WFC3', cmd_2_8_formatting),
+    *[('padova', name, cmd_3_0_formatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3', 'Pan_STARRS1')],
+    *[('padova', name, cmd_3_6_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
+    ('padova', 'Another', python_formatting),
+    ('py_custom', 'LSST', python_formatting),                      # the names are those of padova only
+    ('py_custom', 'DCMC', python_formatting),                      # also when it is made in Python, with the solar metallicity of PARSEC
+    ('elsewhere', 'GAIA__DR2', python_formatting),
 ])
 def test_the_layout_of_the_files_is_that_of_the_category_and_the_name(category, name, expected):
     assert Isochrone(pathlib.Path('nowhere') / category / name).formatting is expected

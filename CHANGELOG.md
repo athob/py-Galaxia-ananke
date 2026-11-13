@@ -197,6 +197,12 @@ far as the commits of this package and of the backend say.
   it. Its logic is commented out in `Formatting` and in its tests, with the mark `CMD2-label`, to
   be restored once the systems of CMD 2.x are retired. The layouts of `Formatting` take one index
   fewer, and importing the package no longer adds `integer` to `astropy.units`.
+- The layouts of the files of the isochrones, the `Formatting` objects of
+  `galaxia_ananke.photometry.Formatting` (which the package does not export), are named after the
+  CMD version that writes the files: `python_formatting`, `cmd_2_1_formatting`,
+  `cmd_2_8_formatting`, `cmd_3_0_formatting` and `cmd_3_6_formatting`, where they were
+  `default_formatting`, `oldpadova_fomatting_withlogage`, `oldpadova_fomatting` and
+  `padova_formatting`.
 
 ### Fixed
 
