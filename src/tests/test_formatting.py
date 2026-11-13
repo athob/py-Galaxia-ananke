@@ -26,8 +26,8 @@ import numpy as np
 import pytest
 from astropy import units
 
-from ..galaxia_ananke.photometry.Formatting import (default_formatting, oldpadova_fomatting, oldpadova_fomatting_withlogage,
-                                                    padova_formatting)
+from ..galaxia_ananke.photometry.Formatting import (cmd_2_1_formatting, default_formatting, oldpadova_fomatting,
+                                                    oldpadova_fomatting_withlogage, padova_formatting)
 from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import write_isochrone_file
 
@@ -101,6 +101,17 @@ def test_the_metallicity_is_the_log_of_its_ratio_to_that_of_the_sun(metallicity,
     assert default_formatting.metallicity_converter(metallicity) == pytest.approx(expected)
 
 
+def test_the_systems_of_cmd_2_1_and_2_2_have_the_columns_of_the_default_layout_and_the_solar_metallicity_of_marigo_et_al():
+    assert dataclasses.astuple(cmd_2_1_formatting) == (0, 1, 2, 3, 4, 5, False, 0.019)
+    assert cmd_2_1_formatting == dataclasses.replace(default_formatting, feh_sun=0.019)
+    # CMD2-label: assert dataclasses.astuple(cmd_2_1_formatting) == (0, 1, 2, 3, 4, 5, 6, False, 0.019)
+
+
+@pytest.mark.parametrize("metallicity, expected", [(0.019, 0.0), (0.19, 1.0), (0.0019, -1.0)])
+def test_the_metallicity_of_cmd_2_1_and_2_2_is_relative_to_that_of_the_sun_of_marigo_et_al(metallicity, expected):
+    assert cmd_2_1_formatting.metallicity_converter(metallicity) == pytest.approx(expected)
+
+
 def test_the_metallicity_of_several_isochrones_can_be_converted_together():
     assert default_formatting.metallicity_converter(np.array([0.0152, 0.152])).tolist() == pytest.approx([0.0, 1.0])
 
@@ -161,6 +172,11 @@ def test_the_stars_of_an_age_are_in_the_order_of_their_initial_mass(tmp_path):
 
 def test_every_star_has_the_metallicity_of_the_file_in_log_relative_to_the_sun(tmp_path):
     tables = default_formatting.qtable_per_age_from_isochronefile(isochrone_file(tmp_path, metallicity=0.152))
+    assert values(tables[9.0], 'Z_ini') == pytest.approx([1.0, 1.0, 1.0])
+
+
+def test_every_star_of_cmd_2_1_and_2_2_has_the_metallicity_of_the_file_in_log_relative_to_the_sun_of_marigo_et_al(tmp_path):
+    tables = cmd_2_1_formatting.qtable_per_age_from_isochronefile(isochrone_file(tmp_path, metallicity=0.19))
     assert values(tables[9.0], 'Z_ini') == pytest.approx([1.0, 1.0, 1.0])
 
 

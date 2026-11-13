@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from .Isochrone import Isochrone
     from .IsochroneFile import IsochroneFile
 
-__all__ = ['default_formatting', 'padova_formatting', 'oldpadova_fomatting', 'oldpadova_fomatting_withlogage']
+__all__ = ['default_formatting', 'cmd_2_1_formatting', 'padova_formatting', 'oldpadova_fomatting', 'oldpadova_fomatting_withlogage']
 
 
 units.Zsun = units.def_unit('Zsun') # TODO could define PhysicalType "abundance" ?
@@ -93,7 +93,7 @@ class Formatting(_BaseFormatting):
     i_grav: int
     # CMD2-label: i_label: int
     lin_age: bool = False
-    feh_sun: float = 0.0152  # TODO figure out that conversion situation
+    feh_sun: float = 0.0152  # PARSEC (Bressan et al. 2012) and later tracks; 0.019 for Marigo et al. (2008) and previous ones (input form of CMD)
 
     @cached_property
     def format_mapper(self) -> Dict[int,str]:
@@ -138,10 +138,13 @@ class Formatting(_BaseFormatting):
 
 # The columns that each layout takes are the ones that the backend reads (IsochroneBase::readfile of Galaxia-ananke), and the tests pin them
 # CMD2-label: default_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False)  # Python and others
+# CMD2-label: cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False, feh_sun=0.019)  # APO__SDSS, DCMC, Generic__Johnson_UBVRIJHK, Generic__Stroemgren
 # CMD2-label: padova_formatting = Formatting(2, 3, 5, 6, 7, 8, 9, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
 # CMD2-label: oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
 # CMD2-label: oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, 7, False)  # WFIRST+HST__WFC3
-default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python and others
+default_formatting = Formatting(0, 1, 2, 3, 4, 5, False)  # Python, and any other system that is not known
+# the same columns, and the solar metallicity of the models of Marigo et al. (2008): CMD 2.1 and 2.2, the only systems of the original Galaxia
+cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, False, feh_sun=0.019)  # APO__SDSS, DCMC, Generic__Johnson_UBVRIJHK, Generic__Stroemgren
 padova_formatting = Formatting(2, 3, 5, 6, 7, 8, False)  # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
 oldpadova_fomatting = Formatting(1, 2, 3, 4, 5, 6, True)  # WFIRST, LSST, GAIA__0, GAIA__DR2
 oldpadova_fomatting_withlogage = Formatting(1, 2, 3, 4, 5, 6, False)  # WFIRST+HST__WFC3

@@ -174,6 +174,8 @@ class Isochrone:
     def formatting(self):
         if False: # sys.version_info >= (3,10):  # TODO uncomment below when upgrading officially to 3.10
             # match self.name:
+            #     case ('APO__SDSS' | 'DCMC' | 'Generic__Johnson_UBVRIJHK' | 'Generic__Stroemgren') if self.category == 'padova':
+            #         return cmd_2_1_formatting
             #     case 'WFIRST+HST__WFC3' if self.category == 'padova':
             #         return oldpadova_fomatting_withlogage
             #     case ('WFIRST' | 'LSST' | 'GAIA__0' | 'GAIA__DR2') if self.category == 'padova':
@@ -188,13 +190,15 @@ class Isochrone:
                 return oldpadova_fomatting_withlogage
             if self.name in ['WFIRST','LSST','GAIA__0','GAIA__DR2','HST__WFC3'] and self.category == 'padova':
                 return oldpadova_fomatting
+            if self.name in ['APO__SDSS','DCMC','Generic__Johnson_UBVRIJHK','Generic__Stroemgren'] and self.category == 'padova':
+                return cmd_2_1_formatting
             if self.name in ['CTIO__DECam','LSST_DP0','Roman','Euclid','JWST__NIRCam','JWST__MIRI'] and self.category == 'padova':
                 return padova_formatting
             else:
                 return default_formatting
 
     @cached_property
-    def qtables_dictionary(self):  # log10(fe[i]/0.0152
+    def qtables_dictionary(self):  # by log10(Z/Zsun), with the Zsun of the layout
         return {self.formatting.metallicity_converter(iso_file.metallicity): self.formatting.qtable_per_age_from_isochronefile(iso_file)
                 for iso_file in self.isochrone_files}
     

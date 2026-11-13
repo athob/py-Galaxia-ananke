@@ -28,8 +28,8 @@ import pandas as pd
 import pytest
 
 from ..galaxia_ananke._constants import CUSTOM_PHOTOCAT
-from ..galaxia_ananke.photometry.Formatting import (default_formatting, oldpadova_fomatting, oldpadova_fomatting_withlogage,
-                                                    padova_formatting)
+from ..galaxia_ananke.photometry.Formatting import (cmd_2_1_formatting, default_formatting, oldpadova_fomatting,
+                                                    oldpadova_fomatting_withlogage, padova_formatting)
 from ..galaxia_ananke.photometry.Isochrone import Isochrone
 from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import custom_isochrone_data as custom_data, write_isochrone_file
@@ -244,11 +244,13 @@ def test_the_isochrone_files_are_those_of_the_directory_in_the_order_of_their_na
 # -- the layout of the files --------------------------------------------------------
 
 @pytest.mark.parametrize("category, name, expected", [
+    *[('padova', name, cmd_2_1_formatting) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
     ('padova', 'WFIRST+HST__WFC3', oldpadova_fomatting_withlogage),
     *[('padova', name, oldpadova_fomatting) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
     *[('padova', name, padova_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
     ('padova', 'Another', default_formatting),
     ('py_custom', 'LSST', default_formatting),                      # the names are those of padova only
+    ('py_custom', 'DCMC', default_formatting),                      # also when it is made in Python, with the solar metallicity of PARSEC
     ('elsewhere', 'GAIA__DR2', default_formatting),
 ])
 def test_the_layout_of_the_files_is_that_of_the_category_and_the_name(category, name, expected):
@@ -266,6 +268,19 @@ BACKEND_READS = [
     *[('padova', name, (1, True, 2, 3, 4, 5, 6)) for name in ('WFIRST', 'LSST', 'GAIA__0', 'GAIA__DR2', 'HST__WFC3')],
     *[('padova', name, (2, False, 3, 5, 6, 7, 8)) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI')],
 ]
+
+
+# The solar metallicity that the backend takes for each system (solarMetallicity in IsochroneBase.cpp, once the systems of PARSEC that were left
+# out of its lists are in, M40): 0.019 for the systems of CMD 2.1 and 2.2, the models of Marigo et al. (2008), and 0.0152 for all the others,
+# which are PARSEC (Bressan et al. 2012) or made in Python, as the input form of CMD says: "Z_sun=0.019 for Marigo et al. (2008) and previous
+# tracks, and Z_sun=0.0152 for PARSEC Bressan et al. (2012) and later tracks"
+CMD_2_1_SYSTEMS = ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')
+BACKEND_SOLAR_METALLICITY = [(category, name, 0.019 if name in CMD_2_1_SYSTEMS else 0.0152) for category, name, _ in BACKEND_READS]
+
+
+@pytest.mark.parametrize("category, name, solar", BACKEND_SOLAR_METALLICITY, ids=[f"{category}/{name}" for category, name, _ in BACKEND_SOLAR_METALLICITY])
+def test_the_package_takes_the_solar_metallicity_that_the_backend_takes_for_each_system(category, name, solar):
+    assert Isochrone(pathlib.Path('nowhere') / category / name).formatting.feh_sun == solar
 
 
 @pytest.mark.parametrize("category, name, reads", BACKEND_READS, ids=[f"{category}/{name}" for category, name, _ in BACKEND_READS])

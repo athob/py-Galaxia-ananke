@@ -294,6 +294,11 @@ far as the commits of this package and of the backend say.
   the backend, which aborts without a message when the numbers of ages differ and reads the ages
   of the first metallicity for all of them when only those in the middle differ: it is refused
   with a `ValueError` that names the metallicities.
+- The tables of the four systems of CMD 2.1 and 2.2 (`APO__SDSS`, `DCMC`, `Generic__Johnson_UBVRIJHK`
+  and `Generic__Stroemgren`) took 0.0152 as the solar metallicity, which is that of PARSEC, where
+  the backend and the CMD service take 0.019 for the models of Marigo et al. (2008) that they are
+  made of: their metallicities were 0.097 dex off. They have a layout of their own for it,
+  `cmd_2_1_formatting`.
 
 ## [0.8.0] - 2026-08-10
 
