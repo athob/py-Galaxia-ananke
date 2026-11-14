@@ -93,8 +93,8 @@ far as the commits of this package and of the backend say.
   and the clearing of them, what a system says about itself and the check of the colors of a
   diagram, the instruments that a system is asked about, and the effective wavelengths and zero
   points from the saved answers of the SVO filter profile service (Gaia, and LSST). The
-  weaknesses that they found are expected failures: the filters of LSST are eight for six
-  magnitudes.
+  weakness that they found, the filters of LSST that were eight for six magnitudes, is fixed
+  below.
 - Tests of what `Output` is made of that needs no survey: the longitude within bounds, the
   partitions shared between processes, the keys of a catalogue, the conversions of the coordinates
   (checked against physics: a star at 1 kpc that moves across the sky at 4.74 km/s moves by 1
