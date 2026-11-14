@@ -41,7 +41,8 @@ class InterfaceSvoFpsDriver:
         'GAIA__DR2': 'GAIA__GAIA2r',
         'Generic__Johnson_UBVRIJHK': 'Generic__Johnson_UBVRIJHKL',
         'Generic__Stroemgren': 'Generic__Stromgren',
-        'LSST_DP0': 'LSST',
+        'LSST': 'LSST__LSST',                       # the facility LSST of SVO holds two instruments, LSST and LSSTv19 (added in October 2026, with two filters, g and i)
+        'LSST_DP0': 'LSST__LSST',
         'Pan_STARRS1': 'PAN-STARRS',
         'HST__WFC3': 'HST__WFC3_UVIS1+HST__WFC3_UVIS2+HST__WFC3_IR'
         }

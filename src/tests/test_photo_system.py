@@ -152,11 +152,10 @@ def test_the_zero_points_of_a_system_of_several_instruments_are_the_mean_of_thos
     assert zero_points.unit == units.Jy and zero_points.value.tolist() == pytest.approx([2000.0])
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the saved table of LSST has two filters named g and two named i, and the selection "
-                   "by the name of the band keeps both: eight wavelengths for six magnitudes")
-def test_there_is_a_wavelength_for_each_magnitude_of_lsst(monkeypatch):
+@pytest.mark.parametrize("name", ['LSST', 'LSST_DP0'])
+def test_there_is_a_wavelength_for_each_magnitude_of_lsst(monkeypatch, name):
     replay_svo(monkeypatch, LSST='svo_raw_LSST.ecsv')
-    assert len(system(name='LSST_DP0', mag_names=['u', 'g', 'r', 'i', 'z', 'y']).effective_wavelengths) == 6
+    assert len(system(name=name, mag_names=['u', 'g', 'r', 'i', 'z', 'y']).effective_wavelengths) == 6
 
 
 # -- the tracks nearest to given ages and metallicities -----------------------------

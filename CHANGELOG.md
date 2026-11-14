@@ -315,6 +315,10 @@ far as the commits of this package and of the backend say.
   the backend and the CMD service take 0.019 for the models of Marigo et al. (2008) that they are
   made of: their metallicities were 0.097 dex off. They have a layout of their own for it,
   `cmd_2_1_formatting`.
+- The photometric systems `LSST` and `LSST_DP0` take the effective wavelengths and the zero points
+  of their filters from the instrument `LSST` of the Spanish Virtual Observatory, and not from its
+  whole facility `LSST`, which has two filters named `g` and two named `i` since the instrument
+  `LSSTv19` was added there in October 2026: they had eight values for six magnitudes.
 
 ## [0.8.0] - 2026-08-10
 

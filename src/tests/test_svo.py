@@ -44,7 +44,8 @@ def test_the_names_that_the_service_knows_differently():
         'GAIA__DR2': 'GAIA__GAIA2r',
         'Generic__Johnson_UBVRIJHK': 'Generic__Johnson_UBVRIJHKL',
         'Generic__Stroemgren': 'Generic__Stromgren',
-        'LSST_DP0': 'LSST',
+        'LSST': 'LSST__LSST',
+        'LSST_DP0': 'LSST__LSST',
         'Pan_STARRS1': 'PAN-STARRS',
         'HST__WFC3': 'HST__WFC3_UVIS1+HST__WFC3_UVIS2+HST__WFC3_IR',
     }
@@ -62,8 +63,8 @@ def test_the_separators_of_the_names():
     ('HST__WFC3', ['HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),
     ('WFIRST+HST__WFC3', ['WFIRST', 'HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),      # each part has its own special case
     ('DCMC', ['DENIS', '2MASS']),
-    ('LSST_DP0', ['LSST']),
-    ('LSST', ['LSST']),
+    ('LSST_DP0', ['LSST__LSST']),
+    ('LSST', ['LSST__LSST']),
     ('Pan_STARRS1', ['PAN-STARRS']),
     ('Generic__Johnson_UBVRIJHK', ['Generic__Johnson_UBVRIJHKL']),
     ('Generic__Stroemgren', ['Generic__Stromgren']),
@@ -97,6 +98,7 @@ def test_the_interface_says_the_name_and_the_magnitudes_of_its_system():
     ('HST__WFC3_UVIS1', 'HST', 'WFC3_UVIS1'),
     ('Generic__Johnson_UBVRIJHKL', 'Generic', 'Johnson_UBVRIJHKL'),
     ('LSST', 'LSST', None),                                                   # a name without a separator is a facility only
+    ('LSST__LSST', 'LSST', 'LSST'),
     ('PAN-STARRS', 'PAN-STARRS', None),
     ('WFIRST', 'WFIRST', None),
 ])
@@ -148,13 +150,14 @@ def test_a_magnitude_that_is_a_filter_in_other_letters_takes_the_values_of_that_
     assert table['WavelengthEff'].tolist() == pytest.approx([GAIA_EFFECTIVE_WAVELENGTHS[band] for band in ('G', 'Gbp', 'Grp')], rel=1e-9)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the saved table of LSST has two filters named g and two named i (LSST.g and LSSTv19.g, "
-                   "LSST.i and LSSTv19.i), and the selection by the name of the band keeps both: eight filters for six magnitudes")
-def test_there_is_a_filter_for_each_magnitude_of_lsst(monkeypatch):
+@pytest.mark.parametrize("name", ['LSST', 'LSST_DP0'])
+def test_there_is_a_filter_for_each_magnitude_of_lsst(monkeypatch, name):
+    # the saved table of LSST has two filters named g and two named i (LSST.g and LSSTv19.g, LSST.i and LSSTv19.i): the instrument is asked for
     asked = replay_svo(monkeypatch, LSST='svo_raw_LSST.ecsv')
-    table = interface('LSST_DP0', ['u', 'g', 'r', 'i', 'z', 'y']).svofpsdrivers[0].svo_filter_list
+    table = interface(name, ['u', 'g', 'r', 'i', 'z', 'y']).svofpsdrivers[0].svo_filter_list
     assert asked == ['LSST']
     assert len(table) == 6
+    assert set(table['Instrument']) == {'LSST'}
 
 
 if __name__ == '__main__':
