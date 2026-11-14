@@ -152,6 +152,15 @@ def test_the_zero_points_of_a_system_of_several_instruments_are_the_mean_of_thos
     assert zero_points.unit == units.Jy and zero_points.value.tolist() == pytest.approx([2000.0])
 
 
+def test_a_system_that_is_a_facility_only_takes_the_filters_of_all_the_instruments_of_the_facility(monkeypatch):
+    table = Table({'filterID': ['TEST/A.x', 'TEST/B.y'], 'WavelengthEff': [1000.0, 3000.0] * units.AA, 'ZeroPoint': [3000.0, 1000.0] * units.Jy})
+    asked = replay_svo(monkeypatch, TEST=table)
+    photo_system = system(name='TEST', mag_names=['x', 'y'])
+    assert photo_system.effective_wavelengths.value.tolist() == pytest.approx([0.1, 0.3])           # in micron: 1000 and 3000 angstrom
+    assert photo_system.zeropoints.value.tolist() == pytest.approx([3000.0, 1000.0])
+    assert asked == ['TEST']
+
+
 @pytest.mark.parametrize("name", ['LSST', 'LSST_DP0'])
 def test_there_is_a_wavelength_for_each_magnitude_of_lsst(monkeypatch, name):
     replay_svo(monkeypatch, LSST='svo_raw_LSST.ecsv')

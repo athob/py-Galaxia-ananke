@@ -97,9 +97,8 @@ def test_the_interface_says_the_name_and_the_magnitudes_of_its_system():
     ('GAIA__GAIA2r', 'GAIA', 'GAIA2r'),
     ('HST__WFC3_UVIS1', 'HST', 'WFC3_UVIS1'),
     ('Generic__Johnson_UBVRIJHKL', 'Generic', 'Johnson_UBVRIJHKL'),
-    ('LSST', 'LSST', None),                                                   # a name without a separator is a facility only
     ('LSST__LSST', 'LSST', 'LSST'),
-    ('PAN-STARRS', 'PAN-STARRS', None),
+    ('PAN-STARRS', 'PAN-STARRS', None),                                       # a name without a separator is a facility only
     ('WFIRST', 'WFIRST', None),
 ])
 def test_an_instrument_has_a_facility_and_perhaps_a_name_of_its_own(instrument, facility, name):
