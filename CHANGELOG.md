@@ -154,9 +154,10 @@ far as the commits of this package and of the backend say.
 - A check in the `conftest.py` of the tests that fails the test that leaves a file in the directory
   that pytest was run from, where the package makes its files by default (the report names the
   file, and the file is removed): a test works in its own temporary directory.
-- The layout of the files of `Pan_STARRS1` (CMD 3.0, as `GAIA__DR2` and `WFIRST`) is known to the
-  package, so that its isochrones can be read once the system has a descriptor and the backend a
-  branch for it.
+- `Pan_STARRS1` works: its 34 isochrone files are those of CMD 3.9 (the system had 20 files of CMD 3.0,
+  no descriptor, and no way to read them), the backend reads them as those of `Euclid` and `Roman`, and
+  the package knows their layout, that of CMD 3.6 and later. The submodule has to be at the commit of
+  the backend that has them.
 
 ### Changed
 
