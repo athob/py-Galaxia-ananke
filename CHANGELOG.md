@@ -204,6 +204,12 @@ far as the commits of this package and of the backend say.
   `cmd_2_8_formatting`, `cmd_3_0_formatting` and `cmd_3_6_formatting`, where they were
   `default_formatting`, `oldpadova_fomatting_withlogage`, `oldpadova_fomatting` and
   `padova_formatting`.
+- The isochrones of `Roman` are those of CMD 3.9 (they were those of CMD 3.7, with the OBC
+  bolometric corrections), with the Roman filters of March 2024 (they were those of 2021) and the
+  YBC bolometric corrections. The system has eight bands, `F062`, `F087`, `F106`, `F129`, `F158`,
+  `F184`, `F146` and `F213`: the prism and the grism bands, which the filters of 2024 do not have,
+  are gone, and with them the columns `roman_prism`, `roman_grism1st` and `roman_grism` of the
+  catalogues. The submodule has to be at the commit of the backend that has the new files.
 
 ### Fixed
 
