@@ -193,7 +193,7 @@ def test_the_installation_offers_the_photometric_systems_that_the_backend_comes_
     padova = photometry.available_photo_systems['padova']
     assert set(PADOVA) <= set(padova)                                   # others can be there: the user's own are in another category
     assert list(padova['GAIA__DR2'].mag_names) == ['G', 'Gbp', 'Grp']
-    assert list(padova['LSST'].mag_names) == ['u', 'g', 'r', 'i', 'z', 'Y']
+    assert list(padova['LSST'].mag_names) == ['u', 'g', 'r', 'i', 'z', 'y']
     assert list(padova['LSST'].to_export_keys) == ['lsst_u', 'lsst_g', 'lsst_r', 'lsst_i', 'lsst_z', 'lsst_y']
 
 

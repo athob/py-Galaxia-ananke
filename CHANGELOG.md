@@ -210,6 +210,14 @@ far as the commits of this package and of the backend say.
   `F184`, `F146` and `F213`: the prism and the grism bands, which the filters of 2024 do not have,
   are gone, and with them the columns `roman_prism`, `roman_grism1st` and `roman_grism` of the
   catalogues. The submodule has to be at the commit of the backend that has the new files.
+- The isochrones of `LSST` are those of CMD 3.9 (they were those of CMD 3.0, with the OBC
+  bolometric corrections), with the filters of the LSST throughputs Release 1.9 of September 2023
+  (they were those of March 2012) and the YBC bolometric corrections. For the same stars, the
+  magnitudes of the new filters are brighter by 0.57 mag in `u`, and by 0.01 to 0.04 mag in `g`,
+  `r`, `i` and `y`, and the same in `z` (the filters alone, at a metallicity of 0.016: the
+  bolometric corrections add their own change). The last band is named `y` and not `Y`, and the
+  column of the catalogues, `lsst_y`, is the same. `LSST_DP0` is not changed. The submodule has to
+  be at the commit of the backend that has the new files.
 
 ### Fixed
 
