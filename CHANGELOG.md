@@ -323,6 +323,12 @@ far as the commits of this package and of the backend say.
   the backend and the CMD service take 0.019 for the models of Marigo et al. (2008) that they are
   made of: their metallicities were 0.097 dex off. They have a layout of their own for it,
   `cmd_2_1_formatting`.
+- The backend took 0.019 as the solar metallicity of `LSST`, `Roman`, `Euclid`, `JWST__NIRCam` and
+  `JWST__MIRI`, which are made of the PARSEC models, where the CMD service takes 0.0152 (0.019 is
+  that of the models of Marigo et al. (2008), of the four systems of CMD 2.1 and 2.2, which keep it):
+  the isochrones used for a given metallicity were 0.097 dex too metal-rich. The solar metallicity
+  is taken from one function of the name of the system, 0.019 for the systems of CMD 2.1 and 2.2
+  and 0.0152 for all the others. The submodule has to be at the commit of the backend that has it.
 - The photometric systems `LSST` and `LSST_DP0` take the effective wavelengths and the zero points
   of their filters from the instrument `LSST` of the Spanish Virtual Observatory, and not from its
   whole facility `LSST`, which has two filters named `g` and two named `i` since the instrument
