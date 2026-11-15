@@ -218,6 +218,17 @@ far as the commits of this package and of the backend say.
   bolometric corrections add their own change). The last band is named `y` and not `Y`, and the
   column of the catalogues, `lsst_y`, is the same. `LSST_DP0` is not changed. The submodule has to
   be at the commit of the backend that has the new files.
+- The isochrones of `GAIA__DR2` are those of CMD 3.9 (they were those of CMD 3.0 of April 2018, with
+  the OBC bolometric corrections), with the passbands of Evans et al. (2018), as before, and the YBC
+  bolometric corrections. In the old files the current mass of the stars of 8 solar masses or more,
+  younger than about 14 Myr, was set to 1.000, and their surface gravity computed from it (wrong by
+  1.2 to 1.6 dex, and negative for some of them): `mact` and `grav` of those stars are now those of the
+  models. The magnitudes change with the bolometric corrections, mostly for the dwarfs: at a
+  metallicity of 0.016, weighted by the IMF of the backend, the stars below 0.7 solar masses (about
+  86% of the stars) are fainter by 0.08 to 0.23 mag in `G`, 0.14 to 0.38 mag in `G_BP` and 0.05 to
+  0.18 mag in `G_RP` on average, the more the lighter they are; those from 0.7 to 1 solar mass by
+  less than 0.05 mag, and those above 1 solar mass by 0.02 mag or less. The submodule has to be at
+  the commit of the backend that has the new files.
 
 ### Fixed
 
