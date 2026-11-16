@@ -252,6 +252,14 @@ far as the commits of this package and of the backend say.
   and are fainter by 0.04 to 0.19 mag in the ultraviolet bands, `F336W` and `F390W`. The submodule
   has to be at the commit of the backend that has the new files.
 
+### Removed
+
+- The photometric systems `WFIRST`, `WFIRST+HST__WFC3` and `GAIA__0+TYCHO+2MASS` are no longer
+  offered, and neither are their directories in the library nor their branches in the backend.
+  `Roman` is the system of the mission that `WFIRST` named, with the filters of 2024, and
+  `2MASS+Spitzer+WISE` is the system of 2MASS: `GAIA__0+TYCHO+2MASS` had no isochrone files. The
+  submodule has to be at the commit of the backend that has them removed.
+
 ### Fixed
 
 - The metadata of the package states its license in a `License` field, where only a

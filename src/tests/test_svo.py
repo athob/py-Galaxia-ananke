@@ -61,7 +61,7 @@ def test_the_separators_of_the_names():
     ('GAIA__0', ['GAIA__GAIA0']),
     ('Euclid', ['Euclid__NISP0', 'Euclid__VIS']),
     ('HST__WFC3', ['HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),
-    ('WFIRST+HST__WFC3', ['WFIRST', 'HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),      # each part has its own special case
+    ('GAIA__DR2+HST__WFC3', ['GAIA__GAIA2r', 'HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),   # each part has its own special case (a made-up name: no system joins them)
     ('DCMC', ['DENIS', '2MASS']),
     ('2MASS+Spitzer+WISE', ['2MASS', 'Spitzer', 'WISE']),                    # a name that joins facilities is asked as each of them
     ('LSST_DP0', ['LSST__LSST']),
@@ -70,7 +70,6 @@ def test_the_separators_of_the_names():
     ('Generic__Johnson_UBVRIJHK', ['Generic__Johnson_UBVRIJHKL']),
     ('Generic__Stroemgren', ['Generic__Stromgren']),
     ('CTIO__DECam', ['CTIO__DECam']),                                        # the names that are not special are the same
-    ('WFIRST', ['WFIRST']),
     ('JWST__NIRCam', ['JWST__NIRCam']),
 ])
 def test_the_instruments_of_a_photometric_system(name, instruments):
@@ -83,7 +82,7 @@ def test_a_name_that_is_not_special_is_left_as_it_is():
 
 
 def test_there_is_a_driver_for_each_instrument_that_asks_for_it():
-    iface = interface('WFIRST+HST__WFC3')
+    iface = interface('GAIA__DR2+HST__WFC3')
     assert len(iface.svofpsdrivers) == 4 and all(isinstance(driver, SvoFpsDriver) for driver in iface.svofpsdrivers)
     assert [driver._instrument_name for driver in iface.svofpsdrivers] == iface.list_of_instruments
     assert all(driver._interface is iface for driver in iface.svofpsdrivers)
@@ -100,7 +99,6 @@ def test_the_interface_says_the_name_and_the_magnitudes_of_its_system():
     ('Generic__Johnson_UBVRIJHKL', 'Generic', 'Johnson_UBVRIJHKL'),
     ('LSST__LSST', 'LSST', 'LSST'),
     ('PAN-STARRS', 'PAN-STARRS', None),                                       # a name without a separator is a facility only
-    ('WFIRST', 'WFIRST', None),
 ])
 def test_an_instrument_has_a_facility_and_perhaps_a_name_of_its_own(instrument, facility, name):
     driver = interface(instrument).svofpsdrivers[0]

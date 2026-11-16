@@ -48,11 +48,11 @@ def values(table, name):
 @pytest.mark.parametrize("formatting, layout", [
     # CMD2-label: (python_formatting, (0, 1, 2, 3, 4, 5, 6, False)),                    # what is made in Python, and others
     # CMD2-label: (cmd_3_6_formatting, (2, 3, 5, 6, 7, 8, 9, False)),                      # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
-    # CMD2-label: (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, 7, True)),                     # WFIRST, LSST, GAIA__0, GAIA__DR2: linear ages
+    # CMD2-label: (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, 7, True)),                     # GAIA__0: linear ages
     # CMD2-label: (cmd_2_8_formatting, (1, 2, 3, 4, 5, 6, 7, False)),         # WFIRST+HST__WFC3
     (python_formatting, (0, 1, 2, 3, 4, 5, False)),                       # what is made in Python, and others
     (cmd_3_6_formatting, (2, 3, 5, 6, 7, 8, False)),                         # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
-    (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, True)),                        # WFIRST, LSST, GAIA__0, GAIA__DR2: linear ages
+    (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, True)),                        # GAIA__0: linear ages
     (cmd_2_8_formatting, (1, 2, 3, 4, 5, 6, False)),            # WFIRST+HST__WFC3
 ], ids=["python", "cmd_3_6", "cmd_3_0", "cmd_2_8"])
 def test_the_layouts_of_the_isochrone_files_that_the_package_knows(formatting, layout):

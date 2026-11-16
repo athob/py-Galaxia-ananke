@@ -185,8 +185,8 @@ def test_a_survey_that_is_run_again_with_caching_reuses_everything_that_was_made
 
 # -- the photometric systems of the installation ------------------------------------
 
-PADOVA = ['2MASS+Spitzer+WISE', 'APO__SDSS', 'CTIO__DECam', 'DCMC', 'Euclid', 'GAIA__0', 'GAIA__0+TYCHO+2MASS', 'GAIA__DR2', 'Generic__Johnson_UBVRIJHK',
-          'Generic__Stroemgren', 'HST__WFC3', 'JWST__MIRI', 'JWST__NIRCam', 'LSST', 'LSST_DP0', 'Roman', 'WFIRST', 'WFIRST+HST__WFC3']
+PADOVA = ['2MASS+Spitzer+WISE', 'APO__SDSS', 'CTIO__DECam', 'DCMC', 'Euclid', 'GAIA__0', 'GAIA__DR2', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren',
+          'HST__WFC3', 'JWST__MIRI', 'JWST__NIRCam', 'LSST', 'LSST_DP0', 'Pan_STARRS1', 'Roman']
 
 
 def test_the_installation_offers_the_photometric_systems_that_the_backend_comes_with():

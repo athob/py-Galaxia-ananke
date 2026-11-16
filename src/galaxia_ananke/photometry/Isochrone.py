@@ -176,9 +176,7 @@ class Isochrone:
             # match self.name:
             #     case ('APO__SDSS' | 'DCMC' | 'Generic__Johnson_UBVRIJHK' | 'Generic__Stroemgren') if self.category == 'padova':
             #         return cmd_2_1_formatting
-            #     case 'WFIRST+HST__WFC3' if self.category == 'padova':
-            #         return cmd_2_8_formatting
-            #     case ('WFIRST' | 'GAIA__0') if self.category == 'padova':
+            #     case 'GAIA__0' if self.category == 'padova':
             #         return cmd_3_0_formatting
             #     case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST' | 'Pan_STARRS1' | 'LSST' | 'GAIA__DR2' | 'HST__WFC3' | '2MASS+Spitzer+WISE') if self.category == 'padova':
             #         return cmd_3_6_formatting
@@ -186,9 +184,7 @@ class Isochrone:
             #         return python_formatting
             pass
         else:
-            if self.name == 'WFIRST+HST__WFC3' and self.category == 'padova':
-                return cmd_2_8_formatting
-            if self.name in ['WFIRST','GAIA__0'] and self.category == 'padova':
+            if self.name == 'GAIA__0' and self.category == 'padova':
                 return cmd_3_0_formatting
             if self.name in ['APO__SDSS','DCMC','Generic__Johnson_UBVRIJHK','Generic__Stroemgren'] and self.category == 'padova':
                 return cmd_2_1_formatting
