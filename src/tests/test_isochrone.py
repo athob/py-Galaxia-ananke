@@ -247,7 +247,7 @@ def test_the_isochrone_files_are_those_of_the_directory_in_the_order_of_their_na
     *[('padova', name, cmd_2_1_formatting) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
     ('padova', 'WFIRST+HST__WFC3', cmd_2_8_formatting),
     *[('padova', name, cmd_3_0_formatting) for name in ('WFIRST', 'GAIA__0')],
-    *[('padova', name, cmd_3_6_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI', 'Pan_STARRS1', 'LSST', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, cmd_3_6_formatting) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI', 'Pan_STARRS1', 'LSST', 'GAIA__DR2', 'HST__WFC3', '2MASS+Spitzer+WISE')],
     ('padova', 'Another', python_formatting),
     ('py_custom', 'LSST', python_formatting),                      # the names are those of padova only
     ('py_custom', 'DCMC', python_formatting),                      # also when it is made in Python, with the solar metallicity of PARSEC
@@ -266,7 +266,7 @@ BACKEND_READS = [
     *[('padova', name, (0, False, 1, 2, 3, 4, 5)) for name in ('APO__SDSS', 'DCMC', 'Generic__Johnson_UBVRIJHK', 'Generic__Stroemgren')],
     ('padova', 'WFIRST+HST__WFC3', (1, False, 2, 3, 4, 5, 6)),
     *[('padova', name, (1, True, 2, 3, 4, 5, 6)) for name in ('WFIRST', 'GAIA__0')],
-    *[('padova', name, (2, False, 3, 5, 6, 7, 8)) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI', 'Pan_STARRS1', 'LSST', 'GAIA__DR2', 'HST__WFC3')],
+    *[('padova', name, (2, False, 3, 5, 6, 7, 8)) for name in ('CTIO__DECam', 'LSST_DP0', 'Roman', 'Euclid', 'JWST__NIRCam', 'JWST__MIRI', 'Pan_STARRS1', 'LSST', 'GAIA__DR2', 'HST__WFC3', '2MASS+Spitzer+WISE')],
 ]
 
 

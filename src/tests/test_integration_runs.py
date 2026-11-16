@@ -185,7 +185,7 @@ def test_a_survey_that_is_run_again_with_caching_reuses_everything_that_was_made
 
 # -- the photometric systems of the installation ------------------------------------
 
-PADOVA = ['APO__SDSS', 'CTIO__DECam', 'DCMC', 'Euclid', 'GAIA__0', 'GAIA__0+TYCHO+2MASS', 'GAIA__DR2', 'Generic__Johnson_UBVRIJHK',
+PADOVA = ['2MASS+Spitzer+WISE', 'APO__SDSS', 'CTIO__DECam', 'DCMC', 'Euclid', 'GAIA__0', 'GAIA__0+TYCHO+2MASS', 'GAIA__DR2', 'Generic__Johnson_UBVRIJHK',
           'Generic__Stroemgren', 'HST__WFC3', 'JWST__MIRI', 'JWST__NIRCam', 'LSST', 'LSST_DP0', 'Roman', 'WFIRST', 'WFIRST+HST__WFC3']
 
 
@@ -195,6 +195,8 @@ def test_the_installation_offers_the_photometric_systems_that_the_backend_comes_
     assert list(padova['GAIA__DR2'].mag_names) == ['G', 'Gbp', 'Grp']
     assert list(padova['LSST'].mag_names) == ['u', 'g', 'r', 'i', 'z', 'y']
     assert list(padova['LSST'].to_export_keys) == ['lsst_u', 'lsst_g', 'lsst_r', 'lsst_i', 'lsst_z', 'lsst_y']
+    assert list(padova['2MASS+Spitzer+WISE'].mag_names) == ['J', 'H', 'Ks', 'I1', 'I2', 'I3', 'I4', '24mu', '70mu', '160mu', 'W1', 'W2', 'W3', 'W4']
+    assert list(padova['2MASS+Spitzer+WISE'].to_export_keys)[:3] == ['2mass+spitzer+wise_j', '2mass+spitzer+wise_h', '2mass+spitzer+wise_ks']
 
 
 if __name__ == '__main__':

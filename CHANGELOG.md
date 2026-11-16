@@ -158,6 +158,13 @@ far as the commits of this package and of the backend say.
   no descriptor, and no way to read them), the backend reads them as those of `Euclid` and `Roman`, and
   the package knows their layout, that of CMD 3.6 and later. The submodule has to be at the commit of
   the backend that has them.
+- `2MASS+Spitzer+WISE` is a new photometric system, with the 34 isochrone files of the CMD 3.9 option
+  2MASS + Spitzer (IRAC+MIPS) + WISE: 14 bands, `J`, `H` and `Ks` of 2MASS, `I1` to `I4` of IRAC,
+  `24mu`, `70mu` and `160mu` of MIPS and `W1` to `W4` of WISE, named as SVO names them so that their
+  effective wavelengths and zero points are found (a name with `+` is asked of SVO as the facilities
+  that it joins). The keys of its magnitudes in the output keep the `+`, as `2mass+spitzer+wise_j`.
+  The backend reads its files as those of `Euclid` and `Roman`, and the package knows their layout,
+  that of CMD 3.6 and later. The submodule has to be at the commit of the backend that has them.
 
 ### Changed
 

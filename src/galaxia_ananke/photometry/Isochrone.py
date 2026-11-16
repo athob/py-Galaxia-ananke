@@ -180,7 +180,7 @@ class Isochrone:
             #         return cmd_2_8_formatting
             #     case ('WFIRST' | 'GAIA__0') if self.category == 'padova':
             #         return cmd_3_0_formatting
-            #     case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST' | 'Pan_STARRS1' | 'LSST' | 'GAIA__DR2' | 'HST__WFC3') if self.category == 'padova':
+            #     case ('CTIO__DECam' | 'LSST_DP0' | 'Roman' | 'Euclid' | 'JWST' | 'Pan_STARRS1' | 'LSST' | 'GAIA__DR2' | 'HST__WFC3' | '2MASS+Spitzer+WISE') if self.category == 'padova':
             #         return cmd_3_6_formatting
             #     case _:
             #         return python_formatting
@@ -192,7 +192,7 @@ class Isochrone:
                 return cmd_3_0_formatting
             if self.name in ['APO__SDSS','DCMC','Generic__Johnson_UBVRIJHK','Generic__Stroemgren'] and self.category == 'padova':
                 return cmd_2_1_formatting
-            if self.name in ['CTIO__DECam','LSST_DP0','Roman','Euclid','JWST__NIRCam','JWST__MIRI','Pan_STARRS1','LSST','GAIA__DR2','HST__WFC3'] and self.category == 'padova':
+            if self.name in ['CTIO__DECam','LSST_DP0','Roman','Euclid','JWST__NIRCam','JWST__MIRI','Pan_STARRS1','LSST','GAIA__DR2','HST__WFC3','2MASS+Spitzer+WISE'] and self.category == 'padova':
                 return cmd_3_6_formatting
             else:
                 return python_formatting  # what is made in Python, and a system that is not known

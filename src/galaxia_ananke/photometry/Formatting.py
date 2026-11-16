@@ -159,7 +159,7 @@ cmd_2_8_formatting = Formatting(1, 2, 3, 4, 5, 6, False)
 # CMD 3.0, PARSEC v1.2S + COLIBRI PR16, for WFIRST and GAIA__0: Zini, Age (linear, in years), Mini,
 # Mass, logL, logTe, logg, label, McoreTP, C_O, period0, period1, pmode, Mloss, tau1m, X, Y, Xc, Xn, Xo, Cexcess, Z, mbolmag, the magnitudes
 cmd_3_0_formatting = Formatting(1, 2, 3, 4, 5, 6, True)
-# CMD 3.6 and later (3.7, 3.9), PARSEC v1.2S + COLIBRI S_37 + S_35 + PR16, for CTIO__DECam, LSST_DP0, Roman, Euclid, JWST__NIRCam, JWST__MIRI, Pan_STARRS1, LSST, GAIA__DR2 and HST__WFC3: Zini, MH,
+# CMD 3.6 and later (3.7, 3.9), PARSEC v1.2S + COLIBRI S_37 + S_35 + PR16, for CTIO__DECam, LSST_DP0, Roman, Euclid, JWST__NIRCam, JWST__MIRI, Pan_STARRS1, LSST, GAIA__DR2, HST__WFC3 and 2MASS+Spitzer+WISE: Zini, MH,
 # logAge, Mini, int_IMF, Mass, logL, logTe, logg, label, McoreTP, C_O, period0 to period4, pmode, Mloss, tau1m, X, Y, Xc, Xn, Xo, Cexcess, Z,
 # mbolmag, the magnitudes
 cmd_3_6_formatting = Formatting(2, 3, 5, 6, 7, 8, False)

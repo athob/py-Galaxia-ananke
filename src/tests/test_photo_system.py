@@ -59,6 +59,12 @@ def test_the_keys_of_the_magnitudes_in_the_output_are_the_name_of_the_system_and
     assert photo_system.mag_names_to_export_keys_mapping == {'G': 'gaia__dr2_g', 'Gbp': 'gaia__dr2_gbp', 'Grp': 'gaia__dr2_grp'}
 
 
+def test_the_plus_of_a_name_that_joins_facilities_stays_in_the_keys_of_the_magnitudes():
+    photo_system = system(name='2MASS+Spitzer+WISE', mag_names=['J', 'Ks', '24mu', 'W1'])
+    assert photo_system.to_export_keys == ['2mass+spitzer+wise_j', '2mass+spitzer+wise_ks', '2mass+spitzer+wise_24mu', '2mass+spitzer+wise_w1']
+    assert photo_system.mag_names_to_export_keys_mapping['Ks'] == '2mass+spitzer+wise_ks'
+
+
 # -- the colors of a diagram --------------------------------------------------------
 
 def test_what_the_colors_of_a_dictionary_must_have():

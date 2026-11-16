@@ -63,6 +63,7 @@ def test_the_separators_of_the_names():
     ('HST__WFC3', ['HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),
     ('WFIRST+HST__WFC3', ['WFIRST', 'HST__WFC3_UVIS1', 'HST__WFC3_UVIS2', 'HST__WFC3_IR']),      # each part has its own special case
     ('DCMC', ['DENIS', '2MASS']),
+    ('2MASS+Spitzer+WISE', ['2MASS', 'Spitzer', 'WISE']),                    # a name that joins facilities is asked as each of them
     ('LSST_DP0', ['LSST__LSST']),
     ('LSST', ['LSST__LSST']),
     ('Pan_STARRS1', ['PAN-STARRS']),
