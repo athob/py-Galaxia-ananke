@@ -133,9 +133,12 @@ def test_the_temperatures_and_the_luminosities_are_no_longer_logarithms(real_sur
 def test_the_stars_are_not_more_massive_now_than_they_were_born_but_for_the_precision_of_the_backend(real_survey):
     # The current mass is the initial mass less what was lost, but not to the precision of the backend: it is found by interpolating
     # the isochrones, which gives up to 0.06% more than the initial mass for about one star in ten (1888 stars, 227 of them above).
+    # The lower bound is not physics: a star loses up to three quarters of its mass at the tip of the TP-AGB (at Z = 0.016 the lowest ratio of a star of the isochrones is
+    # 0.24, for 3 solar masses) and more if it is massive. It is a tripwire for a gross error, a wrong column or a placeholder current mass (the defect of the old CMD files
+    # was a current mass below a tenth of the initial one), and a tenth is below what any star of the isochrones of this system reaches.
     mact, minit = column(real_survey, 'mact'), column(real_survey, 'minit').astype(float)
     ratio = mact / minit
-    assert (minit > 0).all() and (ratio <= 1.01).all() and (ratio > 0.5).all()
+    assert (minit > 0).all() and (ratio <= 1.01).all() and (ratio > 0.1).all()
     assert 0.99 < np.median(ratio) <= 1.001
 
 
