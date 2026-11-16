@@ -139,6 +139,14 @@ def test_the_stars_are_not_more_massive_now_than_they_were_born_but_for_the_prec
     assert 0.99 < np.median(ratio) <= 1.001
 
 
+def test_no_star_of_the_survey_has_the_luminosity_of_a_remnant(real_survey):
+    # The isochrones of the CMD 3.6 and later end with a row that is not a star (a luminosity log of -9.999), above the last star: a mass between the two is a remnant,
+    # that the magnitude limits have to leave out, and the backend used to interpolate it from both rows, which gave it the luminosity of a remnant and the magnitudes of
+    # a star (28% of the stars of this survey, 2695 where 1932 are stars). The faintest star that has an absolute magnitude below 6, the limit of this survey, is of 0.3
+    # solar luminosities.
+    assert (column(real_survey, 'lum') > 0.01).all()
+
+
 def test_the_stars_are_the_children_of_the_particles_that_were_given(real_survey):
     parentid = column(real_survey, 'parentid')
     assert parentid.min() >= 0 and parentid.max() < len(real_survey.particles['massinit'])

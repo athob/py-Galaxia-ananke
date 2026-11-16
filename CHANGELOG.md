@@ -366,6 +366,12 @@ far as the commits of this package and of the backend say.
   of their filters from the instrument `LSST` of the Spanish Virtual Observatory, and not from its
   whole facility `LSST`, which has two filters named `g` and two named `i` since the instrument
   `LSSTv19` was added there in October 2026: they had eight values for six magnitudes.
+- A survey no longer contains stars that are neither alive nor dead. The isochrones of the systems of CMD 3.6 and later end with a row that is not a star, above the last star,
+  and a star of a mass between the two was interpolated from both: it had the luminosity of a remnant (about 1e-10 solar luminosities) and the magnitudes of a star, so
+  that no magnitude limit left it out. In 432 to 450 ages of each of these systems (of 6018 to 6372) that gap is above 0.1% of the mass, and in the largest, at log ages of
+  10.06 to 10.12 and metallicities of 0.0005 to 0.0009, it is 44% (0.79 to 1.13 solar masses) and holds half of the bright stars of the isochrone. In the survey of the
+  integration test (log age of 9.7 +- 0.4, [Fe/H] of -0.7 +- 0.4), 28% of the stars were of that kind (2695 stars, 1932 now). The backend gives such a mass the values of the
+  row that ends the isochrone, a remnant that no magnitude limit lets through. The submodule has to be at the commit of the backend that has the fix.
 
 ## [0.8.0] - 2026-08-10
 
