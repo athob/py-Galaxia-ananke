@@ -229,6 +229,21 @@ far as the commits of this package and of the backend say.
   0.18 mag in `G_RP` on average, the more the lighter they are; those from 0.7 to 1 solar mass by
   less than 0.05 mag, and those above 1 solar mass by 0.02 mag or less. The submodule has to be at
   the commit of the backend that has the new files.
+- The isochrones of `HST__WFC3` are those of CMD 3.9 (they were those of CMD 3.0 of September 2017,
+  with the OBC bolometric corrections), with the wide filters of the 2021 update of the calibration
+  of the WFC3 (they were the UVIS1 final throughputs) and the YBC bolometric corrections. The three
+  ultraviolet bands are renamed, `F218W1`, `F225W1` and `F275W1` becoming `F218W`, `F225W` and `F275W`,
+  and so are their columns in the catalogues (`hst__wfc3_f218w1`, `hst__wfc3_f225w1` and
+  `hst__wfc3_f275w1` become `hst__wfc3_f218w`, `hst__wfc3_f225w` and `hst__wfc3_f275w`): the new names
+  are those of the Spanish Virtual Observatory, so that the bands now have an effective wavelength
+  and a zero point, which the old names, that it does not know, did not. The magnitudes change in
+  every band, with the filters and the bolometric corrections: at a metallicity of 0.016, weighted
+  by the IMF of the backend, the stars below 0.7 solar masses (about 86% of the stars) are fainter
+  by 0.13 to 0.27 mag in `F438W` to `F814W` and by 0.27 to 0.36 mag in `F218W` and `F225W`, and
+  brighter by 0.23 mag in `F336W` and by 0.09 to 0.11 mag in
+  `F140W` and `F160W`; the stars above 1 solar mass change by 0.03 mag or less in `F438W` to `F160W`,
+  and are fainter by 0.04 to 0.19 mag in the ultraviolet bands, `F336W` and `F390W`. The submodule
+  has to be at the commit of the backend that has the new files.
 
 ### Fixed
 
