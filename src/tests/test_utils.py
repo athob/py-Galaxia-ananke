@@ -70,9 +70,8 @@ def frame():
     return RecordingDataFrame({"age": [1, 2], "feh": [3, 4], "mass": [5, 6]})
 
 
-@pytest.mark.xfail(raises=UserWarning, reason="making a frame sets an attribute that pandas takes for a column that someone "
-                   "forgot to make, and warns: whoever post-processes a survey with a function of their own sees it")
 def test_a_recording_frame_is_made_without_a_warning():
+    # pandas takes a new attribute of a frame for a column that someone forgot to make, and warns: whoever post-processes a survey with a function of their own saw it
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         RecordingDataFrame({"age": [1, 2]})

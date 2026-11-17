@@ -47,7 +47,7 @@ class RecordingDataFrame(pd.DataFrame):
     """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._record_of_all_used_keys = set()
+        object.__setattr__(self, '_record_of_all_used_keys', set())      # not through pandas, which takes a new attribute for a column that someone forgot to make, and warns
     def _add_to_record_of_all_used_keys(self, keys):
         if isinstance(keys, str):
             keys = [keys]
