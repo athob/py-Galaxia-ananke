@@ -259,6 +259,10 @@ far as the commits of this package and of the backend say.
   `Roman` is the system of the mission that `WFIRST` named, with the filters of 2024, and
   `2MASS+Spitzer+WISE` is the system of 2MASS: `GAIA__0+TYCHO+2MASS` had no isochrone files. The
   submodule has to be at the commit of the backend that has them removed.
+- The two files of `CTIO__DECam` and of `LSST_DP0` that the backend never read, because their
+  metallicities are not in its grid of 34, are removed, so that the tables of these systems in
+  Python have the 34 metallicities of the others. The submodule has to be at the commit of the
+  backend that has them removed.
 
 ### Fixed
 
