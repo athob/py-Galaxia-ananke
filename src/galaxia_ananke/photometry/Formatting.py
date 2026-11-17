@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from .Isochrone import Isochrone
     from .IsochroneFile import IsochroneFile
 
-__all__ = ['python_formatting', 'cmd_2_1_formatting', 'cmd_2_8_formatting', 'cmd_3_0_formatting', 'cmd_3_6_formatting']
+__all__ = ['python_formatting', 'cmd_2_1_formatting', 'cmd_3_0_formatting', 'cmd_3_6_formatting']
 
 
 units.Zsun = units.def_unit('Zsun') # TODO could define PhysicalType "abundance" ?
@@ -142,7 +142,6 @@ class Formatting(_BaseFormatting):
 # for PARSEC (Bressan et al. 2012) and later ones, as the input form of CMD says.
 # CMD2-label: python_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False)
 # CMD2-label: cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, 6, False, feh_sun=0.019)
-# CMD2-label: cmd_2_8_formatting = Formatting(1, 2, 3, 4, 5, 6, 7, False)
 # CMD2-label: cmd_3_0_formatting = Formatting(1, 2, 3, 4, 5, 6, 7, True)
 # CMD2-label: cmd_3_6_formatting = Formatting(2, 3, 5, 6, 7, 8, 9, False)
 
@@ -153,9 +152,6 @@ python_formatting = Formatting(0, 1, 2, 3, 4, 5, False)
 # M_ini, M_act, logL, logTe, logG, mbol, the magnitudes, then C/O, M_hec, period, pmode, logMdot and int_IMF. The columns of python_formatting
 # and Zsun = 0.019
 cmd_2_1_formatting = Formatting(0, 1, 2, 3, 4, 5, False, feh_sun=0.019)
-# CMD 2.8, PARSEC v1.2S + COLIBRI PR16, for WFIRST+HST__WFC3: Z, log(age/yr), M_ini, M_act, logL, logTe, logG, mbol, the magnitudes, then C/O,
-# M_hec, period, pmode, logMdot, slope and int_IMF
-cmd_2_8_formatting = Formatting(1, 2, 3, 4, 5, 6, False)
 # CMD 3.0, PARSEC v1.2S + COLIBRI PR16, for GAIA__0: Zini, Age (linear, in years), Mini,
 # Mass, logL, logTe, logg, label, McoreTP, C_O, period0, period1, pmode, Mloss, tau1m, X, Y, Xc, Xn, Xo, Cexcess, Z, mbolmag, the magnitudes
 cmd_3_0_formatting = Formatting(1, 2, 3, 4, 5, 6, True)

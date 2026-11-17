@@ -15,7 +15,7 @@
 #
 """
 Tests of Formatting, which says how the files of the isochrones of a photometric system are laid out (which column is the age, the
-mass, ...) and turns what they hold into one table per age with units. The four layouts that the package knows are pinned, and the
+mass, ...) and turns what they hold into one table per age with units. The three layouts that the package knows are pinned, and the
 tables are checked on small isochrone files whose numbers are worked out here, outside astropy.
 """
 import dataclasses
@@ -27,7 +27,7 @@ import pytest
 from astropy import units
 
 from ..galaxia_ananke.photometry.Formatting import (cmd_2_1_formatting, python_formatting, cmd_3_0_formatting,
-                                                    cmd_2_8_formatting, cmd_3_6_formatting)
+                                                    cmd_3_6_formatting)
 from ..galaxia_ananke.photometry.IsochroneFile import IsochroneFile
 from .utils import write_isochrone_file
 
@@ -43,18 +43,16 @@ def values(table, name):
     return np.asarray(table[name].value).tolist()
 
 
-# -- the four layouts ---------------------------------------------------------------
+# -- the three layouts --------------------------------------------------------------
 
 @pytest.mark.parametrize("formatting, layout", [
     # CMD2-label: (python_formatting, (0, 1, 2, 3, 4, 5, 6, False)),                    # what is made in Python, and others
     # CMD2-label: (cmd_3_6_formatting, (2, 3, 5, 6, 7, 8, 9, False)),                      # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
     # CMD2-label: (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, 7, True)),                     # GAIA__0: linear ages
-    # CMD2-label: (cmd_2_8_formatting, (1, 2, 3, 4, 5, 6, 7, False)),         # WFIRST+HST__WFC3
     (python_formatting, (0, 1, 2, 3, 4, 5, False)),                       # what is made in Python, and others
     (cmd_3_6_formatting, (2, 3, 5, 6, 7, 8, False)),                         # CTIO__DECam, LSST_DP0, Roman, Euclid, JWST
     (cmd_3_0_formatting, (1, 2, 3, 4, 5, 6, True)),                        # GAIA__0: linear ages
-    (cmd_2_8_formatting, (1, 2, 3, 4, 5, 6, False)),            # WFIRST+HST__WFC3
-], ids=["python", "cmd_3_6", "cmd_3_0", "cmd_2_8"])
+], ids=["python", "cmd_3_6", "cmd_3_0"])
 def test_the_layouts_of_the_isochrone_files_that_the_package_knows(formatting, layout):
     assert dataclasses.astuple(formatting) == layout + (0.0152,)
 
@@ -202,7 +200,8 @@ def test_a_layout_with_the_age_in_years_gives_tables_for_the_log_of_the_ages(tmp
 def test_the_same_layout_with_the_age_in_log_keeps_the_ages_as_they_are(tmp_path):
     stars = [(9.0, 1.0, 0.99, 0.0, 3.76, 4.4, 0, 5.0, 5.5), (9.5, 0.8, 0.79, -0.3, 3.7, 4.5, 0, 6.0, 6.4)]
     iso_file = isochrone_file(tmp_path, stars=stars, first_magnitude=8, extra_columns=['Z'])
-    assert list(cmd_2_8_formatting.qtable_per_age_from_isochronefile(iso_file)) == [9.0, 9.5]
+    same_layout_with_the_age_in_log = dataclasses.replace(cmd_3_0_formatting, lin_age=False)
+    assert list(same_layout_with_the_age_in_log.qtable_per_age_from_isochronefile(iso_file)) == [9.0, 9.5]
 
 
 if __name__ == '__main__':
