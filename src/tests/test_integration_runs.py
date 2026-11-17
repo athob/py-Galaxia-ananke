@@ -164,7 +164,8 @@ def test_the_stars_that_the_rule_gives_no_partition_are_left_out_of_the_catalogu
 
 def cached_run(directory):
     particles, kernels = dummy_input()
-    input = Input(particles, kernels, input_dir=directory / 'in', name='itest_cache', ngb=64, caching=True)
+    with pytest.warns(DeprecationWarning, match="caching mode"):                  # an input that caches says that the feature is experimental
+        input = Input(particles, kernels, input_dir=directory / 'in', name='itest_cache', ngb=64, caching=True)
     return Survey(input, surveyname='itest_cache', verbose=False).make_survey(verbose=False, output_dir=directory / 'out', **LIMITS)
 
 
