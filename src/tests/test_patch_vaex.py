@@ -111,24 +111,28 @@ def test_the_files_of_a_list_are_one_table_in_the_order_of_the_list(tmp_path):
     first, second = ananke_file(tmp_path, 'a.h5', stars=(1.0, 2.0)), ananke_file(tmp_path, 'b.h5', stars=(3.0,))
     df = _patch_vaex.new_open_many([str(first), str(second)], group=STARCATALOG_GROUP)
     assert values(df, 'x') == [1.0, 2.0, 3.0] and len(df) == 3
+    df.close()
 
 
 def test_blank_lines_comments_and_the_spaces_around_the_names_are_left_out_of_the_list(tmp_path):
     first, second = ananke_file(tmp_path, 'a.h5', stars=(1.0, 2.0)), ananke_file(tmp_path, 'b.h5', stars=(3.0,))
     df = _patch_vaex.new_open_many([f"  {first}  \n", "", "   ", "# a comment", "  # another one", f"\t{second}\n"], group=STARCATALOG_GROUP)
     assert values(df, 'x') == [1.0, 2.0, 3.0]
+    df.close()
 
 
 def test_a_list_can_be_a_generator_of_names(tmp_path):
     paths = [ananke_file(tmp_path, f"{name}.h5", stars=(float(i),)) for i, name in enumerate('abc')]
     df = _patch_vaex.new_open_many(map(str, paths), group=STARCATALOG_GROUP)
     assert values(df, 'x') == [0.0, 1.0, 2.0]
+    df.close()
 
 
 def test_the_arguments_of_opening_are_given_to_each_file(tmp_path):
     first, second = ananke_file(tmp_path, 'a.h5'), ananke_file(tmp_path, 'b.h5')
     df = _patch_vaex.new_open_many([str(first), str(second)], group=PARENTPARTICLE_GROUP)
     assert df.get_column_names() == ['parentid'] and len(df) == 10
+    df.close()
 
 
 def test_the_patched_function_is_the_one_that_vaex_has_and_the_original_is_kept():
