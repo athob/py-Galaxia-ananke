@@ -31,7 +31,7 @@ is a manylinux one. So the build is only Python files, and takes seconds.
 The sdist holds the Python sources, `.gitmodules`, and the `_version.py` in which
 versioneer wrote the version and the full revision id of the tagged commit. It does not
 hold the backend, which is the git submodule `Galaxia-ananke` of this repository, about
-5.8 GB of files. When pip builds the package, the installer first asks git for the
+7.4 GB of files. When pip builds the package, the installer first asks git for the
 submodule. An sdist is not a git repository, so that fails, and the installer then asks
 the GitHub API which commit of Galaxia-ananke the tagged revision pins, clones the
 repository and checks that commit out.

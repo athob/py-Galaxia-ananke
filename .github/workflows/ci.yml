@@ -101,7 +101,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-        # The C++ backend, Galaxia-ananke, is a git submodule: about 5.8 GB of
+        # The C++ backend, Galaxia-ananke, is a git submodule: about 7.4 GB of
         # files, which weigh about 1 GB in git's store. Here it is fetched shallow
         # (just the commit this repository pins), where the installer's own
         # `git submodule update` would fetch the whole history: the installer

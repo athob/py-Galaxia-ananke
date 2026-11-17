@@ -42,7 +42,7 @@ pip install pytest ruff
 
 `pip install .` compiles the C++ backend, [Galaxia-ananke](https://github.com/athob/Galaxia-ananke),
 and installs it with the package. It is a git submodule of this repository, and it is large:
-about 5.8 GB of files, most of them data, and about a minute to build. So installing needs
+about 7.4 GB of files, most of them data, and about a minute to build. So installing needs
 network access, git, GNU make and g++ (the versions are in the README), several GB of free
 disk space, and Windows is not supported. The tests import the package straight from `src/`
 (they use relative imports), so once the install has worked your edits are picked up without

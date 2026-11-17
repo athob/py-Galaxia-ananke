@@ -43,7 +43,7 @@ After installation, the module can be imported in Python under the name `galaxia
 
 ### Requirements
 
-Python 3.9 to 3.12 (the vaex dependency does not support newer versions yet), on a Unix system: Windows is not supported. Installing `py-Galaxia-ananke` builds its C++ backend, [`Galaxia-ananke`](https://github.com/athob/Galaxia-ananke), but the package does not carry that source: the installation fetches it from GitHub (it is a git submodule of this repository, pinned to one commit). It therefore needs network access and git, as well as GNU make (4.2 or later) and g++ (8.5 or later) to build it. The `Galaxia-ananke` repository is large, about 5.8 GB at the time of writing (most of it is data, such as the isochrones), and the installation copies its data into a cache directory under `sys.prefix`: make sure that there is enough free disk space before installing.
+Python 3.9 to 3.12 (the vaex dependency does not support newer versions yet), on a Unix system: Windows is not supported. Installing `py-Galaxia-ananke` builds its C++ backend, [`Galaxia-ananke`](https://github.com/athob/Galaxia-ananke), but the package does not carry that source: the installation fetches it from GitHub (it is a git submodule of this repository, pinned to one commit). It therefore needs network access and git, as well as GNU make (4.2 or later) and g++ (8.5 or later) to build it. The `Galaxia-ananke` repository is large, about 7.4 GB at the time of writing (most of it is data, such as the isochrones), and the installation copies its data into a cache directory under `sys.prefix`: make sure that there is enough free disk space before installing.
 
 ### Troubleshooting installation
 

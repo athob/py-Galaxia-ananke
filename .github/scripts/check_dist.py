@@ -24,7 +24,7 @@ installer needs from the sdist is its Python sources, `.gitmodules`, which gives
 backend, and the `_version.py` that versioneer wrote, whose full revision id is what the
 installer asks GitHub for, to find the commit of the backend this version pins. An sdist whose
 revision id is unknown (one built from files without git information) cannot be installed. The
-backend is not part of the sdist, and must not become part of it: it is about 5.8 GB.
+backend is not part of the sdist, and must not become part of it: it is about 7.4 GB.
 """
 import json
 import re
