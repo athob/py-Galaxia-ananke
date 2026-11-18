@@ -19,7 +19,9 @@ pipelines make (checked against the pipelines applied one after the other to the
 themselves), what is flushed into the files, the group of the parent particles with the statistics of their stars, and what is said
 of it. The stars are those of synthetic.py: six stars of three parents in two partitions, whose statistics are worked out by hand.
 """
+import gc
 import json
+import os
 import warnings
 
 import h5py
@@ -179,6 +181,33 @@ def test_the_statistics_of_the_stars_per_parent_are_those_of_the_catalogue(tmp_p
     stats = output._parent_stats_per_partitionid
     assert sorted(stats) == [0, 1] and stats[0].index.name == 'parentid'
     assert stats[0].loc[1, 'star_count'] == 1 and stats[1].loc[1, 'parent_star_count'] == 2 and stats[1].loc[2, 'minit_sum'] == 11.0
+
+
+def descriptors_on(paths):
+    """The descriptors of this process that point at one of the files, read through /proc as the benchmark counts them."""
+    found = []
+    for name in os.listdir('/proc/self/fd'):
+        try:
+            target = os.readlink(f'/proc/self/fd/{name}')
+        except OSError:  # the descriptor of the listing itself, or one that is closed meanwhile
+            continue
+        if target.replace(' (deleted)', '') in paths:
+            found.append(target)
+    return found
+
+
+@pytest.mark.skipif(not os.path.isdir('/proc/self/fd'), reason='counts the descriptors of the process through /proc')
+def test_a_dropped_output_leaves_no_descriptor_open_on_the_files_of_its_partitions(tmp_path, monkeypatch):
+    # vaex keeps the progress tree of its last computation in a module global, and the tree keeps alive the frames of the
+    # groupbys of the statistics of the parents, whose datasets hold the open file of every partition: without the release at
+    # the end of the statistics, a survey that is dropped keeps its descriptors until another computation of vaex replaces
+    # the tree (the frame of the output itself is freed all the same, so the descriptors are what this test looks at)
+    output, _ = post_processed(tmp_path, monkeypatch)
+    paths = {os.path.realpath(path) for path in output._hdf5s.values()}
+    assert descriptors_on(paths), "a live output holds its files, or this test measures nothing"
+    del output
+    gc.collect()
+    assert descriptors_on(paths) == []
 
 
 if __name__ == '__main__':

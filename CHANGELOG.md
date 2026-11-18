@@ -387,6 +387,10 @@ far as the commits of this package and of the backend say.
 - A function of one's own that post-processes a survey no longer makes pandas warn that it doesn't
   allow columns to be created via a new attribute name: the frame that records which columns the
   function reads now sets its record apart from the attribute setting of pandas.
+- A survey that is dropped no longer keeps the files of its partitions open. vaex keeps the progress tree of its last
+  computation in a module global, which referred to the frames of the groupbys of the statistics of the parent particles
+  and, through them, to the open file of every partition (2 descriptors per partition, 16 for the 8 partitions of a small
+  survey) until another computation of vaex replaced it: the statistics now let it go. The progress bars are unchanged.
 
 ## [0.8.0] - 2026-08-10
 

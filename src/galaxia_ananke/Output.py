@@ -37,6 +37,7 @@ import vaex
 import pandas as pd
 from astropy import units, coordinates
 import vaex.dataframe
+import vaex.progress
 
 from .__metadata__ import *
 from ._constants import *
@@ -1030,8 +1031,14 @@ class Output:
                  f'parent_{self._minit}_sum': vaex.agg.sum(f'{self._minit}_sum')},
             sort=True, progress=True)
         final_groupby: vaex.dataframe.DataFrameLocal = groupby.join(parent_groupby, on=self._parentid)
-        return {partitionid: stats.drop(self._partitionid, inplace=True).to_pandas_df().set_index(self._parentid)
-                for (partitionid,), stats in final_groupby.groupby(self._partitionid)}
+        parent_stats: Dict[int, pd.DataFrame] = {
+            partitionid: stats.drop(self._partitionid, inplace=True).to_pandas_df().set_index(self._parentid)
+            for (partitionid,), stats in final_groupby.groupby(self._partitionid)}
+        # vaex keeps the progress tree of its last computation in a module global, which refers to the frames of the
+        # groupbys above and, through them, to the open file of every partition: let it go, or a survey that is dropped
+        # keeps its files open until another computation of vaex replaces the tree
+        vaex.progress._last_progress_tree = None
+        return parent_stats
 
     def __export_parent_particles_data(self) -> None:
         for _, hdf5_file, parent_stats in common_entries(self._hdf5s, self._parent_stats_per_partitionid):
