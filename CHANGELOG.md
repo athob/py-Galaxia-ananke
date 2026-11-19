@@ -165,6 +165,10 @@ far as the commits of this package and of the backend say.
   that it joins). The keys of its magnitudes in the output keep the `+`, as `2mass+spitzer+wise_j`.
   The backend reads its files as those of `Euclid` and `Roman`, and the package knows their layout,
   that of CMD 3.6 and later. The submodule has to be at the commit of the backend that has them.
+- The logs of the backend that the HDF5 files hold (the attribute `Galaxia_ebf_output_logs`) now include, for each photometric
+  system of the survey, the raw descriptor and the raw header of its isochrones, as the backend writes them in an item
+  `<system>_isochrone_info` of each ebf file (a backend that does not write it leaves it out). The text is the same for all the
+  generations, so the compact form of the logs holds it once. The submodule has to be at the commit of the backend that writes it.
 
 ### Changed
 
