@@ -263,6 +263,12 @@ far as the commits of this package and of the backend say.
   mapping per partition for the files of its table instead of 4 and 2, which halves the open files that a survey needs
   (`OSError: [Errno 24] Too many open files` on a system with a low limit). Without auto flush the frames are open while a pipeline
   runs.
+- `make_survey_from_particles` and `Survey.make_survey` take a new keyword `sampling_factor`, the sampling factor of the whole survey
+  over all its generations (1 is a full sample, 0.5 a 50% undersampling, 2 a 200% oversampling): the `fsample` of the backend, that
+  of one generation, is the sampling factor divided by the number of generations, so that `n_gens` no longer has to be taken into
+  account by hand. The keyword `fsample` is deprecated (it still means the sampling factor of one generation, and warns), and so is
+  the property `Survey.fsample` in favour of `Survey.sampling_factor`, which is also recorded in the metadata of the catalogues
+  (`Survey_sampling_factor`). The parameters of a survey, hence its hash and the names of its files, do not change.
 
 ### Removed
 

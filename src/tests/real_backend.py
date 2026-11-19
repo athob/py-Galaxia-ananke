@@ -30,7 +30,8 @@ from ..galaxia_ananke._constants import GALAXIA_FILENAMES, GALAXIA_NBODY1
 
 PARTICLES = 1000
 SEED = 2026
-LIMITS = dict(fsample=0.01, abs_mag_lim_hi=6, app_mag_lim_hi=22)      # a few hundred stars, in a few seconds
+# a few hundred stars, in a few seconds (with one generation: the sampling factor is that of the whole survey)
+LIMITS = dict(sampling_factor=0.01, abs_mag_lim_hi=6, app_mag_lim_hi=22)
 
 
 def forget_input(input):
@@ -86,7 +87,8 @@ def real_run(tmp_path_factory, name, photo_sys=DEFAULT_PSYS, **kwargs):
 
 @pytest.fixture(scope='session')
 def real_generations(tmp_path_factory):
-    yield from real_run(tmp_path_factory, 'itest_gens', n_gens=2)
+    # each generation samples as it does alone: twice the sampling factor of one generation
+    yield from real_run(tmp_path_factory, 'itest_gens', n_gens=2, sampling_factor=2 * LIMITS['sampling_factor'])
 
 
 @pytest.fixture(scope='session')
@@ -96,7 +98,8 @@ def real_systems(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def real_rules(tmp_path_factory):
-    yield from real_run(tmp_path_factory, 'itest_rules', n_gens=2, max_pp_workers=2, partitioning_rule=sign_of_pz)
+    yield from real_run(tmp_path_factory, 'itest_rules', n_gens=2, sampling_factor=2 * LIMITS['sampling_factor'],
+                        max_pp_workers=2, partitioning_rule=sign_of_pz)
 
 
 @pytest.fixture(scope='session')

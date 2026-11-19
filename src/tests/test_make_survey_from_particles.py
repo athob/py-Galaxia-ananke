@@ -114,6 +114,39 @@ def test_a_survey_without_a_single_star_has_an_empty_catalogue_with_the_columns_
         assert all(len(empty[PARENTPARTICLE_GROUP][key]) == 0 for key in empty[PARENTPARTICLE_GROUP])
 
 
+@pytest.fixture
+def forwarded(monkeypatch):
+    """What the function gives to the make_survey of the survey that it makes, with an input and a survey that run nothing."""
+    package = sys.modules[make_survey_from_particles.__module__]
+    calls = []
+
+    class FakeSurvey:
+        def __init__(self, input, **kwargs):
+            pass
+
+        def make_survey(self, **kwargs):
+            calls.append(kwargs)
+            return 'output'
+    monkeypatch.setattr(package, 'Input', lambda *args, **kwargs: None)
+    monkeypatch.setattr(package, 'Survey', FakeSurvey)
+    return calls
+
+
+def test_the_sampling_factor_is_given_to_the_survey_as_it_is(forwarded):
+    assert make_survey_from_particles(0, 1, sampling_factor=0.3) == 'output'
+    assert forwarded[0]['sampling_factor'] == 0.3 and forwarded[0]['fsample'] is None
+
+
+def test_the_deprecated_fsample_is_given_to_the_survey_as_it_is(forwarded):
+    make_survey_from_particles(0, 1, fsample=0.3)
+    assert forwarded[0]['fsample'] == 0.3 and forwarded[0]['sampling_factor'] is None
+
+
+def test_without_either_it_is_for_the_survey_to_choose(forwarded):
+    make_survey_from_particles(0, 1)
+    assert forwarded[0]['fsample'] is None and forwarded[0]['sampling_factor'] is None
+
+
 @pytest.mark.parametrize("args, keywords", [((0,), {}), ((0, 1, 2), {}), ((), {'pname': 'sim_abcdef0.ebf'}), ((), {})],
                          ids=["the particles only", "three arguments", "pname only", "nothing"])
 def test_a_call_that_is_none_of_the_documented_ones_says_what_the_calls_are(args, keywords):

@@ -191,7 +191,7 @@ def test_the_file_of_the_backend_has_a_dataset_for_each_key_that_the_synthetic_f
 def test_the_log_of_the_backend_is_made_of_a_header_the_parameters_and_a_footer(real_survey):
     parsed = Output._Output__parse_galaxia_ebf_log(str(real_survey.output._ebfs[0].resolve()))
     assert isinstance(parsed['log_header'], str) and isinstance(parsed['log_footer'], str) and len(parsed) > 10
-    assert float(parsed['fSample']) == pytest.approx(LIMITS['fsample'])
+    assert float(parsed['fSample']) == pytest.approx(LIMITS['sampling_factor'])        # one generation: the whole survey
 
 
 def test_the_first_parameter_of_the_log_of_the_backend_is_read_by_its_name(real_survey):

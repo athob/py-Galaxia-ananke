@@ -95,6 +95,8 @@ def test_all_the_metadata_of_an_output_is_that_of_its_parameters_its_input_and_i
     assert metadata['SurveyParam_fsample'] == 1 and metadata[f"SurveyParam_{FTTAGS.output_dir}"] == str(tmp_path / 'out')
     assert (metadata['Input_name'], metadata['Input_hash']) == ('sim', survey.input.hash)
     assert (metadata['Survey_surveyname'], metadata['Survey_hash']) == ('survey', survey.hash)
+    # the sampling factor of the survey, and the fsample of one generation
+    assert metadata['Survey_sampling_factor'] == 1 and metadata['SurveyParam_fsample'] == 1
     assert all(isinstance(value, (bool, int, float, str)) for value in metadata.values())
 
 

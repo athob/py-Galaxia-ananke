@@ -172,7 +172,7 @@ def test_a_survey_that_was_not_made_says_to_make_it_first(attribute, an_input):
         getattr(Survey(an_input), attribute)
 
 
-@pytest.mark.parametrize("attribute", ["n_gens", "fsample"])
+@pytest.mark.parametrize("attribute", ["n_gens", "fsample", "sampling_factor"])
 def test_a_survey_that_was_not_made_says_to_make_it_first_for_its_generations_too(attribute, an_input):
     with pytest.raises(RuntimeError, match="hasn't been made yet"):
         getattr(Survey(an_input), attribute)
@@ -302,7 +302,7 @@ def test_all_the_parameters_are_those_of_the_file_and_the_other_ones(an_input, d
 
 def test_the_sampling_is_that_of_each_generation_times_their_number(an_input, directories):
     survey = prepare(Survey(an_input), directories, n_gens=range(3), fsample=0.01)
-    assert survey.fsample == pytest.approx(0.03)
+    assert survey.sampling_factor == pytest.approx(0.03)
 
 
 # -- the name of a survey -----------------------------------------------------------
@@ -362,9 +362,9 @@ def test_a_survey_that_is_made_again_with_the_same_parameters_keeps_its_name(an_
     assert survey.surveyname_hash == first
 
 
-def test_the_metadata_of_a_survey_is_its_name_and_its_hash(an_input, directories):
+def test_the_metadata_of_a_survey_is_its_name_its_hash_and_its_sampling_factor(an_input, directories):
     survey = prepare(Survey(an_input, surveyname='mine'), directories)
-    assert survey.metadata == {'surveyname': 'mine', 'hash': survey.hash}
+    assert survey.metadata == {'surveyname': 'mine', 'hash': survey.hash, 'sampling_factor': 1}
 
 
 def test_the_output_is_named_after_the_survey_and_the_input(an_input, directories):
@@ -482,8 +482,67 @@ def test_the_sorter_of_the_input_is_set_by_the_survey(directories, backend):
 
 def test_the_parameters_that_are_given_to_the_run_are_those_of_the_survey(an_input, directories, backend):
     survey = Survey(an_input)
-    survey._vanilla_survey(fsample=0.1, rand_seed=3, output_dir=directories[1])
+    survey._vanilla_survey(sampling_factor=0.1, rand_seed=3, output_dir=directories[1])
     assert survey.fileparam[FTTAGS.fsample] == 0.1 and survey.fileparam[FTTAGS.rand_seed] == 3
+
+
+# -- the sampling factor: that of the whole survey, divided among its generations -----
+
+def test_the_sampling_factor_of_the_survey_is_divided_among_its_generations(an_input, directories, backend):
+    survey = Survey(an_input)
+    survey._vanilla_survey(sampling_factor=0.6, n_gens=3, output_dir=directories[1])
+    assert survey.fileparam[FTTAGS.fsample] == pytest.approx(0.2) and survey.sampling_factor == pytest.approx(0.6)
+
+
+def test_a_sampling_factor_above_one_oversamples_among_the_generations(an_input, directories, backend):
+    survey = Survey(an_input)
+    survey._vanilla_survey(sampling_factor=2, n_gens=2, output_dir=directories[1])
+    assert survey.fileparam[FTTAGS.fsample] == 1 and survey.sampling_factor == 2
+
+
+def test_the_generations_that_are_given_by_their_numbers_share_the_sampling_factor_too(an_input, directories, backend):
+    survey = Survey(an_input)
+    survey._vanilla_survey(sampling_factor=1, n_gens=[3, 5, 8, 13], output_dir=directories[1])
+    assert survey.fileparam[FTTAGS.fsample] == 0.25
+
+
+def test_one_generation_gets_the_sampling_factor_as_given_so_the_hash_stays(an_input, directories, backend):
+    survey = Survey(an_input)
+    survey._vanilla_survey(output_dir=directories[1])  # the default is the integer 1, as the parameter file always had it
+    assert survey.fileparam[FTTAGS.fsample] == 1 and isinstance(survey.fileparam[FTTAGS.fsample], int)
+    survey._vanilla_survey(sampling_factor=0.25, output_dir=directories[1])
+    assert survey.fileparam[FTTAGS.fsample] == 0.25 and survey.sampling_factor == 0.25
+
+
+def test_no_generation_is_still_refused_by_its_own_message(an_input, directories, backend):
+    with pytest.raises(ValueError, match="n_gens must hold at least one generation"):
+        Survey(an_input)._vanilla_survey(sampling_factor=1, n_gens=[], output_dir=directories[1])
+
+
+def test_fsample_is_the_deprecated_sampling_factor_of_one_generation(an_input, directories, backend):
+    survey = Survey(an_input)
+    with pytest.warns(DeprecationWarning, match='fsample is deprecated'):
+        survey._vanilla_survey(fsample=0.1, n_gens=2, output_dir=directories[1])
+    assert survey.fileparam[FTTAGS.fsample] == 0.1 and survey.sampling_factor == pytest.approx(0.2)
+
+
+def test_the_survey_of_the_fsample_of_each_generation_is_that_of_the_sampling_factor(an_input, directories, backend):
+    old, new = Survey(an_input), Survey(an_input)
+    with pytest.warns(DeprecationWarning, match='fsample is deprecated'):
+        old._vanilla_survey(fsample=0.25, n_gens=2, output_dir=directories[1])
+    new._vanilla_survey(sampling_factor=0.5, n_gens=2, output_dir=directories[1])
+    assert old.parameters == new.parameters and old.hash == new.hash
+
+
+def test_the_sampling_factor_and_the_fsample_cannot_be_both_given(an_input, directories, backend):
+    with pytest.raises(TypeError, match='and not both'):
+        Survey(an_input)._vanilla_survey(sampling_factor=1, fsample=1, output_dir=directories[1])
+
+
+def test_the_deprecated_fsample_of_a_survey_is_its_sampling_factor(an_input, directories):
+    survey = prepare(Survey(an_input), directories, n_gens=range(3), fsample=0.01)
+    with pytest.warns(DeprecationWarning, match='Survey.fsample is deprecated'):
+        assert survey.fsample == pytest.approx(0.03) == survey.sampling_factor
 
 
 def test_the_other_photometric_systems_are_appended_to_each_file_after_the_run(an_input, directories, backend):

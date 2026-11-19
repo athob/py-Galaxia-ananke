@@ -151,10 +151,17 @@ class Survey:
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
+    @staticmethod
+    def _fsample_of_one_generation(sampling_factor: float, n_gens: Iterable[int]) -> float:
+        """The fsample of the backend, that of each generation, for a sampling factor of the whole survey."""
+        n = len(n_gens)
+        # a single generation (or none, which is refused later) keeps the value as it was given
+        return sampling_factor / n if n > 1 else sampling_factor
+
     def _vanilla_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD,
-                              fsample: float = 1, input_sorter: ArrayLike = None,
+                              sampling_factor: float = None, input_sorter: ArrayLike = None,
                               n_jobs: int = None, n_gens: Union[int, Iterable[int]] = (0,),
-                              max_gen_workers: int = None, **kwargs) -> None:
+                              max_gen_workers: int = None, fsample: float = None, **kwargs) -> None:
         """
             TODO
         """
@@ -167,6 +174,16 @@ class Survey:
             max_gen_workers = len(n_gens)
         else:
             warn('The keyword argument max_gen_workers is currently not implemented.', stacklevel=2)
+        if fsample is not None:
+            if sampling_factor is not None:
+                raise TypeError("Give either sampling_factor, the sampling factor of the whole survey, "
+                                "or fsample, that of one generation (deprecated), and not both")
+            warn('Keyword argument fsample is deprecated and will be removed: it is the sampling factor of one single '
+                 'generation, so that a survey of n_gens generations samples n_gens times fsample. Please use instead '
+                 'keyword argument sampling_factor, the sampling factor of the whole survey, which is divided among '
+                 'the generations.', DeprecationWarning, stacklevel=3)
+        else:
+            fsample = self._fsample_of_one_generation(1 if sampling_factor is None else sampling_factor, n_gens)
         self.input.input_sorter = input_sorter
         self._prepare_survey_parameters_and_output(cmd_magnames, n_gens, fsample=fsample, **kwargs)
         inputname, parfile, for_parfile = self.input.prepare_input(self)
@@ -183,7 +200,7 @@ class Survey:
             Call signature::
             
                 output = self.make_survey(cmd_magnames= '{DEFAULT_CMD}' ,
-                                          fsample=1, verbose=True, **kwargs)
+                                          sampling_factor=1, verbose=True, **kwargs)
             
             Parameters
             ----------
@@ -200,10 +217,18 @@ class Survey:
                 the first chosen photometric system in photo_sys. Default to
                 ``'{DEFAULT_CMD}'``
             
+            sampling_factor : float
+                Sampling factor of the whole synthetic star survey, over all
+                its independent generations (see n_gens): 1 returns a full
+                sample, 0.5 a 50% undersampling and 2 a 200% oversampling.
+                Galaxia is given this factor divided by the number of
+                generations, which is its own parameter fsample: that of one
+                generation. Default to 1.
+
             fsample : float
-                Sampling rate from 0 to 1 for the resulting synthetic star
-                survey. 1 returns a full sample while any value under returns
-                partial surveys. Default to 1.
+                Deprecated, use sampling_factor instead. The sampling factor
+                of one single generation, as Galaxia understands it: a survey
+                of n_gens generations samples n_gens times fsample.
 
             input_sorter : array_like
                 TODO
@@ -373,8 +398,16 @@ class Survey:
             }).values())
 
     @property
-    def fsample(self) -> float:
+    @mark_metadata_prop
+    def sampling_factor(self) -> float:
         return len(self.n_gens)*self.fileparam[FTTAGS.fsample]
+
+    @property
+    def fsample(self) -> float:
+        value = self.sampling_factor  # refuses first if the survey was not made
+        warn('Survey.fsample is deprecated and will be removed, please use instead Survey.sampling_factor: '
+             'the sampling factor of the whole survey.', DeprecationWarning, stacklevel=2)
+        return value
 
     @property
     def _surveyhash(self) -> bytes:  # not cached: the parameters change each time the survey is made
