@@ -251,6 +251,12 @@ far as the commits of this package and of the backend say.
   `F140W` and `F160W`; the stars above 1 solar mass change by 0.03 mag or less in `F438W` to `F160W`,
   and are fainter by 0.04 to 0.19 mag in the ultraviolet bands, `F336W` and `F390W`. The submodule
   has to be at the commit of the backend that has the new files.
+- The documentation of `make_survey` now recommends asking for the same `max_pp_workers` in all the surveys of a process,
+  because a survey that needs a new pool of workers after another survey of the same process can hang when the workers are
+  started by `fork` (found with a benchmark of the memory over repeated surveys, see [issue #6](https://github.com/athob/py-Galaxia-ananke/issues/6)).
+  It also notes that the workers stay alive once the survey is made (about 150 MB each after a small survey), and that a
+  script has to guard its entry point with `if __name__ == '__main__':` when the workers are not started by `fork`, as on
+  macOS or after `multiprocess.set_start_method('forkserver')`.
 
 ### Removed
 

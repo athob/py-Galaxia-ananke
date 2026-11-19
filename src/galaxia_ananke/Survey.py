@@ -223,6 +223,9 @@ class Survey:
             max_pp_workers : int
                 Maximum number of workers to parallelize the post-processing
                 pipelines after the initial catalog generation. Default to 1.
+                The workers stay alive once the survey is made, and the next
+                survey that asks for the same number reuses them: see the
+                notes below.
             
             pp_auto_flush : bool
                 TODO
@@ -305,6 +308,26 @@ class Survey:
             output : :obj:`Output`
                 Handler with utilities to utilize the output survey and its
                 data.
+
+            Notes
+            -----
+            The workers of ``max_pp_workers`` are processes that ``pathos``
+            starts, by ``fork`` on Linux, and keeps in a cache: they stay
+            alive and idle after ``make_survey`` returns, until the Python
+            process ends, and keep their memory meanwhile (about 150 MB each
+            after a small survey in our measurements).
+
+            It is recommended to ask for the same ``max_pp_workers`` in all
+            the surveys of a process: with workers started by ``fork``, a
+            survey that needs a new pool of workers after another survey of
+            the same process can hang, see
+            https://github.com/athob/py-Galaxia-ananke/issues/6
+
+            A script that calls ``make_survey`` should guard its entry point
+            with ``if __name__ == '__main__':`` whenever the workers are not
+            started by ``fork``, as on macOS or after
+            ``multiprocess.set_start_method('forkserver')``: those start
+            methods run the script again in each worker.
         """  # TODO Move documentation around to the subroutines where they should go
         self.verbose = verbose
         self._vanilla_survey(**kwargs)

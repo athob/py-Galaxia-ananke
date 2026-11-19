@@ -542,5 +542,11 @@ def test_the_documentation_of_making_a_survey_has_what_it_is_made_of_filled_in()
     assert "'abs_mag'" in documentation                                         # the box of the diagram, as a dictionary
 
 
+def test_the_documentation_of_making_a_survey_recommends_the_same_workers_and_a_guard_for_other_start_methods():
+    documentation = Survey.make_survey.__doc__
+    assert "stay alive" in documentation and "the same ``max_pp_workers``" in documentation
+    assert "if __name__ == '__main__':" in documentation and "``multiprocess.set_start_method('forkserver')``" in documentation
+
+
 if __name__ == '__main__':
     pass
