@@ -210,5 +210,45 @@ def test_a_dropped_output_leaves_no_descriptor_open_on_the_files_of_its_partitio
     assert descriptors_on(paths) == []
 
 
+ON_LINUX = pytest.mark.skipif(not os.path.isdir('/proc/self/fd'), reason='counts the descriptors of the process through /proc')
+
+
+@ON_LINUX
+def test_an_output_with_auto_flush_opens_the_frames_of_its_partitions_only_when_they_are_asked_for(tmp_path, monkeypatch):
+    # the workers open the files by path, so the main process needs the whole table only: 2 descriptors per partition,
+    # and 2 more per partition for the frames of the partitions, opened when asked for
+    output, _ = post_processed(tmp_path, monkeypatch)  # auto flush is the default
+    paths = {os.path.realpath(path) for path in output._hdf5s.values()}
+    assert len(descriptors_on(paths)) == 2 * len(paths)
+    frames = output._vaex_per_partition
+    assert sorted(frames) == sorted(output._hdf5s) and len(descriptors_on(paths)) == 4 * len(paths)
+
+
+@ON_LINUX
+def test_the_reload_of_an_output_with_auto_flush_forgets_the_frames_of_its_partitions(tmp_path, monkeypatch):
+    output, _ = post_processed(tmp_path, monkeypatch)
+    paths = {os.path.realpath(path) for path in output._hdf5s.values()}
+    frames = output._vaex_per_partition
+    output._Output__reload_vaex()
+    del frames
+    gc.collect()
+    # nothing is asked since: the whole table only
+    assert len(descriptors_on(paths)) == 2 * len(paths)
+
+
+@ON_LINUX
+def test_the_reload_of_an_output_without_auto_flush_closes_the_frames_of_its_partitions(tmp_path, monkeypatch):
+    output, _ = post_processed(tmp_path, monkeypatch, pp_auto_flush=False)
+    paths = {os.path.realpath(path) for path in output._hdf5s.values()}
+    # reloaded after the pipelines: the whole table only
+    assert len(descriptors_on(paths)) == 2 * len(paths)
+    frames = output._vaex_per_partition
+    assert len(descriptors_on(paths)) == 4 * len(paths)
+    output._Output__reload_vaex()
+    # the frames are closed, though still referenced here
+    assert len(descriptors_on(paths)) == 2 * len(paths)
+    assert output._vaex_per_partition is not frames
+
+
 if __name__ == '__main__':
     pass

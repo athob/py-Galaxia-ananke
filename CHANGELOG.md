@@ -257,6 +257,12 @@ far as the commits of this package and of the backend say.
   It also notes that the workers stay alive once the survey is made (about 150 MB each after a small survey), and that a
   script has to guard its entry point with `if __name__ == '__main__':` when the workers are not started by `fork`, as on
   macOS or after `multiprocess.set_start_method('forkserver')`.
+- With `pp_auto_flush=True` (the default), an `Output` no longer opens a frame for each of its partitions in the main process:
+  `_vaex_per_partition` is now a `cached_property` that opens them when it is asked for, and a reload forgets them (and closes them
+  first without auto flush, as before). The workers open the files by path, so the main process holds 2 descriptors and 1 memory
+  mapping per partition for the files of its table instead of 4 and 2, which halves the open files that a survey needs
+  (`OSError: [Errno 24] Too many open files` on a system with a low limit). Without auto flush the frames are open while a pipeline
+  runs.
 
 ### Removed
 

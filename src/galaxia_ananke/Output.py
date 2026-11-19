@@ -204,7 +204,6 @@ class Output:
         """
         self.__survey: Survey = survey
         self.__vaex = None
-        self.__vaex_per_partition = None
         self.__path = None
         self.__make_state()
         if not self.caching:
@@ -913,12 +912,13 @@ class Output:
         else:
             return self.__vaex
 
-    @property
+    @cached_property
     def _vaex_per_partition(self) -> Dict[int, vaex.dataframe.DataFrameLocal]:
-        if self.__vaex_per_partition is None:
+        # opened when asked for: with the auto flush the workers open the files by path, and each frame holds
+        # 2 descriptors and a mapping per partition in the main process; __reload_vaex forgets them
+        if self.__vaex is None:
             raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
-        else:
-            return self.__vaex_per_partition
+        return {i: vaex.open(str(hdf5_file), group=STARCATALOG_GROUP) for i, hdf5_file in self._hdf5s.items()}
 
     @property
     def _path(self):
@@ -1006,10 +1006,10 @@ class Output:
             self.__vaex: vaex.dataframe.DataFrameLocal = vaex.open_many(map(str,self._hdf5s.values()), group=STARCATALOG_GROUP)
         else:
             raise RuntimeError("Corrupted HDF5 internal dictionary")
-        if self.__vaex_per_partition is not None and not self._pp_auto_flush:
-            for i in self.__vaex_per_partition:
-                self.__vaex_per_partition[i].close()
-        self.__vaex_per_partition: Dict[int, vaex.dataframe.DataFrameLocal] = {i: vaex.open(str(hdf5_file), group=STARCATALOG_GROUP) for i, hdf5_file in self._hdf5s.items()}
+        if '_vaex_per_partition' in self.__dict__ and not self._pp_auto_flush:
+            for vaex_df in self._vaex_per_partition.values():
+                vaex_df.close()
+        self.__dict__.pop('_vaex_per_partition', None)
         gc.collect()
 
     @property
