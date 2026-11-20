@@ -369,6 +369,9 @@ prepared with.
   ignoring them: with files, the name of the input is the one of the particles file, the number of neighbours is read in the
   name of the kernels file and the kernels are used as they are. Their defaults are now `None`, which leaves the choice to the
   input: `'sim'`, 64 and 1, as before.
+- Python 3.15 is supported: `python_requires` is `>=3.9,<3.16`, the classifiers name it, and the tests of the CI run on it too.
+  The package takes pandas 3 as well (`pandas>=2,<4`, it was `<3`): which one is installed is up to vaex 4.20, which requires
+  3.1 or later on 3.15 and below 3 on the other Pythons.
 
 ### Removed
 

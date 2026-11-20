@@ -106,7 +106,7 @@ takes about four minutes. Its jobs:
 - **workflows**: [actionlint](https://github.com/rhysd/actionlint) on the workflow
   files. You can run it locally too, and the pre-commit hook does so when it is
   installed.
-- **install**: for each Python version from 3.9 to 3.14, fetches the backend (shallow: the
+- **install**: for each Python version from 3.9 to 3.15, fetches the backend (shallow: the
   one commit this repository pins), installs the package and runs `pytest src`; the run on Python 3.12 also puts the coverage of the
   tests in the summary of the run, and fails under the floor of the coverage (`fail_under` in
   `pyproject.toml`). When the coverage rises, raise the floor; a change that lowers it needs a test,
@@ -242,7 +242,7 @@ rather than bad luck.
 ## Conventions
 
 - **Supported Pythons** are the ones in `python_requires` in `setup.py`
-  (currently 3.9 up to 3.14). CI covers all of them, and the classifiers in
+  (currently 3.9 up to 3.15). CI covers all of them, and the classifiers in
   `src/galaxia_ananke/__metadata__.py` name them for PyPI: the tests check that the three agree.
   The ceiling is that of the requirements that have been checked on a Python: vaex 4.20 allows up to 3.15.
 - **Type hints** come from the `typing` module (`Optional[int]`, `Union[int, str]`), and not as

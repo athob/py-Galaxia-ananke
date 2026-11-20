@@ -772,15 +772,16 @@ def test_the_readme_says_what_the_build_requires():
     assert "pip install galaxia_ananke" in readme                    # from PyPI first
 
 
-def test_the_readme_says_where_the_backend_is_and_what_limits_the_python_range():
-    # the pin of vaex, the bound of pandas that stops the Pythons at the last one that is supported, and where the installation puts the
-    # backend, are those that the code has
+def test_the_readme_says_where_the_backend_is_and_what_pandas_and_vaex_allow():
+    # the pin of vaex, the majors of pandas that setup.py allows (the Python of a user decides which one, through the requirements of vaex),
+    # and where the installation puts the backend, are those that the code has
     setup, constants = read("setup.py"), read("src/galaxia_ananke/_constants.py")
     readme = read("README.md")
     vaex = re.search(r"['\"]vaex==([\d.]+)['\"]", setup).group(1)
-    pandas_before = re.search(r"['\"]pandas>=[\d.]+,<([\d.]+)['\"]", setup).group(1)
-    first_unsupported = f"3.{supported_pythons()[1] + 1}"
-    assert f"({first_unsupported} waits for pandas {pandas_before}, which vaex {vaex} requires from that version)" in readme
+    low, high = (int(number) for number in re.search(r"['\"]pandas>=(\d+)[\d.]*,<(\d+)[\d.]*['\"]", setup).groups())
+    majors = [str(major) for major in range(low, high)]
+    allowed = majors[0] if len(majors) == 1 else f"{', '.join(majors[:-1])} or {majors[-1]}"
+    assert f"(with pandas {allowed}: vaex {vaex} takes" in readme
     cache = re.search(r"^GLOBAL_CACHE = PREFIX / '([^']+)'$", constants, flags=re.MULTILINE).group(1)
     name = re.search(r"^NAME = '(\w+)'$", read("src/galaxia_ananke/_name.py"), flags=re.MULTILINE).group(1)
     binary, executable = (re.search(rf"^{key} = '(\w+)'$", constants, flags=re.MULTILINE).group(1) for key in ("BIN_DIR", "GALAXIA_EXEC"))
