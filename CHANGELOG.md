@@ -285,6 +285,10 @@ far as the commits of this package and of the backend say.
   account by hand. The keyword `fsample` is deprecated (it still means the sampling factor of one generation, and warns), and so is
   the property `Survey.fsample` in favour of `Survey.sampling_factor`, which is also recorded in the metadata of the catalogues
   (`Survey_sampling_factor`). The parameters of a survey, hence its hash and the names of its files, do not change.
+- vaex is pinned to 4.20 (it was 4.19), which declares the Pythons 3.9 to 3.15 (4.19: 3.9 to 3.12) and whose `export_hdf5` works with
+  numpy 2 (it did not in 4.19 with numpy 2.4). The two functions that the package replaces in vaex, the loader of HDF5 files and
+  `open_many`, are the same in the two versions, so the patch is unchanged. The Pythons that the package declares are not yet
+  those of vaex: they wait for its other requirements.
 
 ### Removed
 
