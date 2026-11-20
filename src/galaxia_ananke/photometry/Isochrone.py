@@ -422,9 +422,11 @@ class Isochrone:
                     next_age = unique_ages[i_age+1]
                     max_mini_next_age = qtables[next_age][self._mini].max()
                     dead_next_age_qtable = qtable[qtable[self._mini] > max_mini_next_age]
-                    list_of_points.append(dead_next_age_qtable[[self._zini, self._age, self._mini]].to_pandas().to_numpy())
+                    # copies, as these two are changed below and pandas 3 gives read-only views of the data of a frame
+                    dead_points = dead_next_age_qtable[[self._zini, self._age, self._mini]]
+                    list_of_points.append(dead_points.to_pandas().to_numpy(copy=True))
                     list_of_points[-1][:,1] = next_age
-                    list_of_values.append(dead_next_age_qtable[self.mag_names].to_pandas().to_numpy())
+                    list_of_values.append(dead_next_age_qtable[self.mag_names].to_pandas().to_numpy(copy=True))
                     list_of_values[-1][:,:] = 999
                     list_of_points.append(list_of_points[-1][[-1]].copy())
                     list_of_points[-1][:,1] = unique_ages[-1]

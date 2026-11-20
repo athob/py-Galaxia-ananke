@@ -19,6 +19,7 @@ shared between processes, the keys of the properties that a catalogue has, and t
 conversions of the coordinates are in test_output_pipelines.py, the HDF5 helpers in test_output_hdf5.py.
 """
 import types
+import warnings
 
 import numpy as np
 import pytest
@@ -59,6 +60,13 @@ def test_longitudes_are_shifted_together_and_always_end_up_within_the_bounds():
 def consolidate(partitions, lengths, max_workers):
     result = Output._Output__consolidate_partitions_per_process(np.array(partitions), np.array(lengths), max_workers)
     return {int(process): [int(partition) for partition in group] for process, group in result.items()}
+
+
+def test_the_partitions_are_shared_without_a_warning_of_pandas():
+    # pandas 3.1 deprecates the inplace keyword (PDEP-8), and pandas 4 removes it
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        consolidate([0, 1, 2, 3], [10, 40, 20, 30], 2)
 
 
 @pytest.mark.parametrize("partitions, lengths, max_workers, expected", [
