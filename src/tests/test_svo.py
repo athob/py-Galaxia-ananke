@@ -20,9 +20,11 @@ of the magnitudes of the system (SvoFpsDriver). The service is not used: its ans
 Gaia one and the LSST one as astroquery returned them.
 """
 import types
+import warnings
 
 import numpy as np
 import pytest
+from astropy.table import Table
 
 from ..galaxia_ananke.photometry.InterfaceSvoFpsDriver import InterfaceSvoFpsDriver
 from ..galaxia_ananke.photometry.SvoFpsDriver import SvoFpsDriver
@@ -156,6 +158,62 @@ def test_there_is_a_filter_for_each_magnitude_of_lsst(monkeypatch, name):
     assert asked == ['LSST']
     assert len(table) == 6
     assert set(table['Instrument']) == {'LSST'}
+
+
+# -- a facility that the service has no filter of -----------------------------------
+
+# astroquery's words (with their typo) when the service has no filter whose facility is the one that is asked: it is what
+# it says of 'Generic' and 'DENIS', whose filters have no facility in the service
+# (https://github.com/astropy/astroquery/issues/2899)
+NO_FILTER = 'No filter found for requested Facilty (and Instrument)'
+
+
+def test_a_facility_that_the_service_has_no_filter_of_gives_no_table_and_a_warning(monkeypatch):
+    asked = replay_svo(monkeypatch, Generic=IndexError(NO_FILTER))
+    driver = interface('Generic__Johnson_UBVRIJHK', ['U', 'B']).svofpsdrivers[0]
+    with pytest.warns(UserWarning, match=r"no filter for the facility 'Generic' and the instrument 'Johnson_UBVRIJHKL', which "
+                                         r"Generic__Johnson_UBVRIJHK needs.*astroquery/issues/2899"):
+        assert driver.svo_filter_list is None
+    assert asked == ['Generic']
+
+
+def test_the_service_that_has_no_filter_of_a_facility_is_asked_and_the_warning_given_once(monkeypatch):
+    asked = replay_svo(monkeypatch, Generic=IndexError(NO_FILTER))
+    driver = interface('Generic__Johnson_UBVRIJHK', ['U']).svofpsdrivers[0]
+    with pytest.warns(UserWarning):
+        driver.svo_filter_list
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        assert driver.svo_filter_list is None
+    assert asked == ['Generic']
+
+
+def test_an_empty_table_is_the_service_having_no_filter_too(monkeypatch):
+    replay_svo(monkeypatch, Generic=Table({'filterID': np.array([], dtype=str)}))              # what facility='' gives
+    driver = interface('Generic__Johnson_UBVRIJHK', ['U']).svofpsdrivers[0]
+    with pytest.warns(UserWarning, match="no filter for the facility 'Generic'"):
+        assert driver.svo_filter_list is None
+
+
+def test_an_instrument_that_the_facility_does_not_have_is_the_service_having_no_filter_of_it(monkeypatch):
+    replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    driver = interface('GAIA__NOSUCH', ['G']).svofpsdrivers[0]
+    with pytest.warns(UserWarning, match="no filter for the facility 'GAIA' and the instrument 'NOSUCH'"):
+        assert driver.svo_filter_list is None
+
+
+def test_another_index_error_is_not_taken_for_the_service_having_no_filter(monkeypatch):
+    replay_svo(monkeypatch, Generic=IndexError('list index out of range'))
+    driver = interface('Generic__Johnson_UBVRIJHK', ['U']).svofpsdrivers[0]
+    with pytest.raises(IndexError, match='out of range'):
+        driver.svo_filter_list
+
+
+def test_a_service_that_cannot_be_reached_is_not_taken_for_having_no_filter(monkeypatch):
+    replay_svo(monkeypatch, Generic=ConnectionError('no network'))
+    driver = interface('Generic__Johnson_UBVRIJHK', ['U']).svofpsdrivers[0]
+    with pytest.raises(ConnectionError, match='no network'):
+        driver.svo_filter_list
 
 
 if __name__ == '__main__':

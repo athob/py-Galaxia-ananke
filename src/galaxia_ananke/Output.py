@@ -809,6 +809,24 @@ class Output:
         return self.survey.photosystems
 
     @property
+    def magnitude_systems(self) -> Dict[str, Optional[str]]:
+        """
+        The magnitude system of each magnitude of the catalogue, by its key: 'Vega', 'AB' or 'ST', or None where the descriptor
+        of the isochrones of its photometric system does not say it.
+        """
+        return {key: photosystem.magnitude_system for photosystem in self.photosystems for key in photosystem.to_export_keys}
+
+    def offsets_to_magnitude_system(self, target: str) -> Dict[str, float]:
+        """
+        What to add to each magnitude of the catalogue, by its key, to have it in the magnitude system `target` ('Vega' or
+        'AB'), whichever system it is in (``magnitude_systems``): zero for those that are already in it. The conversion
+        between Vega and AB uses the zero points of the SVO filter profile service (the network): see
+        ``PhotoSystem.vega_to_ab_offsets``.
+        """
+        return {key: offset for photosystem in self.photosystems
+                for key, offset in photosystem.offsets_to_magnitude_system(target).items()}
+
+    @property
     def export_keys(self) -> Tuple[str]:
         return self._make_export_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     

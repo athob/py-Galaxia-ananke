@@ -16,10 +16,11 @@
 """
 Docstring
 """
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 from numpy.typing import ArrayLike
 from functools import cached_property
 import re
+import warnings
 
 import numpy as np
 from astropy import table, units
@@ -38,6 +39,7 @@ class PhotoSystem:
     PhotoSystem
     """
     _required_cmd_magnames_dictkeys = {'magnitude', 'color_minuend', 'color_subtrahend'}
+    _ab_zeropoint = 3631 * units.Jy  # by definition of the AB system
     def __init__(self, isochrone: Isochrone) -> None:
         self.__isochrone = isochrone
         self.__interface_svofps = InterfaceSvoFpsDriver(self)
@@ -62,16 +64,21 @@ class PhotoSystem:
             return cmd_magnames
     
     def _extract_from_svo_filter_list(self, key: str, unit=None, aggregate=lambda stack: np.nanmean(stack, axis=1)):
-        stack = np.vstack(
-            [
-                (
+        parts = [
+            None if sfd.svo_filter_list is None else (  # None: the service has no filter for the instrument (with a warning)
                 _colu:= sfd.svo_filter_list[key],  # ignored
                 _unit:= getattr(_colu, 'unit', None) if unit is None else unit,  # ignored
                 _colu.value if _unit is None or _colu.dtype.hasobject else _colu.to(_unit)  # returned
                 )[-1]
             for sfd in self._interface_svofps.svofpsdrivers
-            ]).T
-        return aggregate(stack)
+            ]
+        if unit is None:  # the unit of the filters that were found, for those that were not
+            unit = next((getattr(part, 'unit', None) for part in parts if part is not None), None)
+        nothing = np.full(len(self.mag_names), np.nan) * (1 if unit is None else unit)
+        stack = np.vstack([nothing if part is None else part for part in parts]).T
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)  # the mean of nothing, for a filter that no instrument has: NaN
+            return aggregate(stack)
 
     @property
     def _isochrone(self) -> Isochrone:
@@ -103,13 +110,83 @@ class PhotoSystem:
     
     @cached_property
     def effective_wavelengths(self) -> units.Quantity:
+        """The effective wavelength of each filter in the order of the magnitudes (NaN for a filter that SVO has none of)."""
         return self._extract_from_svo_filter_list('WavelengthEff', unit=DEF_UNIT.wavelength)
 
     @cached_property
     def zeropoints(self) -> units.Quantity:
-        return self._extract_from_svo_filter_list('ZeroPoint').to(
+        """The zero point of each filter in the order of the magnitudes (NaN for a filter that SVO has none of)."""
+        return self._extract_from_svo_filter_list('ZeroPoint', unit=units.Jy).to(
             DEF_UNIT.spectral, equivalencies=units.spectral_density(self.effective_wavelengths)
             )
+
+    @property
+    def magnitude_system(self) -> Optional[str]:
+        """The magnitude system ('Vega', 'AB' or 'ST') of the magnitudes, as the isochrone descriptor says it, or None."""
+        return self._isochrone.magnitude_system
+
+    @cached_property
+    def _vega_zeropoints(self) -> units.Quantity:
+        """
+        In Jy, in the order of the magnitudes: the zero point that SVO gives of each filter when it is that of the Vega
+        system (the mean over the instruments that have the filter, as for zeropoints), NaN for a filter that SVO has no
+        such zero point of.
+        """
+        columns = []
+        for sfd in self._interface_svofps.svofpsdrivers:
+            filters = sfd.svo_filter_list
+            if filters is None:  # the service has no filter for the instrument (with a warning)
+                columns.append(np.full(len(self.mag_names), np.nan))
+                continue
+            frame = filters.to_pandas()
+            to_jansky = (filters['ZeroPoint'].unit or units.Jy).to(units.Jy)
+            is_vega = (frame['MagSys'] == 'Vega').to_numpy()
+            columns.append(np.where(is_vega, frame['ZeroPoint'].to_numpy(dtype=float) * to_jansky, np.nan))
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)  # a filter that no instrument has: the mean of nothing
+            return np.nanmean(np.vstack(columns).T, axis=1) * units.Jy
+
+    @cached_property
+    def vega_to_ab_offsets(self) -> Dict[str, float]:
+        """
+        What to add to a magnitude of the Vega system to have it in the AB system, ``m_AB = m_Vega + offset``, for each
+        magnitude of the system by its key in the output (``to_export_keys``): ``2.5 log10(3631 Jy / zero point of Vega)``,
+        with the zero point that the SVO filter profile service gives of the filter (asked of the service once, which needs
+        the network). It is as good as the match between the filter of SVO and the one that the isochrones were made with,
+        and it is NaN, with a warning, for a filter that SVO has no Vega zero point of. Whether the magnitudes of the system
+        are in the Vega system is said by ``magnitude_system``: see ``offsets_to_magnitude_system`` for what to add
+        whatever it is.
+        """
+        zeropoints = self._vega_zeropoints.to_value(units.Jy)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            offsets = 2.5 * np.log10(self._ab_zeropoint.to_value(units.Jy) / zeropoints)
+        missing = [mag_name for mag_name, offset in zip(self.mag_names, offsets) if np.isnan(offset)]
+        if missing:
+            warnings.warn(f"SVO has no zero point of the Vega system for the filters {missing} of {self.key}: "
+                          f"their offsets are NaN", stacklevel=3)
+        return dict(zip(self.to_export_keys, offsets.tolist()))
+
+    def offsets_to_magnitude_system(self, target: str) -> Dict[str, float]:
+        """
+        What to add to each magnitude of the system, by its key in the output, to have it in the magnitude system `target`
+        ('Vega' or 'AB'), whichever system the magnitudes are in (``magnitude_system``): zero if it is the one that is
+        asked. The conversion between Vega and AB is that of ``vega_to_ab_offsets``, which needs the network, but nothing
+        is asked of the service when there is nothing to convert.
+        """
+        target = Isochrone._check_magnitude_system(target)
+        if target is None:
+            raise ValueError("A magnitude system to convert to is needed")
+        native = self.magnitude_system
+        if native is None:
+            raise ValueError(f"The magnitude system of {self.key} is not stated (its descriptor has no line "
+                             f"'# Magnitude system: ...'): nothing can be converted")
+        if native == target:
+            return dict.fromkeys(self.to_export_keys, 0.0)
+        if {native, target} != {'Vega', 'AB'}:
+            raise NotImplementedError(f"Only the conversions between the Vega and the AB systems are available, "
+                                      f"not from {native} to {target}")
+        sign = 1 if native == 'Vega' else -1
+        return {key: sign * offset for key, offset in self.vega_to_ab_offsets.items()}
 
     @cached_property
     def to_export_keys(self) -> List[str]:

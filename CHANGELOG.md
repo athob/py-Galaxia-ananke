@@ -169,6 +169,17 @@ far as the commits of this package and of the backend say.
   system of the survey, the raw descriptor and the raw header of its isochrones, as the backend writes them in an item
   `<system>_isochrone_info` of each ebf file (a backend that does not write it leaves it out). The text is the same for all the
   generations, so the compact form of the logs holds it once. The submodule has to be at the commit of the backend that writes it.
+- The magnitude system of the magnitudes of a photometric system, `Vega`, `AB` or `ST`, is the line `# Magnitude system: ...` that
+  follows the first line of the descriptor of its isochrones (a comment, which the backend does not read): `PhotoSystem.magnitude_system`
+  and `Isochrone.magnitude_system` read it (None where a descriptor does not say it, and an error for another value), and
+  `Output.magnitude_systems` gives the system of each magnitude of a catalogue by its key. An isochrone that is added from its data
+  can say it with the keyword `magnitude_system` of `Photometry().add_isochrone`, which writes that line. As it is in the
+  descriptor, it is also in the logs of the backend of the ebf and the HDF5 files (`isochrone_info_<system>`).
+- `PhotoSystem.vega_to_ab_offsets` gives, for each magnitude by its key in the output, what to add to a magnitude of the Vega system
+  to have it in the AB system, `2.5 log10(3631 Jy / zero point of Vega)`, from the zero points of the SVO filter profile service (a
+  filter that SVO has no Vega zero point of has NaN, with a warning); `PhotoSystem.offsets_to_magnitude_system` and
+  `Output.offsets_to_magnitude_system` give what to add to have the magnitudes in `Vega` or `AB` whichever system they are in (zero for
+  those that already are), and need the network only when something has to be converted.
 
 ### Changed
 
@@ -413,6 +424,12 @@ far as the commits of this package and of the backend say.
   computation in a module global, which referred to the frames of the groupbys of the statistics of the parent particles
   and, through them, to the open file of every partition (2 descriptors per partition, 16 for the 8 partitions of a small
   survey) until another computation of vaex replaced it: the statistics now let it go. The progress bars are unchanged.
+- A photometric system whose facility the SVO filter profile service cannot find no longer makes `PhotoSystem.effective_wavelengths`,
+  `zeropoints` and `vega_to_ab_offsets` fail. The service has filters that have no facility in it, as those of `Generic` and `DENIS`
+  (astroquery [issue 2899](https://github.com/astropy/astroquery/issues/2899)), which a question about their facility cannot find:
+  astroquery then raises an `IndexError` or gives an empty table. The filters of that instrument now have NaN, with a warning that
+  names the facility, and the other instruments of a system keep their values. Any other `IndexError`, and a service that cannot be
+  reached, are still raised.
 
 ## [0.8.0] - 2026-08-10
 

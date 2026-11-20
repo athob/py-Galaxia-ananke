@@ -23,6 +23,7 @@ import pytest
 
 from ..galaxia_ananke._defaults import DEFAULTS_FOR_PARFILE, DEFAULT_CMD, rSun
 from ..galaxia_ananke._templates import FTTAGS
+from ..galaxia_ananke.photometry.PhotoSystem import PhotoSystem
 from .synthetic import particles, prepared_survey, write_backend_output, write_ebf
 
 EXPORT = {'px', 'py', 'pz', 'vx', 'vy', 'vz', 'rad', 'dmod', 'mtip', 'mact', 'minit', 'age', 'grav', 'feh', 'teff', 'lum',
@@ -87,6 +88,31 @@ def test_the_keys_of_the_optional_properties_of_the_input_are_in_the_catalogue_t
 def test_the_magnitudes_of_all_the_photometric_systems_are_exported(tmp_path, monkeypatch):
     survey = prepared_survey(tmp_path, monkeypatch, photo_sys=['padova/GAIA__DR2', 'padova/LSST'])
     assert set(survey.output.export_keys) == EXPORT | GAIA_MAGNITUDES | {'lsst_u', 'lsst_g'}
+
+
+def two_systems(tmp_path, monkeypatch, vega_to_ab=0.5):
+    """A survey of two photometric systems, GAIA__DR2 in the Vega system and LSST in the AB system, with the same offsets."""
+    survey = prepared_survey(tmp_path, monkeypatch, photo_sys=['padova/GAIA__DR2', 'padova/LSST'])
+    monkeypatch.setattr(PhotoSystem, 'magnitude_system', property(lambda self: {'GAIA__DR2': 'Vega', 'LSST': 'AB'}[self.name]))
+    monkeypatch.setattr(PhotoSystem, 'vega_to_ab_offsets',
+                        property(lambda self: dict.fromkeys(self.to_export_keys, vega_to_ab)))
+    keys = {photosystem.name: photosystem.to_export_keys for photosystem in survey.output.photosystems}
+    return survey.output, keys['GAIA__DR2'], keys['LSST']
+
+
+def test_the_magnitude_systems_of_an_output_are_those_of_its_photometric_systems_by_key(tmp_path, monkeypatch):
+    output, gaia_keys, lsst_keys = two_systems(tmp_path, monkeypatch)
+    assert output.magnitude_systems == {**dict.fromkeys(gaia_keys, 'Vega'), **dict.fromkeys(lsst_keys, 'AB')}
+
+
+def test_what_to_add_to_have_the_magnitudes_of_an_output_in_ab_is_nothing_for_those_that_are(tmp_path, monkeypatch):
+    output, gaia_keys, lsst_keys = two_systems(tmp_path, monkeypatch)
+    assert output.offsets_to_magnitude_system('AB') == {**dict.fromkeys(gaia_keys, 0.5), **dict.fromkeys(lsst_keys, 0.0)}
+
+
+def test_what_to_add_to_have_the_magnitudes_of_an_output_in_vega_is_nothing_for_those_that_are(tmp_path, monkeypatch):
+    output, gaia_keys, lsst_keys = two_systems(tmp_path, monkeypatch)
+    assert output.offsets_to_magnitude_system('Vega') == {**dict.fromkeys(gaia_keys, 0.0), **dict.fromkeys(lsst_keys, -0.5)}
 
 
 def test_all_the_metadata_of_an_output_is_that_of_its_parameters_its_input_and_its_survey(survey, tmp_path):

@@ -17,8 +17,9 @@
 Docstring
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 from functools import cached_property
+import warnings
 
 import numpy as np
 from astroquery.svo_fps import SvoFps
@@ -63,13 +64,33 @@ class SvoFpsDriver:
             return self.__facility_instrument[1]
 
     @cached_property
-    def svo_filter_list(self) -> Table:
+    def svo_filter_list(self) -> Optional[Table]:
+        """
+        The filters of the instrument, one for each magnitude in their order, or None (with a warning) where the service has
+        no filter for the facility: it has some that have no facility at all (those of `Generic`, of `DENIS`...), which a
+        question about their facility cannot find, and astroquery then raises an IndexError or gives an empty table.
+        """
         # TODO ideally the following would be enough, but SVO seems to not be consistent with instrument
         # facility_filter_list = SvoFps.get_filter_list(facility=self.facility,
         #                                               instrument=self.instrument)
-        facility_filter_list: Table = SvoFps.get_filter_list(facility=self.facility)
-        if self.instrument is not None:
+        try:
+            facility_filter_list: Table = SvoFps.get_filter_list(facility=self.facility)
+        except IndexError as error:
+            if not str(error).startswith('No filter found'):  # astroquery's words, another IndexError is not that
+                raise
+            facility_filter_list = None
+        if facility_filter_list is not None and self.instrument is not None and len(facility_filter_list) > 0:
             facility_filter_list = facility_filter_list[(facility_filter_list.to_pandas().filterID.str.split('[/.]').str[1] == self.instrument).tolist()]
+        if facility_filter_list is None or len(facility_filter_list) == 0:
+            of = f"the facility '{self.facility}'"
+            if self.instrument is not None:
+                of += f" and the instrument '{self.instrument}'"
+            warnings.warn(f"The SVO filter profile service has no filter for {of}, which {self._interface.name} needs: the "
+                          f"wavelengths and the zero points of its filters are NaN. The service has filters that have no "
+                          f"facility in it (those of 'Generic' or of 'DENIS', see "
+                          f"https://github.com/astropy/astroquery/issues/2899), which a question about their facility "
+                          f"cannot find.", stacklevel=2)
+            return None
         _temp = facility_filter_list.to_pandas().filterID.str.split('[/.]')
         facility_filter_list['Instrument'] = np.ma.array(_temp.str[1], dtype='object')
         facility_filter_list['Band'] = np.ma.array(_temp.str[2], dtype='object')

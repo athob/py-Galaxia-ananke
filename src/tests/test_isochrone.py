@@ -229,6 +229,75 @@ def test_a_directory_without_a_descriptor_is_not_a_photometric_system(tmp_path):
         iso.file_descriptor_content
 
 
+# -- the magnitude system that the descriptor says ----------------------------------
+
+@pytest.mark.parametrize("line, system", [("# Magnitude system: Vega", 'Vega'), ("# Magnitude system: AB", 'AB'),
+                                          ("# Magnitude system: ST", 'ST'), ("# magnitude system:   ab  ", 'AB'),
+                                          ("#Magnitude system:Vega", 'Vega')])
+def test_the_magnitude_system_is_the_one_that_a_line_after_the_first_of_the_descriptor_says(tmp_path, line, system):
+    iso = Isochrone(isochrone_directory(tmp_path, 'Sys', {}, descriptor=f"X 9 7 2 G BP\n{line}\n# a comment"))
+    assert iso.magnitude_system == system
+    # the comments are no part of what the backend reads
+    assert iso.file_descriptor_content == ['X', '9', '7', '2', 'G', 'BP']
+
+
+def test_the_lines_of_the_descriptor_that_follow_the_magnitude_system_leave_it_as_it_is(tmp_path):
+    descriptor = ("2MASS+Spitzer+WISE       42 28 14 J  H  Ks\n# Magnitude system: Vega\n"
+                  "# Settings of the CMD form that the headers of the isochrone files do not list (CMD 3.9):\n"
+                  "# ninTPC (resolution of the thermal pulse cycles) = 10, the default\n"
+                  "# Bolometric corrections: YBC + new Vega (Chen et al. 2019)\n# Interstellar extinction: A_V = 0")
+    assert Isochrone(isochrone_directory(tmp_path, 'Sys', {}, descriptor=descriptor)).magnitude_system == 'Vega'
+
+
+SAY_NOTHING = ["X 9 7 2 G BP", "X 9 7 2 G BP\n# Bolometric corrections: YBC + new Vega", "# Magnitude system: AB"]
+
+
+@pytest.mark.parametrize("descriptor", SAY_NOTHING, ids=["nothing", "a comment about Vega", "on the first line"])
+def test_a_descriptor_that_does_not_say_it_after_its_first_line_has_no_magnitude_system(tmp_path, descriptor):
+    assert Isochrone(isochrone_directory(tmp_path, 'Sys', {}, descriptor=descriptor)).magnitude_system is None
+
+
+def test_a_directory_without_a_descriptor_has_no_magnitude_system(tmp_path):
+    (tmp_path / 'padova' / 'Nothing').mkdir(parents=True)
+    assert Isochrone(tmp_path / 'padova' / 'Nothing').magnitude_system is None
+
+
+def test_a_magnitude_system_that_is_not_vega_ab_or_st_is_refused_naming_the_descriptor(tmp_path):
+    iso = Isochrone(isochrone_directory(tmp_path, 'Sys', {}, descriptor="X 9 7 2 G BP\n# Magnitude system: Johnson"))
+    with pytest.raises(ValueError, match=r"'Vega', 'AB', 'ST', not 'Johnson'.*IsoFileDescriptor\.txt"):
+        iso.magnitude_system
+
+
+def test_a_custom_isochrone_can_say_its_magnitude_system_in_a_comment_of_its_descriptor(isochrones_path):
+    iso = Isochrone('mine', custom_data(), magnitude_system='AB')
+    assert iso.file_descriptor_path.read_text() == "Python_mine 8 6 2 BP G\n# Magnitude system: AB\n\n"
+    assert iso.magnitude_system == 'AB' and iso.file_descriptor_content == ['Python_mine', '8', '6', '2', 'BP', 'G']
+
+
+def test_the_magnitude_system_of_a_custom_isochrone_is_spelled_as_the_descriptors_spell_it(isochrones_path):
+    assert Isochrone('mine', custom_data(), magnitude_system=' vega ').magnitude_system == 'Vega'
+
+
+def test_a_custom_isochrone_that_says_nothing_has_the_descriptor_that_it_always_had(isochrones_path):
+    iso = Isochrone('mine', custom_data())
+    assert iso.file_descriptor_path.read_text() == "Python_mine 8 6 2 BP G\n\n" and iso.magnitude_system is None
+
+
+def test_a_magnitude_system_that_is_refused_writes_nothing_and_removes_nothing(isochrones_path):
+    with pytest.raises(ValueError, match="'Vega', 'AB', 'ST'"):
+        Isochrone('mine', custom_data(), magnitude_system='Johnson')
+    assert not (isochrones_path / CUSTOM_PHOTOCAT / 'mine').exists()
+    first = Isochrone('mine', custom_data(), magnitude_system='AB')
+    with pytest.raises(ValueError, match="'Vega', 'AB', 'ST'"):
+        Isochrone('mine', custom_data(), overwrite=True, magnitude_system='Johnson')
+    assert first.path.exists() and Isochrone(first.path).magnitude_system == 'AB'
+
+
+def test_the_magnitude_system_is_for_an_isochrone_that_is_made_from_its_data(tmp_path):
+    with pytest.raises(TypeError, match="made from its data"):
+        Isochrone(tmp_path, magnitude_system='AB')
+
+
 def test_the_magnitudes_of_a_system_with_a_single_one_are_a_tuple(tmp_path):
     directory = isochrone_directory(tmp_path, 'Single', {0.0152: []}, descriptor='Single 8 7 1 G')
     assert Isochrone(directory).magnitude_itemgetter([f"column{i}" for i in range(8)]) == ('column7',)

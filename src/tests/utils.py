@@ -162,8 +162,9 @@ def custom_isochrone_data():
 def replay_svo(monkeypatch, **files):
     """
     Makes the SVO filter profile service answer from tables that were saved, so that nothing here uses the network: each keyword
-    is a facility and gives the file (in tests/data) of the table that astroquery returned for it, or a table. Returns the list of
-    the facilities that were asked about, in order. A table is made again at each question, as the code that asks changes what it gets.
+    is a facility and gives the file (in tests/data) of the table that astroquery returned for it, or a table, or an exception
+    that astroquery raises for it. Returns the list of the facilities that were asked about, in order. A table is made again at
+    each question, as the code that asks changes what it gets.
     """
     from astropy.table import Table
     from ..galaxia_ananke.photometry.SvoFpsDriver import SvoFpsDriver
@@ -173,6 +174,8 @@ def replay_svo(monkeypatch, **files):
     def get_filter_list(facility=None, **kwargs):
         asked.append(facility)
         source = files[facility]
+        if isinstance(source, BaseException):
+            raise source
         return source.copy() if isinstance(source, Table) else Table.read(SVO_DATA / source)
     monkeypatch.setattr(module.SvoFps, 'get_filter_list', get_filter_list)
     return asked

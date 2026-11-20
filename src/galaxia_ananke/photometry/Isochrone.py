@@ -16,8 +16,9 @@
 """
 Docstring
 """
+import re
 import sys
-from typing import Tuple, List, Callable, Sequence
+from typing import Tuple, List, Callable, Sequence, Optional
 from numpy.typing import NDArray
 from functools import cached_property
 import pathlib
@@ -47,19 +48,25 @@ class Isochrone:
     _required_keys = [_age, _mini, _mact, _lum, _teff, _grav]
     _required_metallicities = {0.0001, 0.0002, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0022, 0.0024, 0.0026, 0.003, 0.0034, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.024, 0.028, 0.03}
     _file_descriptor = "IsoFileDescriptor.txt"
-    def __init__(self, *args, overwrite=False) -> None:
+    _magnitude_systems = ('Vega', 'AB', 'ST')
+    _magnitude_system_line = re.compile(r'^#\s*Magnitude system\s*:\s*(.*?)\s*$', re.IGNORECASE)
+    def __init__(self, *args, overwrite=False, magnitude_system: Optional[str] = None) -> None:
         if not args:
             raise TypeError("Isochrone requires at least one argument")
         elif len(args) == 1:
+            if magnitude_system is not None:
+                raise TypeError("magnitude_system is for an isochrone that is made from its data: that of an isochrone that "
+                                "exists is the line '# Magnitude system: ...' of its descriptor")
             self._path = pathlib.Path(args[0])
         elif len(args) == 2:
+            magnitude_system = self._check_magnitude_system(magnitude_system)  # before anything is written or removed
             self._path = ISOCHRONES_PATH / CUSTOM_PHOTOCAT / args[0]
             if self.path.exists() and not overwrite:
                 raise FileExistsError(f"Isochrone '{args[0]}' already exists at '{self.path}' (use `overwrite` kwarg to ignore)")
             iso_column_order = self._check_isochrone_data(args[1])  # before the isochrone that is to be replaced is removed
             if self.path.exists():
                 shutil.rmtree(self.path)
-            self._write_isochrone_files(args[1], iso_column_order)
+            self._write_isochrone_files(args[1], iso_column_order, magnitude_system)
         else:
             raise TypeError(f"Too many arguments ({len(args)} given)")
     
@@ -68,10 +75,21 @@ class Isochrone:
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['category', 'name']])
         return f'{cls}({description})'
     
-    def _write_isochrone_files(self, isochrone_data: dict, iso_column_order: list):
+    @classmethod
+    def _check_magnitude_system(cls, value: Optional[str]) -> Optional[str]:
+        """The magnitude system as it is spelled in the descriptors ('Vega', 'AB' or 'ST'), whatever the case, or None."""
+        if value is None:
+            return None
+        known = {system.casefold(): system for system in cls._magnitude_systems}
+        if not isinstance(value, str) or value.strip().casefold() not in known:
+            allowed = ', '.join(map(repr, cls._magnitude_systems))
+            raise ValueError(f"The magnitude system has to be one of {allowed}, not {value!r}")
+        return known[value.strip().casefold()]
+
+    def _write_isochrone_files(self, isochrone_data: dict, iso_column_order: list, magnitude_system: Optional[str] = None):
         self.path.mkdir(parents=True, exist_ok=True)
         try:
-            self._write_file_descriptor(iso_column_order)
+            self._write_file_descriptor(iso_column_order, magnitude_system)
             for feh, iso in isochrone_data.items():
                 path = self._path / IsochroneFile._file_format.format(format(feh, '.6f'))
                 _temp = IsochroneFile(path, iso[iso_column_order], isochrone=self)
@@ -108,10 +126,12 @@ class Isochrone:
         with_mass = ~np.isnan(np.asarray(table[self._mact], dtype=float))
         return np.unique(np.asarray(table[self._age], dtype=np.float32)[with_mass])
 
-    def _write_file_descriptor(self, iso_column_order: list):
+    def _write_file_descriptor(self, iso_column_order: list, magnitude_system: Optional[str] = None):
         magnames = iso_column_order[len(self._required_keys):]
-        with self.file_descriptor_path.open('w') as f: f.write(
-            f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}\n\n")
+        lines = [f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}"]
+        if magnitude_system is not None:
+            lines.append(f"# Magnitude system: {magnitude_system}")  # a comment: the backend reads the first line only
+        with self.file_descriptor_path.open('w') as f: f.write('\n'.join(lines) + "\n\n")
 
     @property
     def path(self):
@@ -145,6 +165,23 @@ class Isochrone:
         else:
             raise NotImplementedError("Photometric system doesn't have an IsoFileDescriptor.txt file")
     
+    @cached_property
+    def magnitude_system(self) -> Optional[str]:
+        """
+        The magnitude system of the magnitudes of the isochrone, 'Vega', 'AB' or 'ST', as the line '# Magnitude system: ...'
+        that follows the first line of its descriptor says it, or None where the descriptor does not say it.
+        """
+        if not self.has_file_descriptor:
+            return None
+        for line in self.file_descriptor_path.read_text().splitlines()[1:]:  # after the line that the backend reads
+            match = self._magnitude_system_line.match(line)
+            if match:
+                try:
+                    return self._check_magnitude_system(match.group(1))
+                except ValueError as error:
+                    raise ValueError(f"{error} (in {self.file_descriptor_path})") from None
+        return None
+
     # (nothing uses the two properties below: commented out, with the mark UNUSED, to be removed after v1)
     # UNUSED: @cached_property
     # UNUSED: def __fd_photosysname(self) -> str:

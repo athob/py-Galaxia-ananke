@@ -166,6 +166,14 @@ def test_nothing_can_be_deleted_from_the_registry(isochrones_path):
 
 # -- the isochrones that are added --------------------------------------------------
 
+def test_an_isochrone_that_is_added_can_say_its_magnitude_system(isochrones_path):
+    registry = scan()
+    registry.add_isochrone('mine', custom_isochrone_data(), magnitude_system='Vega')
+    assert registry[CUSTOM_PHOTOCAT]['mine'].magnitude_system == 'Vega'
+    registry.add_isochrone('other', custom_isochrone_data())
+    assert registry[CUSTOM_PHOTOCAT]['other'].magnitude_system is None
+
+
 def test_an_isochrone_is_added_in_the_custom_category_and_written_there(isochrones_path):
     registry = scan()
     registry.add_isochrone('mine', custom_isochrone_data())

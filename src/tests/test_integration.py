@@ -26,8 +26,9 @@ import h5py
 import numpy as np
 import pytest
 
-from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP, PARTITIONING_GROUP, STARCATALOG_GROUP
+from ..galaxia_ananke._constants import LEGACY_PHOTOCAT, PARENTPARTICLE_GROUP, PARTITIONING_GROUP, STARCATALOG_GROUP
 from ..galaxia_ananke.Output import Output
+from ..galaxia_ananke.photometry.Photometry import Photometry
 from .real_backend import LIMITS, real_survey                 # noqa: F401 (the fixture)
 from .synthetic import INTEGER_KEYS, dtype_of
 from .utils import needs_backend
@@ -192,6 +193,21 @@ def test_the_log_of_the_backend_is_made_of_a_header_the_parameters_and_a_footer(
     parsed = Output._Output__parse_galaxia_ebf_log(str(real_survey.output._ebfs[0].resolve()))
     assert isinstance(parsed['log_header'], str) and isinstance(parsed['log_footer'], str) and len(parsed) > 10
     assert float(parsed['fSample']) == pytest.approx(LIMITS['sampling_factor'])        # one generation: the whole survey
+
+
+def test_every_photometric_system_of_the_library_says_its_magnitude_system():
+    systems = Photometry()[LEGACY_PHOTOCAT]
+    unstated = {name: system.magnitude_system for name, system in systems.items()
+                if system.magnitude_system not in ('Vega', 'AB', 'ST')}
+    assert systems and unstated == {}
+
+
+def test_the_logs_of_the_files_have_the_descriptor_of_each_photometric_system_with_its_magnitude_system(real_survey):
+    with h5py.File(real_survey.output._hdf5s[0], 'r') as f5:
+        logs = json.loads(f5.attrs['Galaxia_ebf_output_logs'])
+    for photosystem in real_survey.output.photosystems:
+        info = logs['common_values'][f"isochrone_info_{photosystem.name}"]
+        assert f"# Magnitude system: {photosystem.magnitude_system}" in info
 
 
 def test_the_first_parameter_of_the_log_of_the_backend_is_read_by_its_name(real_survey):

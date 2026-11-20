@@ -24,7 +24,7 @@ import types
 import numpy as np
 import pytest
 from astropy import units
-from astropy.table import Table
+from astropy.table import MaskedColumn, Table
 
 from ..galaxia_ananke.photometry.PhotoSystem import PhotoSystem
 from .utils import replay_svo
@@ -171,6 +171,163 @@ def test_a_system_that_is_a_facility_only_takes_the_filters_of_all_the_instrumen
 def test_there_is_a_wavelength_for_each_magnitude_of_lsst(monkeypatch, name):
     replay_svo(monkeypatch, LSST='svo_raw_LSST.ecsv')
     assert len(system(name=name, mag_names=['u', 'g', 'r', 'i', 'z', 'y']).effective_wavelengths) == 6
+
+
+# -- a facility that the service has no filter of -----------------------------------
+
+NO_FILTER = 'No filter found for requested Facilty (and Instrument)'
+
+
+def test_the_wavelengths_and_the_zero_points_of_a_facility_that_the_service_has_no_filter_of_are_nan(monkeypatch):
+    replay_svo(monkeypatch, Generic=IndexError(NO_FILTER))
+    photo_system = system(name='Generic__Johnson_UBVRIJHK', mag_names=['U', 'B'])
+    with pytest.warns(UserWarning, match="no filter for the facility 'Generic'") as warned:
+        wavelengths, zero_points = photo_system.effective_wavelengths, photo_system.zeropoints
+    assert wavelengths.unit == units.micron and np.isnan(wavelengths.value).all() and len(wavelengths) == 2
+    assert np.isnan(zero_points.value).all() and len(zero_points) == 2
+    assert len(warned) == 1                                                    # once, not for each of the two quantities
+
+
+def test_the_instruments_that_the_service_has_filters_of_keep_their_values_beside_one_that_it_has_not(monkeypatch):
+    replay_svo(monkeypatch, TEST=two_instruments_table(), NOTHING=IndexError(NO_FILTER))
+    photo_system = system(name='TEST__A+NOTHING', mag_names=['x'])
+    with pytest.warns(UserWarning, match="no filter for the facility 'NOTHING'") as warned:
+        wavelengths, zero_points = photo_system.effective_wavelengths, photo_system.zeropoints
+    # the 1000 angstrom of the instrument A: the other has no value
+    assert wavelengths.value.tolist() == pytest.approx([0.1])
+    alone = system(name='TEST__A', mag_names=['x'])
+    assert not np.isnan(zero_points.value).any()
+    assert zero_points.value.tolist() == pytest.approx(alone.zeropoints.value.tolist())
+    assert len(warned) == 1
+
+
+def test_the_offsets_of_a_facility_without_filters_are_nan_with_a_warning_for_it_and_one_for_the_filters(monkeypatch):
+    replay_svo(monkeypatch, Generic=IndexError(NO_FILTER))
+    photo_system = system(name='Generic__Johnson_UBVRIJHK', mag_names=['U', 'B'])
+    with pytest.warns(UserWarning) as warned:
+        offsets = photo_system.vega_to_ab_offsets
+    messages = [str(record.message) for record in warned]
+    assert any("no filter for the facility 'Generic'" in message for message in messages)
+    assert any("no zero point of the Vega system for the filters ['U', 'B']" in message for message in messages)
+    assert list(offsets) == ['generic__johnson_ubvrijhk_u', 'generic__johnson_ubvrijhk_b']
+    assert np.isnan(list(offsets.values())).all()
+
+
+# -- the magnitude system, and the offsets between Vega and AB ----------------------
+
+GAIA_VEGA_TO_AB = [0.1224, 0.0592, 0.3769]          # G, Gbp, Grp: 2.5 log10(3631 Jy / the zero points above), in magnitude
+# of the filters of the saved table, with their total throughputs
+LSST_VEGA_TO_AB = {'lsst_u': 0.6269, 'lsst_g': -0.1025, 'lsst_r': 0.1495}
+
+
+def vega_instruments_table(systems=('Vega', 'Vega')):
+    """What the service says of a facility TEST: instruments A and B that have a filter x, and the system of its zero point."""
+    return Table({'filterID': ['TEST/A.x', 'TEST/B.x'], 'MagSys': list(systems), 'WavelengthEff': [1000.0, 3000.0] * units.AA,
+                  'ZeroPoint': [3000.0, 1000.0] * units.Jy})
+
+
+def test_the_magnitude_system_is_that_of_the_isochrone():
+    assert system(magnitude_system='AB').magnitude_system == 'AB'
+    assert system(magnitude_system=None).magnitude_system is None
+
+
+def test_the_offsets_to_ab_are_those_of_the_vega_zero_points_by_the_keys_of_the_output(monkeypatch):
+    replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    offsets = system().vega_to_ab_offsets
+    assert list(offsets) == ['gaia__dr2_g', 'gaia__dr2_gbp', 'gaia__dr2_grp']
+    assert list(offsets.values()) == pytest.approx(GAIA_VEGA_TO_AB, abs=5e-5)
+    by_the_formula = [2.5 * np.log10(3631 / zero_point) for zero_point in GAIA_ZERO_POINTS]
+    assert list(offsets.values()) == pytest.approx(by_the_formula, rel=1e-9)
+
+
+def test_the_offsets_to_ab_of_lsst_are_those_of_its_total_throughputs(monkeypatch):
+    replay_svo(monkeypatch, LSST='svo_raw_LSST.ecsv')
+    offsets = system(name='LSST', mag_names=['u', 'g', 'r']).vega_to_ab_offsets
+    assert offsets == pytest.approx(LSST_VEGA_TO_AB, abs=5e-5)
+
+
+def test_the_offsets_are_in_the_order_of_the_magnitudes(monkeypatch):
+    replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    offsets = system(mag_names=['Grp', 'G', 'Gbp']).vega_to_ab_offsets
+    assert list(offsets) == ['gaia__dr2_grp', 'gaia__dr2_g', 'gaia__dr2_gbp']
+    assert list(offsets.values()) == pytest.approx([GAIA_VEGA_TO_AB[2], GAIA_VEGA_TO_AB[0], GAIA_VEGA_TO_AB[1]], abs=5e-5)
+
+
+def test_the_service_is_asked_once_for_the_offsets_and_for_the_zero_points(monkeypatch):
+    asked = replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    photo_system = system()
+    photo_system.vega_to_ab_offsets, photo_system.zeropoints, photo_system.vega_to_ab_offsets
+    assert asked == ['GAIA']
+
+
+def test_the_offsets_of_a_system_of_several_instruments_use_the_mean_of_their_vega_zero_points(monkeypatch):
+    replay_svo(monkeypatch, TEST=vega_instruments_table())
+    offsets = system(name='TEST__A+TEST__B', mag_names=['x']).vega_to_ab_offsets
+    assert offsets == pytest.approx({'test__a+test__b_x': 2.5 * np.log10(3631 / 2000)})            # (3000 + 1000) / 2 Jy
+
+
+def test_a_zero_point_that_is_not_that_of_the_vega_system_is_left_out(monkeypatch):
+    replay_svo(monkeypatch, TEST=vega_instruments_table(('AB', 'Vega')))
+    offsets = system(name='TEST__A+TEST__B', mag_names=['x']).vega_to_ab_offsets
+    assert offsets == pytest.approx({'test__a+test__b_x': 2.5 * np.log10(3631 / 1000)})            # that of B only
+
+
+def test_a_filter_that_has_no_zero_point_of_the_vega_system_has_nan_and_a_warning(monkeypatch):
+    replay_svo(monkeypatch, TEST=vega_instruments_table(('AB', 'AB')))
+    photo_system = system(name='TEST__A+TEST__B', mag_names=['x'])
+    with pytest.warns(UserWarning, match=r"no zero point of the Vega system for the filters \['x'\] of padova/TEST__A\+"):
+        offsets = photo_system.vega_to_ab_offsets
+    assert np.isnan(offsets['test__a+test__b_x'])
+
+
+def test_a_filter_whose_row_is_masked_has_nan_and_the_others_keep_their_offsets(monkeypatch):
+    table = Table({'filterID': ['TEST/A.x', 'TEST/A.y'], 'WavelengthEff': [1000.0, 3000.0] * units.AA,
+                   'MagSys': MaskedColumn(['Vega', 'Vega'], mask=[False, True]),
+                   'ZeroPoint': MaskedColumn([3000.0, 1000.0], mask=[False, True], unit=units.Jy)})
+    replay_svo(monkeypatch, TEST=table)
+    photo_system = system(name='TEST', mag_names=['x', 'y'])
+    with pytest.warns(UserWarning, match=r"for the filters \['y'\]"):
+        offsets = photo_system.vega_to_ab_offsets
+    assert offsets['test_x'] == pytest.approx(2.5 * np.log10(3631 / 3000)) and np.isnan(offsets['test_y'])
+
+
+def test_the_offsets_to_the_system_that_the_magnitudes_are_in_are_zero_and_the_service_is_not_asked(monkeypatch):
+    asked = replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    nothing = {'gaia__dr2_g': 0.0, 'gaia__dr2_gbp': 0.0, 'gaia__dr2_grp': 0.0}
+    assert system(magnitude_system='AB').offsets_to_magnitude_system('ab') == nothing
+    assert system(magnitude_system='Vega').offsets_to_magnitude_system('Vega') == nothing
+    assert asked == []
+
+
+def test_the_offsets_from_vega_to_ab_are_the_offsets_to_ab(monkeypatch):
+    replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    photo_system = system(magnitude_system='Vega')
+    assert photo_system.offsets_to_magnitude_system('AB') == photo_system.vega_to_ab_offsets
+
+
+def test_the_offsets_from_ab_to_vega_are_minus_the_offsets_to_ab(monkeypatch):
+    replay_svo(monkeypatch, GAIA='svo_raw_GAIA.ecsv')
+    photo_system = system(magnitude_system='AB')
+    to_vega = photo_system.offsets_to_magnitude_system('Vega')
+    assert to_vega == {key: -offset for key, offset in photo_system.vega_to_ab_offsets.items()}
+    assert list(to_vega.values()) == pytest.approx([-offset for offset in GAIA_VEGA_TO_AB], abs=5e-5)
+
+
+def test_magnitudes_that_do_not_say_their_system_cannot_be_converted():
+    with pytest.raises(ValueError, match="magnitude system of padova/GAIA__DR2 is not stated"):
+        system(magnitude_system=None).offsets_to_magnitude_system('AB')
+
+
+@pytest.mark.parametrize("native, target", [('ST', 'AB'), ('Vega', 'ST'), ('AB', 'ST')])
+def test_only_the_conversions_between_vega_and_ab_are_there(native, target):
+    with pytest.raises(NotImplementedError, match=f"not from {native} to {target}"):
+        system(magnitude_system=native).offsets_to_magnitude_system(target)
+
+
+@pytest.mark.parametrize("target", ['Johnson', None, ''])
+def test_a_system_to_convert_to_that_is_not_one_is_refused(target):
+    with pytest.raises(ValueError):
+        system(magnitude_system='Vega').offsets_to_magnitude_system(target)
 
 
 # -- the tracks nearest to given ages and metallicities -----------------------------
