@@ -19,6 +19,7 @@ the magnitudes start in the files, and their names) and a file per metallicity. 
 data in Python, what the descriptor says, which layout the files have, and the tables that are made from them. The isochrones that
 are made in Python go to a temporary directory and not to the installation, and the others are small ones that are written here.
 """
+import contextlib
 import pathlib
 import re
 import sys
@@ -412,6 +413,22 @@ def test_the_points_and_values_of_ages_that_end_with_stars_that_are_not_white_dw
     np.testing.assert_allclose(values, [[5.0, 5.5], [3.0, 3.2], [2.0, 2.2], [1.0, 1.2], [999.0, 999.0], [999.0, 999.0],
                                         [5.2, 5.7], [3.1, 3.3], [2.1, 2.3], [999.0, 999.0], [999.0, 999.0],
                                         [5.4, 5.9], [16.0, 16.5]])
+
+
+def copy_on_write():
+    """pandas 3 always has copy-on-write, which gives read-only views of the data of a frame: on pandas 2 an option does."""
+    if int(pd.__version__.split('.')[0]) >= 3:
+        return contextlib.nullcontext()
+    return pd.option_context('mode.copy_on_write', True)
+
+
+def test_the_points_and_values_of_the_dead_stars_do_not_depend_on_pandas_sharing_its_data(tmp_path):
+    # the arrays of the dead stars are changed in place: with copy-on-write those of pandas are read-only, so they are copies
+    expected = consolidated(tmp_path / 'default', BLACK_HOLES)      # in a directory for each: one is made where there is none
+    with copy_on_write():
+        points, values = consolidated(tmp_path / 'copy_on_write', BLACK_HOLES)
+    np.testing.assert_array_equal(points, expected[0])
+    np.testing.assert_array_equal(values, expected[1])
 
 
 def test_an_oldest_age_that_does_not_end_with_a_white_dwarf_is_refused_with_what_the_isochrone_needs(tmp_path):

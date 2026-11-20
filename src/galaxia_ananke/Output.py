@@ -637,8 +637,8 @@ class Output:
     @staticmethod
     def __consolidate_partitions_per_process(partitions: NDArray, lengths: NDArray, max_workers: int) -> Dict[int, List[int]]:
         df = pd.DataFrame({'partition': partitions, 'length': lengths, 'process_id': 0*lengths})
-        df.set_index('partition', drop=True, inplace=True)
-        df.sort_values('length', inplace=True)
+        df = df.set_index('partition', drop=True)
+        df = df.sort_values('length')
         df['length_cumsum'] = df.length.cumsum()
         df['length_cumsum_norm'] = (
             df.length_cumsum/df.length_cumsum.iloc[-1]
@@ -649,7 +649,7 @@ class Output:
         unique = df.process_id.unique()
         df['process_id'] = df.process_id.map(dict(zip(unique, range(len(unique)))))
         df['temp'] = df.length * (-1)**(df.process_id)
-        df.sort_values(['process_id','temp'], inplace=True)
+        df = df.sort_values(['process_id','temp'])
         return df.groupby('process_id').groups
 
     def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args,
