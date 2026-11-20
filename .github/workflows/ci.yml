@@ -113,6 +113,13 @@ jobs:
       id: pythonsetup
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install the HDF5 library, for h5py to build from source
+      # h5py has no wheel for Python 3.15 yet (3.16.0 is the latest, with none for cp315): remove this step
+      # when a release has them
+      if: matrix.python-version == '3.15'
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes libhdf5-dev
     - name: Install package
       run: |
         pip install .
