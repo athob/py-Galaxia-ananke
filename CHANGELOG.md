@@ -297,6 +297,9 @@ far as the commits of this package and of the backend say.
 - Python 3.13 is supported: `python_requires` is `>=3.9,<3.14`, the classifiers name it, and the tests of the CI run on it too
   (vaex 4.20 allows Pythons up to 3.15; the package follows as its other requirements are checked on each).
 - Python 3.14 is supported: `python_requires` is `>=3.9,<3.15`, the classifiers name it, and the tests of the CI run on it too.
+- Python 3.15 is supported: `python_requires` is `>=3.9,<3.16`, the classifiers name it, and the tests of the CI run on it too.
+  The package takes pandas 3 as well (`pandas>=2,<4`, it was `<3`): which one is installed is up to vaex 4.20, which requires
+  3.1 or later on 3.15 and below 3 on the other Pythons.
 
 ### Removed
 
