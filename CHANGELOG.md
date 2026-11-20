@@ -296,6 +296,7 @@ far as the commits of this package and of the backend say.
   or the part of it, is no longer needed.
 - Python 3.13 is supported: `python_requires` is `>=3.9,<3.14`, the classifiers name it, and the tests of the CI run on it too
   (vaex 4.20 allows Pythons up to 3.15; the package follows as its other requirements are checked on each).
+- Python 3.14 is supported: `python_requires` is `>=3.9,<3.15`, the classifiers name it, and the tests of the CI run on it too.
 
 ### Removed
 
