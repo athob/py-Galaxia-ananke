@@ -123,6 +123,14 @@ jobs:
     - name: Install package
       run: |
         pip install .
+    - name: Use the dill that handles Python 3.15, for the tests
+      # dill 0.4.1, the latest release, reads code.co_lnotab, which Python 3.15 removed (uqfoundation/dill#753): it is fixed in
+      # its master (#755) and not released. Its sources are put first in the path of the tests: remove this step when a release has it
+      if: matrix.python-version == '3.15'
+      run: |
+        git clone --depth 1 https://github.com/uqfoundation/dill.git "$RUNNER_TEMP/dill"
+        echo "PYTHONPATH=$RUNNER_TEMP/dill" >> "$GITHUB_ENV"
+        PYTHONPATH="$RUNNER_TEMP/dill" python -c "import dill; print('dill', dill.__version__, 'from', dill.__file__)"
     - name: Test with pytest
       if: matrix.python-version != '3.12'
       run: |
