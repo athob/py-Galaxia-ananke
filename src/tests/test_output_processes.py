@@ -138,6 +138,33 @@ def test_the_function_of_the_processes_that_redefines_the_partitions_reorders_th
     assert log.startswith(log_text(0).rstrip('\n')) and f"# Modified by Python's {NAME} v{__version__}," in log and f"<{__url__}>" in log
 
 
+ISOCHRONE_INFO = ('# <isochrone category="padova" system="GAIA__DR2">\n# <descriptor file="IsoFileDescriptor.txt">\n'
+                   'GAIA__DR2 3 2 1 g\n# Magnitude system: Vega\n# </descriptor>\n# </isochrone>\n')
+
+
+def test_the_items_that_are_not_arrays_of_stars_stay_as_they_are_when_the_partitions_are_redefined(tmp_path, monkeypatch):
+    survey = prepared_survey(tmp_path, monkeypatch)
+    path, columns = write_backend_output(survey, n_stars=6)[0]
+    ebf.write(str(path), '/gaia__dr2_isochrone_info', ISOCHRONE_INFO, 'a')        # what the backend writes for each system
+    ebf.write(str(path), '/other', np.arange(4.0), 'a')                             # an array that is not one of the 6 stars
+    Output._singlethread_redefine_partitions(path, odd_or_even_px, survey.output.export_keys)
+    assert str(ebf.read(str(path), '/gaia__dr2_isochrone_info')) == ISOCHRONE_INFO
+    assert ebf.read(str(path), '/other').tolist() == [0.0, 1.0, 2.0, 3.0]
+    assert ebf.read(str(path), '/partitionid').tolist() == [0, 0, 0, 1, 1, 1]       # and the stars are reordered all the same
+    assert sorted(ebf.read(str(path), '/px').tolist()[:3]) == [2.0, 4.0, 6.0]
+
+
+def test_an_item_with_several_columns_for_each_star_is_reordered_with_the_stars(tmp_path, monkeypatch):
+    survey = prepared_survey(tmp_path, monkeypatch)
+    path, columns = write_backend_output(survey, n_stars=6)[0]
+    px = columns['px']
+    ebf.write(str(path), '/pos3', np.column_stack([px, 10 * px, 100 * px]), 'a')
+    Output._singlethread_redefine_partitions(path, odd_or_even_px, survey.output.export_keys)
+    new_px, pos3 = ebf.read(str(path), '/px'), ebf.read(str(path), '/pos3')
+    assert pos3.shape == (6, 3) and pos3[:, 0].tolist() == new_px.tolist()           # the rows moved with the stars
+    assert pos3[:, 1].tolist() == (10 * new_px).tolist() and pos3[:, 2].tolist() == (100 * new_px).tolist()
+
+
 def test_the_rule_is_given_an_empty_table_first_to_find_out_which_keys_it_uses_and_then_only_those(tmp_path, monkeypatch):
     survey = prepared_survey(tmp_path, monkeypatch)
     path, _ = write_backend_output(survey, n_stars=6)[0]

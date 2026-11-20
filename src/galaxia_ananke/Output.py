@@ -409,9 +409,13 @@ class Output:
         partition_id_sorter = np.argsort(new_partition_id)
         del new_partition_id
         gc.collect()
+        n_stars = len(partition_id_sorter)
         for key in ebf._EbfMap.keys(str(ebf_file)):
             if key not in [b'/log', b'/center'] and not key.startswith(b'/.'):
-                ebf.update_ind(str(ebf_file), key, ebf.read(str(ebf_file), key)[partition_id_sorter])
+                values = ebf.read(str(ebf_file), key)
+                # only the arrays of stars are reordered: the other items (the descriptions of the isochrones) stay as they are
+                if np.ndim(values) > 0 and len(values) == n_stars:
+                    ebf.update_ind(str(ebf_file), key, values[partition_id_sorter])
         # Update ebf file log to flag that a modification was made
         full_log = str(ebf.read(str(ebf_file), '/log')).rstrip('\n')
         ebf._EbfTable.remove(str(ebf_file), '/log')  # TODO update when a more dedicated routine is available

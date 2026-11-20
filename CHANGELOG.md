@@ -168,7 +168,8 @@ far as the commits of this package and of the backend say.
 - The logs of the backend that the HDF5 files hold (the attribute `Galaxia_ebf_output_logs`) now include, for each photometric
   system of the survey, the raw descriptor and the raw header of its isochrones, as the backend writes them in an item
   `<system>_isochrone_info` of each ebf file (a backend that does not write it leaves it out). The text is the same for all the
-  generations, so the compact form of the logs holds it once. The submodule has to be at the commit of the backend that writes it.
+  generations, so the compact form of the logs holds it once. Redefining the partitions with a rule leaves that item as it is: only the
+  items that are arrays of stars are reordered. The submodule has to be at the commit of the backend that writes it.
 - The magnitude system of the magnitudes of a photometric system, `Vega`, `AB` or `ST`, is the line `# Magnitude system: ...` that
   follows the first line of the descriptor of its isochrones (a comment, which the backend does not read): `PhotoSystem.magnitude_system`
   and `Isochrone.magnitude_system` read it (None where a descriptor does not say it, and an error for another value), and
