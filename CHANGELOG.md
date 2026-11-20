@@ -289,6 +289,11 @@ far as the commits of this package and of the backend say.
   numpy 2 (it did not in 4.19 with numpy 2.4). The two functions that the package replaces in vaex, the loader of HDF5 files and
   `open_many`, are the same in the two versions, so the patch is unchanged. The Pythons that the package declares are not yet
   those of vaex: they wait for its other requirements.
+- The documentation of the patch that the package makes to vaex now gives its two reasons: vaex 4.19.0 and later open a group
+  as one that holds its columns in a subgroup `columns` (the catalogues have them in the group itself), and its `open_many` takes no
+  keyword (the package gives it the `group`); leaving the comment and blank lines of a list out, which the documentation gave as
+  the reason, vaex already does. Two tests that are expected to fail say what vaex alone does not do; when one passes, the patch,
+  or the part of it, is no longer needed.
 
 ### Removed
 

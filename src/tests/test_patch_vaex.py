@@ -141,5 +141,31 @@ def test_the_patched_function_is_the_one_that_vaex_has_and_the_original_is_kept(
     assert _patch_vaex._original_hdf5_load is not _patch_vaex.new_hdf5_load
 
 
+# -- what vaex does without the patch: why it is made ---------------------------------
+# These two are expected to fail: they say what vaex alone does not do, and the patch makes up for. When one of them passes
+# (strict: the suite fails), vaex does it by itself and the patch, or the part of it, is no longer needed: see _patch_vaex.py.
+
+LOADER_REASON = ("vaex 4.19.0 and later take a group to hold its columns in a subgroup 'columns': the catalogues have them in "
+                 "the group itself, which the patched loader opens")
+OPEN_MANY_REASON = ("the open_many of vaex takes the list of files and nothing else: the package gives it the group, "
+                    "which the patched function passes on to vaex.open")
+
+
+@pytest.mark.xfail(strict=True, raises=KeyError, reason=LOADER_REASON)
+def test_vaex_alone_opens_a_group_that_holds_its_columns_itself(tmp_path, monkeypatch):
+    monkeypatch.setattr(vaex.hdf5.dataset.Hdf5MemoryMapped, '_load', _patch_vaex._original_hdf5_load)
+    df = vaex.open(ananke_file(tmp_path, 'alone.h5'), group=STARCATALOG_GROUP)
+    assert values(df, 'x') == [1.0, 2.0, 3.0]
+    df.close()
+
+
+@pytest.mark.xfail(strict=True, raises=TypeError, reason=OPEN_MANY_REASON)
+def test_vaex_alone_opens_a_list_of_files_by_their_group(tmp_path):
+    first, second = ananke_file(tmp_path, 'a.h5', stars=(1.0, 2.0)), ananke_file(tmp_path, 'b.h5', stars=(3.0,))
+    df = _patch_vaex._original_open_many([str(first), str(second)], group=STARCATALOG_GROUP)
+    assert values(df, 'x') == [1.0, 2.0, 3.0]
+    df.close()
+
+
 if __name__ == '__main__':
     pass

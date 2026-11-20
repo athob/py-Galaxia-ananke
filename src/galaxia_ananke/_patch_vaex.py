@@ -17,8 +17,12 @@
 Monkey-patches and adjustments for the vaex backend.
 
 Currently includes:
-- Modified HDF5 loading logic (for compatibility with ananke HDF5 files).
-- Replacement of ``vaex.open_many`` (to handle comment / empty lines in file lists).
+- Modified HDF5 loading logic: when a group is given, its datasets are the columns (what vaex calls version 1), as they are in
+  the files of the catalogues. vaex 4.19.0 and later take a group to hold its columns in a subgroup ``columns`` (version 2),
+  and fail without this.
+- Replacement of ``vaex.open_many``: it gives its keyword arguments, such as ``group``, to ``vaex.open`` for each file, which
+  the function of vaex, whose only argument is the list of files, does not take. (vaex already leaves the comment and the blank
+  lines of the list out, as this one does.)
 - Suppression of all vaex internal logging (which is excessively verbose for a
   backend library and can show non-critical errors from uninstalled plugins).
 """
@@ -64,7 +68,7 @@ def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped):  # https://github.c
             self._load_columns(self.h5file["/columns"])
             self.group = "/columns"
     else:
-        self._version = 1
+        self._version = 1  # the columns are in the group itself (vaex 4.19.0 and later set 2 here, for a subgroup 'columns')
         self._load_columns(self.h5file[self.group])
 
     if "properties" in self.h5file:
@@ -83,6 +87,7 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
     The filenames can be of any format that is supported by :py:func:`vaex.open`, namely hdf5, arrow, parquet, csv, etc.
 
     :param list[str] filenames: list of filenames/paths
+    :param kwargs: given to :py:func:`vaex.open` for each file (for example ``group``), which vaex's own function does not do
     :rtype: DataFrame
     """
     dfs = []
@@ -100,8 +105,9 @@ def apply_vaex_patch():
     1. Suppress all vaex internal logging (WARNING, ERROR, etc.) so that
        non-critical messages (e.g., plugin loading failures, memmap cleanup
        warnings) do not pollute the user's output.
-    2. Replace HDF5 loading logic with a version compatible with ananke files.
-    3. Replace ``vaex.open_many`` with a version that tolerates comment/blank lines.
+    2. Replace the HDF5 loading logic with a version that takes the datasets of a given group for the columns, as the files of
+       the catalogues have them.
+    3. Replace ``vaex.open_many`` with a version that gives its keyword arguments (``group``) to ``vaex.open``.
     """
     # --- Silence vaex logging ---
     logging.getLogger("vaex").setLevel(logging.CRITICAL)
