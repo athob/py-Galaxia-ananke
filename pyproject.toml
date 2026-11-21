@@ -37,6 +37,10 @@ markers = [
 filterwarnings = [
     # Importing the package warns on purpose, about the patch it makes to vaex: a test of its own checks that it does
     "ignore:Importing galaxia_ananke monkey-patches vaex:RuntimeWarning",
+    # Python 3.12 and later warn when a process that has threads forks, as the process pools of Output do (the process has
+    # the threads of vaex). It is raised in multiprocess, where a user does not see it by default; the filter is for that
+    # module alone, so that another fork that warns still shows
+    "ignore:This process \\(pid=[0-9]+\\) is multi-threaded, use of fork\\(\\) may lead to deadlocks in the child:DeprecationWarning:multiprocess\\.popen_fork",
 ]
 
 [tool.coverage.run]
