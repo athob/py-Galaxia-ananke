@@ -449,6 +449,12 @@ far as the commits of this package and of the backend say.
   forked process hashes with one thread, which gives the same digests; the parent keeps its threads. Reported to vaex
   ([2503](https://github.com/vaexio/vaex/issues/2503)) and to blake3-py
   ([127](https://github.com/oconnor663/blake3-py/issues/127)).
+- `vaex.open` no longer makes a `ResourceWarning` for every file that it opens (shown in development mode and under
+  `-W error`, hidden by default). vaex opens a file twice, once for h5py and once for the memory mapping, which it stores under
+  the same key, so the file object that h5py was given was finalized unclosed when the HDF5 file was closed.
+  `Hdf5MemoryMapped._open` is wrapped so that this file object is closed with the HDF5 file. Nothing was leaked (no descriptor
+  and no mapping is left, and the memory is flat over 200 cycles, measured with vaex 4.19.0 and 4.20.0), and no descriptor is
+  held longer than vaex holds it.
 
 ## [0.8.0] - 2026-08-10
 

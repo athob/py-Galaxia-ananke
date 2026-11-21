@@ -18,18 +18,23 @@ Tests of the patch that the package makes to vaex: opening an HDF5 file by one o
 group of the stars, next to those of the parent particles and of the partitioning), and opening a list of files that may hold
 blank lines and comments. The files are small ones that are written here.
 """
+import gc
 import hashlib
 import os
 import pathlib
 import re
 import select
 import signal
+import types
+import warnings
 
 import blake3
 import h5py
 import numpy as np
 import pytest
 import vaex
+import vaex.file
+import vaex.hdf5.dataset
 import vaex.utils
 
 from ..galaxia_ananke import _patch_vaex
@@ -146,6 +151,8 @@ def test_the_patched_function_is_the_one_that_vaex_has_and_the_original_is_kept(
     assert _patch_vaex._original_hdf5_load is not _patch_vaex.new_hdf5_load
     assert vaex.utils.create_hasher is _patch_vaex.new_create_hasher
     assert _patch_vaex._original_create_hasher is not _patch_vaex.new_create_hasher
+    assert vaex.hdf5.dataset.Hdf5MemoryMapped._open is _patch_vaex.new_hdf5_open
+    assert _patch_vaex._original_hdf5_open is not _patch_vaex.new_hdf5_open
 
 
 # -- hashing in a process made by fork -------------------------------------------------
@@ -232,10 +239,108 @@ def test_no_module_of_vaex_keeps_the_hasher_under_a_name_of_its_own():
 
 
 def test_applying_the_patch_again_changes_nothing():
-    patched = (vaex.utils.create_hasher, vaex.open_many, vaex.hdf5.dataset.Hdf5MemoryMapped._load)
+    def functions():
+        dataset = vaex.hdf5.dataset.Hdf5MemoryMapped
+        return vaex.utils.create_hasher, vaex.open_many, dataset._load, dataset._open
+    patched = functions()
     with pytest.warns(RuntimeWarning, match="monkey-patches"):
         _patch_vaex.apply_vaex_patch()
-    assert (vaex.utils.create_hasher, vaex.open_many, vaex.hdf5.dataset.Hdf5MemoryMapped._load) == patched
+    assert functions() == patched
+
+
+# -- the file object that h5py is given ------------------------------------------------
+# vaex opens a file twice, for h5py and for the memory mapping, under the same key of file_map: the file object of h5py is
+# finalized unclosed when the HDF5 file is closed, a ResourceWarning at every vaex.open. The patch closes it with that file.
+
+def descriptors_and_mappings_of(path):
+    """How many descriptors and memory mappings of this process are of the file (read in /proc)."""
+    target = os.path.realpath(path)
+    descriptors = 0
+    for name in os.listdir('/proc/self/fd'):
+        try:
+            descriptors += os.path.realpath(os.readlink(f'/proc/self/fd/{name}')) == target
+        except OSError:
+            pass
+    with open('/proc/self/maps') as maps:
+        return descriptors, sum(1 for line in maps if line.rstrip().endswith(target))
+
+
+def resource_warnings_of_opening(path):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        df = vaex.open(str(path), group=STARCATALOG_GROUP)
+        gc.collect()
+    df.close()
+    return [str(w.message) for w in caught if issubclass(w.category, ResourceWarning) and path.name in str(w.message)]
+
+
+def test_opening_a_file_makes_no_resource_warning(tmp_path, monkeypatch):
+    dataset = vaex.hdf5.dataset.Hdf5MemoryMapped
+    monkeypatch.setattr(dataset, '_open', _patch_vaex._original_hdf5_open)
+    if not resource_warnings_of_opening(ananke_file(tmp_path, 'original.h5')):
+        pytest.skip("vaex makes no ResourceWarning when it opens a file: fixed there, the patch is no longer needed")
+    monkeypatch.setattr(dataset, '_open', _patch_vaex.new_hdf5_open)
+    assert resource_warnings_of_opening(ananke_file(tmp_path, 'patched.h5')) == []
+
+
+@pytest.mark.skipif(not os.path.isdir('/proc/self/fd'), reason="the descriptors and the mappings are read in /proc")
+@pytest.mark.filterwarnings("ignore::ResourceWarning")
+def test_the_patch_holds_no_descriptor_or_mapping_that_vaex_does_not(tmp_path, monkeypatch):
+    def counts(function, name):
+        monkeypatch.setattr(vaex.hdf5.dataset.Hdf5MemoryMapped, '_open', function)
+        path = ananke_file(tmp_path, name)
+        df = vaex.open(str(path), group=STARCATALOG_GROUP)
+        gc.collect()
+        while_open = descriptors_and_mappings_of(path)
+        df.close()
+        del df
+        gc.collect()
+        return while_open, descriptors_and_mappings_of(path)
+    original = counts(_patch_vaex._original_hdf5_open, 'original.h5')
+    patched = counts(_patch_vaex.new_hdf5_open, 'patched.h5')
+    assert patched == original
+    assert patched[1] == (0, 0)
+
+
+class RecordingFile:
+    def __init__(self, journal):
+        self.journal = journal
+
+    def close(self):
+        self.journal.append('file')
+
+
+def a_dataset_that_vaex_opened(journal, leaves_a_file=True):
+    """What the _open of vaex leaves in a dataset: a file object in file_map, and the HDF5 file of h5py."""
+    dataset = types.SimpleNamespace(path='file.h5', file_map={})
+
+    def original_open(self, path):
+        if leaves_a_file:
+            self.file_map[self.path] = RecordingFile(journal)
+        self.h5file = types.SimpleNamespace(close=lambda: journal.append('h5py'))
+    return dataset, original_open
+
+
+def test_the_file_object_of_h5py_is_closed_after_h5py_closes_the_hdf5_file(monkeypatch):
+    journal = []
+    dataset, original_open = a_dataset_that_vaex_opened(journal)
+    monkeypatch.setattr(_patch_vaex, '_original_hdf5_open', original_open)
+    monkeypatch.setattr(vaex.file, 'is_file_object', lambda path: False)
+    _patch_vaex.new_hdf5_open(dataset, 'file.h5')
+    dataset.h5file.close()
+    dataset.h5file.close()
+    assert journal == ['h5py', 'file', 'h5py', 'file']
+
+
+@pytest.mark.parametrize("given_by_the_caller, leaves_a_file", [(True, True), (False, False)])
+def test_a_file_of_the_caller_and_a_vaex_that_moved_are_left_alone(given_by_the_caller, leaves_a_file, monkeypatch):
+    journal = []
+    dataset, original_open = a_dataset_that_vaex_opened(journal, leaves_a_file)
+    monkeypatch.setattr(_patch_vaex, '_original_hdf5_open', original_open)
+    monkeypatch.setattr(vaex.file, 'is_file_object', lambda path: given_by_the_caller)
+    _patch_vaex.new_hdf5_open(dataset, 'file.h5')
+    dataset.h5file.close()
+    assert journal == ['h5py']
 
 
 # -- what vaex does without the patch: why it is made ---------------------------------

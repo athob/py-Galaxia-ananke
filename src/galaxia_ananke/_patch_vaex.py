@@ -28,6 +28,10 @@ Currently includes:
   so that a child that hashes after its parent did waits forever (reported to vaex, https://github.com/vaexio/vaex/issues/2503,
   and to blake3-py, https://github.com/oconnor663/blake3-py/issues/127). The parent keeps its threads, and a digest does not
   depend on their number.
+- Wrapping of ``Hdf5MemoryMapped._open``: the file object that vaex gives to h5py is closed when h5py closes the HDF5 file.
+  vaex opens the file twice, once for h5py and once for the memory mapping, which it stores under the same key of ``file_map``:
+  the file object of h5py is no longer known to the dataset, and is finalized unclosed when the end of ``__init__`` closes the
+  HDF5 file, which makes a ``ResourceWarning`` at every ``vaex.open``. Nothing leaks (its descriptor is released then).
 - Suppression of all vaex internal logging (which is excessively verbose for a
   backend library and can show non-critical errors from uninstalled plugins).
 """
@@ -36,6 +40,7 @@ import os
 from warnings import warn
 
 import h5py
+import vaex.file
 import vaex.hdf5.dataset
 import vaex.utils
 
@@ -105,6 +110,27 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
     return concat(dfs)
 
 
+_original_hdf5_open = vaex.hdf5.dataset.Hdf5MemoryMapped._open
+
+def new_hdf5_open(self, path):
+    """
+    Open the file as vaex does, and close the file object that h5py was given when h5py closes the HDF5 file.
+
+    A file object of the caller, and a vaex whose ``_open`` no longer leaves a file object in ``file_map``, are left as vaex
+    has them.
+    """
+    _original_hdf5_open(self, path)
+    file = getattr(self, 'file_map', {}).get(self.path)
+    if file is None or not hasattr(self, 'h5file') or vaex.file.is_file_object(path):
+        return
+    close_hdf5 = self.h5file.close
+
+    def close_hdf5_and_its_file():
+        close_hdf5()
+        file.close()
+    self.h5file.close = close_hdf5_and_its_file
+
+
 _original_create_hasher = vaex.utils.create_hasher
 
 _in_forked_child = False
@@ -129,6 +155,7 @@ def apply_vaex_patch():
        the catalogues have them.
     3. Replace ``vaex.open_many`` with a version that gives its keyword arguments (``group``) to ``vaex.open``.
     4. Wrap ``vaex.utils.create_hasher`` so that a process made by ``fork`` hashes with one thread, and register what tells it.
+    5. Wrap ``Hdf5MemoryMapped._open`` so that the file object that h5py is given is closed when h5py closes the HDF5 file.
     """
     # --- Silence vaex logging ---
     logging.getLogger("vaex").setLevel(logging.CRITICAL)
@@ -149,6 +176,9 @@ def apply_vaex_patch():
     vaex.utils.create_hasher = new_create_hasher
     if hasattr(os, "register_at_fork"):
         os.register_at_fork(after_in_child=_mark_forked_child)
+
+    # --- Close the file object of h5py ---
+    vaex.hdf5.dataset.Hdf5MemoryMapped._open = new_hdf5_open
 
 
 if __name__ == '__main__':
