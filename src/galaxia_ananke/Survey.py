@@ -343,10 +343,9 @@ class Survey:
             after a small survey in our measurements).
 
             It is recommended to ask for the same ``max_pp_workers`` in all
-            the surveys of a process: with workers started by ``fork``, a
-            survey that needs a new pool of workers after another survey of
-            the same process can hang, see
-            https://github.com/athob/py-Galaxia-ananke/issues/6
+            the surveys of a process: a different number starts another pool
+            of workers, which stays alive next to the first one and keeps its
+            memory too.
 
             A script that calls ``make_survey`` should guard its entry point
             with ``if __name__ == '__main__':`` whenever the workers are not
