@@ -21,11 +21,16 @@ blank lines and comments. The files are small ones that are written here.
 import hashlib
 import os
 import pathlib
+import re
+import select
+import signal
 
+import blake3
 import h5py
 import numpy as np
 import pytest
 import vaex
+import vaex.utils
 
 from ..galaxia_ananke import _patch_vaex
 from ..galaxia_ananke._constants import PARENTPARTICLE_GROUP, PARTITIONING_GROUP, STARCATALOG_GROUP
@@ -139,6 +144,98 @@ def test_the_patched_function_is_the_one_that_vaex_has_and_the_original_is_kept(
     assert vaex.open_many is _patch_vaex.new_open_many
     assert _patch_vaex._original_open_many is not _patch_vaex.new_open_many
     assert _patch_vaex._original_hdf5_load is not _patch_vaex.new_hdf5_load
+    assert vaex.utils.create_hasher is _patch_vaex.new_create_hasher
+    assert _patch_vaex._original_create_hasher is not _patch_vaex.new_create_hasher
+
+
+# -- hashing in a process made by fork -------------------------------------------------
+# vaex hashes large data with the thread pool of blake3 (max_threads=AUTO), which a child made by fork inherits without its
+# threads: a child that hashes after its parent did waits forever. The patch makes vaex hash with one thread in such a child.
+
+def run_in_a_forked_child(function, timeout):
+    """What the function gives in a child made by fork, as a string; None if the child does not answer in time (killed)."""
+    read, write = os.pipe()
+    pid = os.fork()
+    if pid == 0:                                    # the child
+        try:
+            os.close(read)
+            os.write(write, str(function()).encode())
+            os._exit(0)
+        except BaseException:
+            os._exit(1)
+    os.close(write)
+    try:
+        answer = os.read(read, 4096).decode() if select.select([read], [], [], timeout)[0] else None
+    finally:
+        os.close(read)
+        os.kill(pid, signal.SIGKILL)
+        os.waitpid(pid, 0)
+    return answer
+
+
+def recording_hasher(seen):
+    return lambda initial_data=None, large_data=True: seen.append((initial_data, large_data))
+
+
+@pytest.mark.parametrize("forked, large_data, asked",
+                         [(False, True, True), (False, False, False), (True, True, False), (True, False, False)])
+def test_threads_are_asked_only_where_the_process_is_not_a_forked_child(forked, large_data, asked, monkeypatch):
+    seen = []
+    monkeypatch.setattr(_patch_vaex, '_original_create_hasher', recording_hasher(seen))
+    monkeypatch.setattr(_patch_vaex, '_in_forked_child', forked)
+    _patch_vaex.new_create_hasher(b'data', large_data=large_data)
+    assert seen == [(b'data', asked)]
+
+
+def test_the_defaults_of_the_hasher_are_those_of_vaex(monkeypatch):
+    seen = []
+    monkeypatch.setattr(_patch_vaex, '_original_create_hasher', recording_hasher(seen))
+    monkeypatch.setattr(_patch_vaex, '_in_forked_child', False)
+    _patch_vaex.new_create_hasher()
+    assert seen == [(None, True)]
+
+
+def test_the_digest_does_not_depend_on_the_threads(monkeypatch):
+    data = b'\xab' * (4 << 20)
+    expected = _patch_vaex._original_create_hasher(data, large_data=True).hexdigest()
+    monkeypatch.setattr(_patch_vaex, '_in_forked_child', True)
+    assert vaex.utils.create_hasher(data, large_data=True).hexdigest() == expected
+
+
+@pytest.mark.filterwarnings("ignore:This process:DeprecationWarning")
+def test_a_forked_child_knows_that_it_is_one_and_its_parent_does_not():
+    assert _patch_vaex._in_forked_child is False
+    assert run_in_a_forked_child(lambda: _patch_vaex._in_forked_child, timeout=20) == 'True'
+
+
+@pytest.mark.filterwarnings("ignore:This process:DeprecationWarning")
+def test_a_forked_child_hashes_with_vaex_after_its_parent_used_the_threads_of_blake3():
+    data = b'\xab' * (64 << 20)
+    expected = blake3.blake3(data, max_threads=blake3.blake3.AUTO).hexdigest()   # the parent now has the pool of threads
+    original = lambda: _patch_vaex._original_create_hasher(data, large_data=True).hexdigest()
+    without_the_patch = run_in_a_forked_child(original, timeout=5)
+    if without_the_patch == expected:
+        pytest.skip("a child made by fork does not hang here without the patch: another platform, or blake3 or vaex fixed it")
+    assert without_the_patch is None, "the child failed, it did not hang"
+    patched = lambda: vaex.utils.create_hasher(data, large_data=True).hexdigest()
+    assert run_in_a_forked_child(patched, timeout=15) == expected
+
+
+def test_no_module_of_vaex_keeps_the_hasher_under_a_name_of_its_own():
+    # the patch replaces the attribute of vaex.utils: a module that kept the function under another name would keep
+    # the original, so every mention of create_hasher in vaex has to be a call (or its definition)
+    mention = re.compile(r"\bcreate_hasher\b(?!\()")
+    offenders = [str(path) for directory in map(pathlib.Path, vaex.__path__) for path in directory.rglob('*.py')
+                 if not {'test', 'tests'} & set(path.relative_to(directory).parts)
+                 and mention.search(path.read_text(encoding='utf-8', errors='replace'))]
+    assert offenders == []
+
+
+def test_applying_the_patch_again_changes_nothing():
+    patched = (vaex.utils.create_hasher, vaex.open_many, vaex.hdf5.dataset.Hdf5MemoryMapped._load)
+    with pytest.warns(RuntimeWarning, match="monkey-patches"):
+        _patch_vaex.apply_vaex_patch()
+    assert (vaex.utils.create_hasher, vaex.open_many, vaex.hdf5.dataset.Hdf5MemoryMapped._load) == patched
 
 
 # -- what vaex does without the patch: why it is made ---------------------------------

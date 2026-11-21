@@ -443,6 +443,12 @@ far as the commits of this package and of the backend say.
   astroquery then raises an `IndexError` or gives an empty table. The filters of that instrument now have NaN, with a warning that
   names the facility, and the other instruments of a system keep their values. Any other `IndexError`, and a service that cannot be
   reached, are still raised.
+- A process that was made by `fork` after its parent had hashed large data with vaex no longer hangs when it hashes itself
+  (issue [6](https://github.com/athob/py-Galaxia-ananke/issues/6)): vaex hashes large data with the thread pool of blake3
+  (`max_threads=AUTO`), which a forked child inherits without its threads. `vaex.utils.create_hasher` is wrapped so that a
+  forked process hashes with one thread, which gives the same digests; the parent keeps its threads. Reported to vaex
+  ([2503](https://github.com/vaexio/vaex/issues/2503)) and to blake3-py
+  ([127](https://github.com/oconnor663/blake3-py/issues/127)).
 
 ## [0.8.0] - 2026-08-10
 

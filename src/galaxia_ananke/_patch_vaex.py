@@ -23,14 +23,21 @@ Currently includes:
 - Replacement of ``vaex.open_many``: it gives its keyword arguments, such as ``group``, to ``vaex.open`` for each file, which
   the function of vaex, whose only argument is the list of files, does not take. (vaex already leaves the comment and the blank
   lines of the list out, as this one does.)
+- Wrapping of ``vaex.utils.create_hasher``: vaex hashes with one thread in a process that was made by ``fork``. It hashes
+  large data with the thread pool of blake3 (``max_threads=blake3.AUTO``), which a forked child inherits without its threads,
+  so that a child that hashes after its parent did waits forever (reported to vaex, https://github.com/vaexio/vaex/issues/2503,
+  and to blake3-py, https://github.com/oconnor663/blake3-py/issues/127). The parent keeps its threads, and a digest does not
+  depend on their number.
 - Suppression of all vaex internal logging (which is excessively verbose for a
   backend library and can show non-critical errors from uninstalled plugins).
 """
 import logging
+import os
 from warnings import warn
 
 import h5py
 import vaex.hdf5.dataset
+import vaex.utils
 
 from vaex import open, concat
 
@@ -98,6 +105,19 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
     return concat(dfs)
 
 
+_original_create_hasher = vaex.utils.create_hasher
+
+_in_forked_child = False
+
+def _mark_forked_child():
+    global _in_forked_child
+    _in_forked_child = True
+
+def new_create_hasher(initial_data=None, large_data=True):
+    """Create a blake3 hasher as vaex does, with one thread (``large_data=False``) in a process that was made by ``fork``."""
+    return _original_create_hasher(initial_data, large_data=large_data and not _in_forked_child)
+
+
 def apply_vaex_patch():
     """
     Apply all vaex-related customisations:
@@ -108,6 +128,7 @@ def apply_vaex_patch():
     2. Replace the HDF5 loading logic with a version that takes the datasets of a given group for the columns, as the files of
        the catalogues have them.
     3. Replace ``vaex.open_many`` with a version that gives its keyword arguments (``group``) to ``vaex.open``.
+    4. Wrap ``vaex.utils.create_hasher`` so that a process made by ``fork`` hashes with one thread, and register what tells it.
     """
     # --- Silence vaex logging ---
     logging.getLogger("vaex").setLevel(logging.CRITICAL)
@@ -123,6 +144,11 @@ def apply_vaex_patch():
 
     # --- Replace open_many ---
     vaex.open_many = new_open_many
+
+    # --- Hash with one thread in a forked process ---
+    vaex.utils.create_hasher = new_create_hasher
+    if hasattr(os, "register_at_fork"):
+        os.register_at_fork(after_in_child=_mark_forked_child)
 
 
 if __name__ == '__main__':
