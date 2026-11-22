@@ -469,6 +469,8 @@ far as the commits of this package and of the backend say.
   in its `log` folder, so that a failed upgrade no longer leaves a working package without its backend; if the build succeeds,
   the custom photometric systems are copied from it to the new installation, which also fixes an installation whose temporary
   directory was on another file system than the cache, and it is deleted. A build that was killed is recovered at the next one.
+- The backend is built in the directory that was checked, the one of the submodule at the root of the repository, wherever the
+  build runs from, and no longer in a directory that is taken from the working directory.
 
 ## [0.8.0] - 2026-08-10
 

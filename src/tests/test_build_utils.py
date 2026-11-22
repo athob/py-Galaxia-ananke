@@ -505,7 +505,8 @@ def run_build_ext(**replaced):
 
 
 def test_build_ext_goes_through_the_extensions_the_system_the_submodule_and_the_backend_in_that_order():
-    assert run_build_ext() == [('extensions',), ('verify',), ('check', build.ROOT_DIR), ('build', build.GALAXIA_SUBMODULE_NAME)]
+    assert run_build_ext() == [('extensions',), ('verify',), ('check', build.ROOT_DIR),
+                               ('build', build.ROOT_DIR / build.GALAXIA_SUBMODULE_NAME)]
 
 
 def test_build_ext_stops_when_the_system_lacks_what_is_needed():
@@ -527,9 +528,6 @@ def test_build_ext_does_not_build_a_backend_that_cannot_be_used():
     assert built == []
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="the backend is built from its name, which is taken from the working "
-                   "directory, while it was checked at the root of the repository: the two are the same only when "
-                   "the build runs at the root")
 def test_build_ext_builds_the_backend_it_checked_wherever_it_runs(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     calls = run_build_ext()

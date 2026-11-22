@@ -357,7 +357,7 @@ def make_cmdclass():
             build_ext.run(self)
             verify_system_dependencies()
             check_galaxia_submodule(ROOT_DIR)
-            build_and_install_galaxia(GALAXIA_SUBMODULE_NAME)
+            build_and_install_galaxia(ROOT_DIR / GALAXIA_SUBMODULE_NAME)
 
 
     class _test(Command):

@@ -226,7 +226,7 @@ def test_without_custom_photometric_systems_the_new_installation_has_none(cache,
 def test_the_backend_to_build_can_be_given_as_a_relative_name_or_a_string(cache, tmp_path, monkeypatch):
     toy_galaxia(tmp_path / 'there')
     monkeypatch.chdir(tmp_path / 'there')
-    build.build_and_install_galaxia('Galaxia-ananke')               # as build_ext gives it
+    build.build_and_install_galaxia('Galaxia-ananke')               # a name, which is relative to the working directory
     assert run_toy(cache.GALAXIA) == 'toy galaxia\n'
 
 
