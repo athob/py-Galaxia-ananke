@@ -123,14 +123,10 @@ def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
     Returns:
         Submodule commit SHA string
     """
-    # Create SSL context (bypass verification if needed)
+    # Create SSL context
     ctx = ssl.create_default_context()
-    # Uncomment below line if you encounter certificate errors
-    # ctx.check_hostname = False
-    # ctx.verify_mode = ssl.CERT_NONE
     # Step 1: Get repository tree recursively for the specific commit
     tree_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/git/trees/{commit_sha}?recursive=1"
-    ################################################################
     try:
         # Make HTTP request
         req = urllib.request.Request(tree_url)
@@ -148,13 +144,6 @@ def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
         if e.code == 403 and 'rate limit' in e.reason.lower():
             raise RuntimeError("GitHub API rate limit exceeded. Try again later.")
         raise  # Re-raise other HTTP errors
-    ################################################################
-    # response = requests.get(tree_url)
-    # if response.status_code == 403 and 'rate limit' in response.text.lower():
-    #     raise RuntimeError("GitHub API rate limit exceeded. Try again later.")
-    # response.raise_for_status()
-    # tree_data = response.json()
-    ################################################################
     # Step 2: Find the submodule entry in the tree
     for item in tree_data.get('tree', []):
         if item['path'] == submodule_path:
@@ -192,12 +181,10 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
         if status:
             raise CompileError(f"Error checking out the commit {galaxia_commit} of {submodule_name} "
                                f"(git exit status {status}), see what git says above\naborting...\n")
-        # git archive -vvv --remote=<REPO_URL> <REF> | tar -xvf -
 
 
 def check_galaxia_submodule(root_dir):
     root_dir = pathlib.Path(root_dir)
-    # if not os.listdir(GALAXIA_SUBMODULE_NAME):
     say("\nChecking submodule Galaxia, running git...")
     try:
         _temp = subprocess.call(['git', 'submodule', 'update', '--init', '--recursive'], cwd=root_dir)
@@ -212,7 +199,6 @@ def check_galaxia_submodule(root_dir):
     elif _temp:
         raise OSError(f"git submodule update --init --recursive failed in {root_dir} (exit status {_temp}), "
                       "see what git says above")
-        # raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
     install_sh_path = root_dir / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
     if not os.access(install_sh_path, os.X_OK):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
