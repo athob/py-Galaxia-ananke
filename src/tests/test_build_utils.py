@@ -479,6 +479,55 @@ def test_nothing_is_renamed_to_another_directory_so_that_no_file_system_can_get_
     assert my_systems(cache).read_text() == 'my own system' and (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
 
 
+# -- the cache has to be possible to make --------------------------------------------
+
+def directories_asked_about(monkeypatch, answer):
+    asked = []
+    monkeypatch.setattr(os, 'access', lambda path, mode: asked.append((pathlib.Path(path), mode)) or answer)
+    return asked
+
+
+def test_a_cache_that_is_not_made_yet_in_a_directory_that_can_be_written_to_is_accepted(cache):
+    assert not cache.CACHE.parent.exists()                               # the nearest directory that exists is asked about
+    build.verify_cache_can_be_written()
+
+
+def test_the_directory_that_has_to_be_writable_is_the_one_that_the_cache_is_in(cache, monkeypatch):
+    cache.CACHE.mkdir(parents=True)
+    asked = directories_asked_about(monkeypatch, True)
+    build.verify_cache_can_be_written()
+    assert asked == [(cache.CACHE.parent, os.W_OK | os.X_OK)]            # not the cache: it is renamed, and made again
+
+
+def test_the_nearest_directory_that_exists_is_asked_about_when_the_one_of_the_cache_is_not_there(cache, monkeypatch):
+    cache.CACHE.parent.parent.mkdir(parents=True, exist_ok=True)
+    asked = directories_asked_about(monkeypatch, True)
+    build.verify_cache_can_be_written()
+    assert asked == [(cache.CACHE.parent.parent, os.W_OK | os.X_OK)]
+
+
+def test_a_cache_that_cannot_be_made_is_refused_with_what_to_do(cache, monkeypatch):
+    cache.CACHE.parent.mkdir(parents=True)
+    directories_asked_about(monkeypatch, False)
+    advice = (f"give write permission to directory {cache.CACHE.parent} or define a custom system prefix via the environment "
+              "variable ANANKE_SYSTEM_PREFIX")
+    with pytest.raises(PermissionError, match=re.escape(advice)):
+        build.verify_cache_can_be_written()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root can write anywhere")
+def test_a_directory_that_the_system_does_not_let_the_cache_be_made_in_is_refused(tmp_path, monkeypatch):
+    prefix = tmp_path / "read-only"
+    prefix.mkdir()
+    prefix.chmod(0o555)
+    patch_cache(monkeypatch, prefix)
+    try:
+        with pytest.raises(PermissionError, match="Installation cannot complete"):
+            build.verify_cache_can_be_written()
+    finally:
+        prefix.chmod(0o755)
+
+
 # -- the commands that setuptools runs ----------------------------------------------
 
 def build_ext_of_the_package():
@@ -493,6 +542,7 @@ def run_build_ext(**replaced):
     from setuptools.command.build_ext import build_ext
     calls = []
     steps = {'verify_system_dependencies': lambda: calls.append(('verify',)),
+             'verify_cache_can_be_written': lambda: calls.append(('cache',)),
              'check_galaxia_submodule': lambda root: calls.append(('check', root)),
              'build_and_install_galaxia': lambda path: calls.append(('build', path))}
     steps.update(replaced)
@@ -504,8 +554,8 @@ def run_build_ext(**replaced):
     return calls
 
 
-def test_build_ext_goes_through_the_extensions_the_system_the_submodule_and_the_backend_in_that_order():
-    assert run_build_ext() == [('extensions',), ('verify',), ('check', build.ROOT_DIR),
+def test_build_ext_goes_through_the_extensions_the_system_the_cache_the_submodule_and_the_backend_in_that_order():
+    assert run_build_ext() == [('extensions',), ('verify',), ('cache',), ('check', build.ROOT_DIR),
                                ('build', build.ROOT_DIR / build.GALAXIA_SUBMODULE_NAME)]
 
 
@@ -516,6 +566,15 @@ def test_build_ext_stops_when_the_system_lacks_what_is_needed():
     with pytest.raises(OSError, match='no compiler'):
         calls = run_build_ext(verify_system_dependencies=refuse)
     assert calls == []
+
+
+def test_build_ext_stops_when_the_cache_cannot_be_written_before_it_asks_git_for_anything():
+    def refuse():
+        raise PermissionError('no write permission')
+    checked = []
+    with pytest.raises(PermissionError, match='no write permission'):
+        run_build_ext(verify_cache_can_be_written=refuse, check_galaxia_submodule=lambda root: checked.append(root))
+    assert checked == []
 
 
 def test_build_ext_does_not_build_a_backend_that_cannot_be_used():

@@ -36,6 +36,7 @@ from packaging.version import Version
 
 from ._builtin_utils import get_version_of_command
 from ._constants import *
+from ._constants import PREFIX_ENV_VAR
 from .__metadata__ import *
 from . import _version, versioneer
 
@@ -92,6 +93,21 @@ def verify_system_dependencies():
         raise OSError("Your system does not have a C++ compiler installed. Please install one before proceeding")
     if gpp_version < MIN_GPP_VERSION:
         raise OSError(f"Your system has g++ v{gpp_version} installed, but {NAME} requires v{MIN_GPP_VERSION}")
+
+
+def verify_cache_can_be_written():
+    """
+    Refuse, before anything is built, a cache that the installation cannot make. The earlier installation is put aside next to
+    the cache and the new one is built in its place, so the directory that the cache is in has to be writable: the nearest one
+    that exists, if the cache is not made yet.
+    """
+    directory = CACHE.parent
+    while not directory.exists() and directory != directory.parent:
+        directory = directory.parent
+    if not os.access(directory, os.W_OK | os.X_OK):
+        # TODO make the variable conda-dependent?
+        raise PermissionError("Installation cannot complete: to proceed, please give write permission to directory "
+                              f"{directory} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")
 
 
 def download_galaxia(galaxia_dir):
@@ -370,6 +386,7 @@ def make_cmdclass():
         def run(self):
             build_ext.run(self)
             verify_system_dependencies()
+            verify_cache_can_be_written()
             check_galaxia_submodule(ROOT_DIR)
             build_and_install_galaxia(ROOT_DIR / GALAXIA_SUBMODULE_NAME)
 

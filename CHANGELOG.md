@@ -479,6 +479,10 @@ far as the commits of this package and of the backend say.
 - A clone of the backend that fails is now an error that gives the last lines of what git said, and no longer goes on to a
   checkout that fails on a directory that is not there. The error of the rate limit of GitHub, which the installation meant to
   report as an error of the build, now is one. The pipe from which the output of the clone is read is closed when it is over.
+- An installation in a directory that cannot be written to now stops, before anything is built, with the error that the
+  installation meant to raise and only built: it says to give write permission to the directory that the cache is in, or to
+  define another prefix with the environment variable `ANANKE_SYSTEM_PREFIX`. The check is made by the build and not when the
+  package is imported, so that a prefix that is read-only still lets the package be imported.
 
 ## [0.8.0] - 2026-08-10
 

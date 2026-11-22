@@ -45,8 +45,6 @@ if PREFIX_ENV_VAR in os.environ:
     PREFIX = pathlib.Path(os.environ[PREFIX_ENV_VAR])
 else:
     PREFIX = pathlib.Path(sys.prefix)
-if not os.access(PREFIX, os.W_OK):
-    PermissionError(f"Installation cannot complete: to proceed, please give write permission to directory {PREFIX} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")  # TODO make the variable conda-dependent?
 
 GLOBAL_CACHE = PREFIX / '.cache'
 
