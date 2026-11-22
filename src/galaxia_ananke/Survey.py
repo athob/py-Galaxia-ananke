@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Set, Dict, 
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 import re
+import shlex
 import pathlib
 from pprint import PrettyPrinter
 
@@ -135,9 +136,9 @@ class Survey:
         cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
-            CTTAGS.nfile      : self.inputname_hash,
+            CTTAGS.nfile      : shlex.quote(self.inputname_hash),
             CTTAGS.ngen       : ngen,
-            CTTAGS.parfile    : parfile
+            CTTAGS.parfile    : shlex.quote(str(parfile))
         }) for ngen in n_gens]
         execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
@@ -145,9 +146,9 @@ class Survey:
         if max_gen_workers is None:
             max_gen_workers = len(list(self.__ebf_output_files_glob))
         cmds = [APPEND_TEMPLATE.substitute(**{
-            CTTAGS.pcat     : photosystem.category,
-            CTTAGS.psys     : photosystem.name,
-            CTTAGS.filename : filename
+            CTTAGS.pcat     : shlex.quote(photosystem.category),
+            CTTAGS.psys     : shlex.quote(photosystem.name),
+            CTTAGS.filename : shlex.quote(str(filename))
         }) for filename in self.__ebf_output_files_glob]
         execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 

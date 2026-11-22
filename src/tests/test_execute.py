@@ -17,6 +17,7 @@
 Tests of execute, which runs the commands of the backend and prints what they say. Every command here is a small
 Python script of its own, run by the interpreter that runs the tests.
 """
+import shlex
 import subprocess
 import sys
 import textwrap
@@ -134,14 +135,33 @@ def test_commands_run_at_the_same_time_whatever_max_workers_is(tmp_path):
     execute([f"{sys.executable} {meet} {a} {b}", f"{sys.executable} {meet} {b} {a}"], max_workers=1, verbose=False)
 
 
-@pytest.mark.xfail(raises=subprocess.CalledProcessError,
-                   reason="execute splits a command on its spaces, so a path that holds one is cut in two")
-def test_a_script_whose_path_holds_a_space_runs(tmp_path, capsys):
+def test_a_script_whose_path_holds_a_space_runs_when_the_command_quotes_it(tmp_path, capsys):
     folder = tmp_path / "a folder"
     folder.mkdir()
     script = write_script(folder, "say.py", "print('hello')\n")
-    execute(f"{sys.executable} {script}")
+    execute(shlex.join([sys.executable, str(script)]))
     assert "JOB 1/1 | hello" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("argument", ["a b", "it's", 'say "hi"', "", "$HOME", "back\\slash", "tab\there", "two  spaces"])
+def test_an_argument_that_is_quoted_arrives_as_it_was(argument, tmp_path, capsys):
+    script = write_script(tmp_path, "show.py", "import sys\nprint(repr(sys.argv[1]))\n")
+    execute(shlex.join([sys.executable, str(script), argument]))
+    assert capsys.readouterr().out.splitlines()[-1] == f"JOB 1/1 | {argument!r}"
+
+
+def test_arguments_that_are_not_quoted_are_cut_where_a_shell_would_cut_them(tmp_path, capsys):
+    script = write_script(tmp_path, "show.py", "import sys\nprint(sys.argv[1:])\n")
+    execute(f"{sys.executable} {script} a  b 'c d'")                                  # two spaces between a and b
+    assert capsys.readouterr().out.splitlines()[-1] == "JOB 1/1 | ['a', 'b', 'c d']"
+
+
+def test_a_command_that_cannot_be_read_is_refused_before_any_command_is_started(monkeypatch):
+    started = []
+    monkeypatch.setattr(subprocess, 'Popen', lambda *arguments, **keywords: started.append(arguments))
+    with pytest.raises(ValueError, match="No closing quotation"):
+        execute(["echo fine", "echo 'unfinished"], verbose=False)
+    assert started == []
 
 
 if __name__ == '__main__':

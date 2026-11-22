@@ -19,10 +19,13 @@ fill them, the parameter file (in the format that the backend reads, as the surv
 file that lists the input files, and the commands that run and that append to a survey.
 """
 import dataclasses
+import pathlib
 import re
+import shlex
 
 import pytest
 
+from ..galaxia_ananke import _templates
 from ..galaxia_ananke._constants import GALAXIA
 from ..galaxia_ananke._templates import (APPEND_TEMPLATE, CTTAGS, FILENAME_TEMPLATE, FTTAGS, HDIMBLOCK_TEMPLATE,
                                          PARFILE_TEMPLATE, PARFILENAME_TEMPLATE, RUN_TEMPLATE,
@@ -177,9 +180,16 @@ def test_the_commands_use_every_command_tag_and_only_them():
 
 
 def test_the_commands_are_cut_into_the_arguments_that_execute_gives_the_backend():
-    # execute splits a command on its spaces: each option has to be one word
+    # execute reads a command as a shell does: each option has to be one word
     command = RUN_TEMPLATE.substitute(hdim_block=HDIMBLOCK_TEMPLATE.substitute(hdim=3), nfile="n", ngen=0, parfile="p")
-    assert command.split(" ") == [str(GALAXIA), "-r", "--hdim=3", "--nfile=n", "--ngen=0", "p"]
+    assert shlex.split(command) == [str(GALAXIA), "-r", "--hdim=3", "--nfile=n", "--ngen=0", "p"]
+
+
+def test_the_path_of_the_backend_is_one_word_for_execute_whatever_it_holds(monkeypatch):
+    path = pathlib.Path("/opt/my tools/it's $HOME/galaxia")                         # a space, a quote and a dollar
+    monkeypatch.setattr(_templates, 'GALAXIA', path)
+    command = _templates.backend_command("-a ${filename}").substitute(filename="x")
+    assert shlex.split(command) == [str(path), "-a", "x"]
 
 
 if __name__ == '__main__':

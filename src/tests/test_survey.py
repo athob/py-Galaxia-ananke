@@ -21,6 +21,7 @@ written goes under temporary directories, as the output directory of a survey is
 """
 import os
 import re
+import shlex
 import sys
 import types
 
@@ -435,6 +436,33 @@ def test_the_commands_to_append_a_photometric_system_are_for_each_file_of_the_ou
     assert backend[0].max_workers == 2                                         # as many as there are files by default
     survey._append_survey(LSST, max_gen_workers=1)
     assert backend[1].max_workers == 1
+
+
+def test_a_parameter_file_whose_path_holds_a_space_and_a_quote_is_one_argument_of_the_command(an_input, directories, backend,
+                                                                                              tmp_path):
+    survey = prepare(Survey(an_input, verbose=False), directories)
+    parfile = tmp_path / "a folder" / "it's params"
+    survey._run_survey(parfile, n_gens=(0,), max_gen_workers=1)
+    assert shlex.split(backend[0].cmds[0]) == [str(GALAXIA), '-r', '--hdim=6', f'--nfile={an_input.name_hash}', '--ngen=0',
+                                               str(parfile)]
+
+
+def test_an_output_file_whose_path_holds_a_space_is_one_argument_of_the_command(an_input, directories, backend, tmp_path):
+    output_directory = tmp_path / 'out put'
+    output_directory.mkdir()
+    survey = prepare(Survey(an_input, photo_sys=['padova/GAIA__DR2', 'padova/LSST']), (directories[0], output_directory))
+    path = output_directory / f"{survey.output.output_name}.0.ebf"
+    path.write_text('')
+    survey._append_survey(LSST, max_gen_workers=None)
+    assert [shlex.split(cmd) for cmd in backend[0].cmds] == [[str(GALAXIA), '-a', '--pcat=padova', '--psys=LSST', str(path)]]
+
+
+def test_the_category_and_name_of_a_photometric_system_are_one_argument_each_of_the_command(an_input, directories, backend):
+    survey = prepare(Survey(an_input, verbose=False), directories)
+    path = directories[1] / f"{survey.output.output_name}.0.ebf"
+    path.write_text('')
+    survey._append_survey(types.SimpleNamespace(category='my category', name="it's mine"), max_gen_workers=None)
+    assert shlex.split(backend[0].cmds[0]) == [str(GALAXIA), '-a', '--pcat=my category', "--psys=it's mine", str(path)]
 
 
 # -- running a survey ---------------------------------------------------------------

@@ -29,6 +29,7 @@ from functools import cached_property, total_ordering
 from itertools import zip_longest
 from operator import itemgetter
 import dataclasses as dc
+import shlex
 import subprocess
 import importlib.util
 import pathlib
@@ -145,9 +146,10 @@ class classproperty(object):
 
 
 def _execute_generator(cmds: List[str], max_workers: int = None, **kwargs):
-    popens = [subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    arguments = [shlex.split(cmd) for cmd in cmds]          # all of them are read before any is run
+    popens = [subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
-              for cmd in cmds]
+              for argv in arguments]
     master_stdout_readline_iter = zip_longest(*(iter(popen.stdout.readline, "") for popen in popens))
     for stdout_lines in master_stdout_readline_iter:
         for tag, stdout_line in enumerate(stdout_lines, start=1):
@@ -163,6 +165,8 @@ def execute(cmds: Union[str, List[str]], max_workers: int = None, verbose: bool 
     Run the commands described by cmds, and use
     verbose kwarg to redirect output/error stream
     to python output stream.
+    Each command is a string that is read as a shell reads it (``shlex.split``): an argument that holds a space, a quote or
+    anything that the shell would take apart has to be quoted, with ``shlex.quote`` or ``shlex.join``.
     Adapted from https://stackoverflow.com/a/4417735
     """
     if isinstance(cmds, str):

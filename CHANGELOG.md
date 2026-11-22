@@ -483,6 +483,10 @@ far as the commits of this package and of the backend say.
   installation meant to raise and only built: it says to give write permission to the directory that the cache is in, or to
   define another prefix with the environment variable `ANANKE_SYSTEM_PREFIX`. The check is made by the build and not when the
   package is imported, so that a prefix that is read-only still lets the package be imported.
+- The commands that run the backend are now read as a shell reads them, and the paths that they hold are quoted, so that a path
+  with a space (the directory of the output, the prefix of the installation) or with a quote is one argument of the command and
+  no longer cut in two. `execute` reads all the commands before it starts any, and says so in its documentation: what a shell
+  would take apart has to be quoted, with `shlex.quote` or `shlex.join`.
 
 ## [0.8.0] - 2026-08-10
 

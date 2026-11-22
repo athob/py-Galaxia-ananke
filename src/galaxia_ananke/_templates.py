@@ -18,6 +18,7 @@ Package templates
 """
 from typing import List
 from string import Template
+import shlex
 from dataclasses import dataclass
 
 from .utils import Singleton
@@ -130,9 +131,18 @@ class CommandTemplateTags(metaclass=Singleton):
 
 CTTAGS = CommandTemplateTags()
 
-RUN_TEMPLATE = Template(f"{GALAXIA} -r${{{CTTAGS.hdim_block}}} --nfile=${{{CTTAGS.nfile}}} --ngen=${{{CTTAGS.ngen}}} ${{{CTTAGS.parfile}}}")
+def backend_command(arguments: str) -> Template:
+    """
+    The template of a command that runs the backend with these arguments. Its path is quoted, as execute reads a command as a
+    shell does, and its dollars are doubled, as a template would take them for the start of a placeholder.
+    """
+    return Template(f"{shlex.quote(str(GALAXIA)).replace('$', '$$')} {arguments}")
+
+
+RUN_TEMPLATE = backend_command(
+    f"-r${{{CTTAGS.hdim_block}}} --nfile=${{{CTTAGS.nfile}}} --ngen=${{{CTTAGS.ngen}}} ${{{CTTAGS.parfile}}}")
 HDIMBLOCK_TEMPLATE = Template(f" --hdim=${{{CTTAGS.hdim}}}")
-APPEND_TEMPLATE = Template(f"{GALAXIA} -a --pcat=${{{CTTAGS.pcat}}} --psys=${{{CTTAGS.psys}}} ${{{CTTAGS.filename}}}")
+APPEND_TEMPLATE = backend_command(f"-a --pcat=${{{CTTAGS.pcat}}} --psys=${{{CTTAGS.psys}}} ${{{CTTAGS.filename}}}")
 
 
 if __name__ == '__main__':
