@@ -110,24 +110,6 @@ def verify_cache_can_be_written():
                               f"{directory} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")
 
 
-def download_galaxia(galaxia_dir):
-    say("\nDownloading Galaxia")
-    tarfile = galaxia_dir.with_suffix('.tar.gz')
-    try:
-        urllib.request.urlretrieve(GALAXIA_URL, filename=tarfile)
-        if tarfile.is_file():
-            say("\nUnpacking Galaxia")
-            subprocess.call(['tar', 'xzvf', tarfile, '-C', tarfile.parent],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            tarfile.unlink()
-            if not galaxia_dir.is_dir():
-                raise RuntimeError("Error unpacking Galaxia")
-        else:
-            raise RuntimeError("Cannot find downloaded file")
-    except RuntimeError as e:
-        raise CompileError(str(e) + "\nError downloading Galaxia, aborting...\n")
-
-
 def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
     """
     Get submodule commit hash for a specific GitHub repository commit.
