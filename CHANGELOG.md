@@ -300,6 +300,8 @@ far as the commits of this package and of the backend say.
 - The notes of `make_survey` no longer say that a survey that needs a new pool of workers after another one can hang (issue
   [6](https://github.com/athob/py-Galaxia-ananke/issues/6)): it did until vaex hashed with one thread in the processes made by
   `fork`. The recommendation of the same `max_pp_workers` stays, for the memory that each pool of workers keeps alive.
+- The notes of `make_survey` say what a `forkserver` start method avoids: workers started by `fork` are copies of a process
+  that has threads, which Python discourages.
 
 ### Removed
 

@@ -347,6 +347,11 @@ class Survey:
             of workers, which stays alive next to the first one and keeps its
             memory too.
 
+            Workers started by ``fork`` are copies of a process that has
+            threads (those of ``vaex``, among others), which Python
+            discourages. ``multiprocess.set_start_method('forkserver')``
+            starts them without copying it, with the guard below.
+
             A script that calls ``make_survey`` should guard its entry point
             with ``if __name__ == '__main__':`` whenever the workers are not
             started by ``fork``, as on macOS or after
