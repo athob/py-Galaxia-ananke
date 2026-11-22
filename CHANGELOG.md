@@ -463,8 +463,12 @@ far as the commits of this package and of the backend say.
 - A step of the build of the backend that fails (`configure`, `make` or `make install`) is now an error that names the step,
   says where its log is and gives its last lines, and stops the installation: the package no longer installs without a
   backend, which was only found out at the first import. A `make distclean` that fails, which only cleans the source tree,
-  is a warning and the installation goes on. The custom photometric systems that the build puts aside are put back whether
-  it succeeds or not.
+  is a warning and the installation goes on.
+- Installing again no longer removes the earlier installation of the backend before the new one is built. The earlier
+  installation waits aside, next to the cache: if the build fails or is interrupted it is put back, with the logs of the build
+  in its `log` folder, so that a failed upgrade no longer leaves a working package without its backend; if the build succeeds,
+  the custom photometric systems are copied from it to the new installation, which also fixes an installation whose temporary
+  directory was on another file system than the cache, and it is deleted. A build that was killed is recovered at the next one.
 
 ## [0.8.0] - 2026-08-10
 

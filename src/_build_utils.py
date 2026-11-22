@@ -28,7 +28,6 @@ import urllib.request
 import urllib.parse
 import json
 import configparser
-import tempfile
 from warnings import warn
 from distutils.errors import CompileError
 from setuptools.command.build_ext import build_ext
@@ -207,12 +206,54 @@ def check_galaxia_submodule(root_dir):
         raise PermissionError(f"Installation cannot complete: to proceed, please give user-execute permission to file {install_sh_path}")
 
 
-def remove_existing_galaxia(temp_photocat: pathlib.Path):
-    if CACHE.is_dir():
-        custom_photocat = ISOCHRONES_PATH / CUSTOM_PHOTOCAT
-        if custom_photocat.is_dir():
-            custom_photocat.rename(temp_photocat)
+def installation_aside() -> pathlib.Path:
+    """
+    Where the earlier installation waits while the new one is built: next to the cache, so on its file system, where a
+    directory can be renamed whatever it holds.
+    """
+    return CACHE.with_name(CACHE.name + '.aside')
+
+
+def installation_to_delete() -> pathlib.Path:
+    """Where the earlier installation goes, once the new one is complete, to be deleted: a rename cannot be left half done."""
+    return CACHE.with_name(CACHE.name + '.delete')
+
+
+def restore_earlier_installation():
+    """
+    Put the earlier installation back in the place of what a build that stopped made, which is removed but for its logs: they
+    take the place of the earlier ones, where the error of the build says that they are. Without an earlier installation, as in
+    a first build, what the build made is left, logs included.
+    """
+    aside = installation_aside()
+    if not aside.is_dir():
+        return
+    if GALAXIA_LOG.is_dir():
+        logs = aside / GALAXIA_LOG.relative_to(CACHE)
+        if logs.is_dir():
+            shutil.rmtree(logs)
+        logs.parent.mkdir(parents=True, exist_ok=True)
+        GALAXIA_LOG.rename(logs)
+    if CACHE.exists():
         shutil.rmtree(CACHE)
+    aside.rename(CACHE)
+
+
+def recover_from_a_stopped_build():
+    """
+    Put the cache back as it was before a build that was killed in the middle of its work, if there was one. The earlier
+    installation waits aside during a build and is only given up when the new one is complete: one that is aside belongs to a
+    build that did not finish, and is put back; one that is to delete belongs to a build that did, and is deleted.
+    """
+    to_delete = installation_to_delete()
+    if to_delete.is_dir():
+        shutil.rmtree(to_delete)
+    restore_earlier_installation()
+
+
+def put_earlier_installation_aside():
+    if CACHE.is_dir():
+        CACHE.rename(installation_aside())
 
 
 def touch_autotools_files(galaxia_dir: pathlib.Path):
@@ -257,22 +298,34 @@ def make_distclean_galaxia(galaxia_dir: pathlib.Path):
     run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir, fatal=False)  # it only cleans
 
 
-def clean_up_temporary(temp_photocat: pathlib.Path):
-    if temp_photocat.is_dir():
-        destination = ISOCHRONES_PATH / CUSTOM_PHOTOCAT
-        destination.parent.mkdir(parents=True, exist_ok=True)      # a build that stopped early has not made it
-        temp_photocat.rename(destination)
+def give_up_earlier_installation():
+    """
+    The new installation is complete: take the custom photometric systems of the earlier one, and give it up. The systems are
+    copied before the earlier installation is renamed to be deleted, so that a build that is killed before the rename leaves
+    them in it.
+    """
+    aside = installation_aside()
+    if not aside.is_dir():
+        return
+    custom_photocat = aside / ISOCHRONES_PATH.relative_to(CACHE) / CUSTOM_PHOTOCAT
+    if custom_photocat.is_dir():
+        shutil.copytree(custom_photocat, ISOCHRONES_PATH / CUSTOM_PHOTOCAT, dirs_exist_ok=True)
+    to_delete = installation_to_delete()
+    aside.rename(to_delete)
+    try:
+        shutil.rmtree(to_delete)
+    except OSError as error:      # the new installation is complete: the next build deletes it again
+        warn(f"Could not delete the earlier installation of Galaxia in {to_delete}: {error}", RuntimeWarning)
 
 
 def build_and_install_galaxia(galaxia_dir: pathlib.Path):
     galaxia_dir = pathlib.Path(galaxia_dir).resolve()
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_photocat = pathlib.Path(temp_dir.name) / CUSTOM_PHOTOCAT
-    remove_existing_galaxia(temp_photocat)
+    recover_from_a_stopped_build()
+    put_earlier_installation_aside()
     say("\nBuilding Galaxia")
-    GALAXIA.parent.mkdir(parents=True, exist_ok=True)
-    GALAXIA_LOG.mkdir(parents=True, exist_ok=True)
     try:
+        GALAXIA.parent.mkdir(parents=True, exist_ok=True)
+        GALAXIA_LOG.mkdir(parents=True, exist_ok=True)
         touch_autotools_files(galaxia_dir)
         say("\n\tConfiguring")
         configure_galaxia(galaxia_dir)
@@ -282,9 +335,11 @@ def build_and_install_galaxia(galaxia_dir: pathlib.Path):
         make_install_galaxia(galaxia_dir)
         say("\n\tRunning make distclean")
         make_distclean_galaxia(galaxia_dir)
-    finally:  # the custom photometric systems that were put aside go back, whether the build succeeded or not
-        say("\n\tCleaning temporary")
-        clean_up_temporary(temp_photocat)
+        say("\n\tCleaning up")
+        give_up_earlier_installation()
+    except BaseException:  # a failure or an interruption: the earlier installation is put back
+        restore_earlier_installation()
+        raise
     say("\n")
 
 

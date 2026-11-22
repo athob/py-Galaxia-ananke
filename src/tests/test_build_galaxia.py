@@ -19,6 +19,7 @@ build, with a toy backend in place of Galaxia: a directory with a configure scri
 makes an executable and installs it in the prefix, and some data to copy. They run the real make.
 """
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -172,7 +173,7 @@ def test_the_build_says_what_it_is_doing(cache, toy):
     with mock.patch.object(build, 'say', said.append):
         build.build_and_install_galaxia(toy)
     assert said == ['\nBuilding Galaxia', '\n\tConfiguring', '\n\tRunning make', '\n\tRunning make install',
-                    '\n\tRunning make distclean', '\n\tCleaning temporary', '\n']
+                    '\n\tRunning make distclean', '\n\tCleaning up', '\n']
 
 
 def test_the_build_makes_the_directories_it_needs(tmp_path, monkeypatch, toy):
@@ -184,16 +185,18 @@ def test_the_build_makes_the_directories_it_needs(tmp_path, monkeypatch, toy):
 
 def test_the_steps_are_taken_in_order(cache, toy):
     taken = []
-    for name in ('remove_existing_galaxia', 'touch_autotools_files', 'configure_galaxia', 'make_galaxia',
-                 'make_install_galaxia', 'make_distclean_galaxia', 'clean_up_temporary'):
+    for name in ('recover_from_a_stopped_build', 'put_earlier_installation_aside', 'touch_autotools_files',
+                 'configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia',
+                 'give_up_earlier_installation'):
         original = getattr(build, name)
         mock.patch.object(build, name, lambda *args, _name=name, _original=original: (taken.append(_name), _original(*args))[1]).start()
     try:
         build.build_and_install_galaxia(toy)
     finally:
         mock.patch.stopall()
-    assert taken == ['remove_existing_galaxia', 'touch_autotools_files', 'configure_galaxia', 'make_galaxia',
-                     'make_install_galaxia', 'make_distclean_galaxia', 'clean_up_temporary']
+    assert taken == ['recover_from_a_stopped_build', 'put_earlier_installation_aside', 'touch_autotools_files',
+                     'configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia',
+                     'give_up_earlier_installation']
 
 
 def test_the_earlier_installation_is_replaced(cache, toy):
@@ -254,17 +257,18 @@ def test_the_error_of_a_step_names_it_and_its_log(step, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize('step', FATAL)
-def test_the_steps_after_the_one_that_fails_are_not_taken_but_the_cleaning_is(step, tmp_path, monkeypatch):
+def test_the_steps_after_the_one_that_fails_are_not_taken(step, tmp_path, monkeypatch):
     patch_cache(monkeypatch, tmp_path / 'prefix')
     taken = []
-    for name in ('configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia', 'clean_up_temporary'):
+    for name in ('configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia',
+                 'give_up_earlier_installation'):
         original = getattr(build, name)
         monkeypatch.setattr(build, name,
                             lambda *args, _name=name, _original=original: (taken.append(_name), _original(*args))[1])
     with pytest.raises(CompileError):
         build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
     steps = ['configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia']
-    assert taken == steps[:list(STEPS).index(step) + 1] + ['clean_up_temporary']
+    assert taken == steps[:list(STEPS).index(step) + 1]
 
 
 @pytest.mark.parametrize('step', FATAL)
@@ -308,6 +312,90 @@ def test_the_error_of_a_step_ends_with_the_last_lines_of_its_log(tmp_path, monke
 def test_the_error_of_a_step_gives_all_of_a_short_log_and_a_step_without_output_gives_none(tmp_path, monkeypatch):
     assert failing_after(3, tmp_path, monkeypatch).split('\n')[1:-2] == ['line 1', 'line 2', 'line 3']
     assert failing_after(0, tmp_path / 'again', monkeypatch).split('\n')[1:] == ['aborting...', '']
+
+
+def make_earlier_installation(places):
+    galaxia = places.GALAXIA
+    galaxia.parent.mkdir(parents=True)
+    galaxia.write_text('#!/bin/sh\necho earlier galaxia\n')
+    galaxia.chmod(0o755)
+    (places.ISOCHRONES_PATH / 'padova').mkdir(parents=True)
+    (places.ISOCHRONES_PATH / 'padova' / 'iso.dat').write_text('earlier data')
+    (places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine').mkdir(parents=True)
+    (places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat').write_text('my own system')
+    places.GALAXIA_LOG.mkdir(parents=True)
+    (places.GALAXIA_LOG / 'Galaxia-make.log').write_text('log of the earlier build')
+
+
+def the_earlier_installation_is_there(places):
+    return (run_toy(places.GALAXIA) == 'earlier galaxia\n'
+            and (places.ISOCHRONES_PATH / 'padova' / 'iso.dat').read_text() == 'earlier data'
+            and (places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
+            and sorted(path.name for path in places.CACHE.parent.iterdir()) == [places.CACHE.name])
+
+
+@pytest.mark.parametrize('step', FATAL)
+def test_a_build_that_fails_leaves_the_earlier_installation_as_it_was(step, tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    make_earlier_installation(places)
+    with pytest.raises(CompileError):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+    assert the_earlier_installation_is_there(places)
+
+
+@pytest.mark.parametrize('step', FATAL)
+def test_the_log_that_the_error_of_a_step_names_is_there_when_the_earlier_installation_is_back(step, tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    make_earlier_installation(places)
+    with pytest.raises(CompileError) as error:
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+    log = pathlib.Path(re.search(r"see the log (\S+)", str(error.value)).group(1))
+    assert log == places.GALAXIA_LOG / STEPS[step][1] and log.read_text() != ''
+
+
+def test_a_build_that_is_interrupted_leaves_the_earlier_installation_as_it_was(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    make_earlier_installation(places)
+    monkeypatch.setattr(build, 'make_galaxia', mock.Mock(side_effect=KeyboardInterrupt))
+    with pytest.raises(KeyboardInterrupt):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source'))
+    assert the_earlier_installation_is_there(places)
+
+
+def test_a_build_that_fails_without_an_earlier_installation_leaves_what_it_made_with_its_logs(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    with pytest.raises(CompileError):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails='make'))
+    assert (places.GALAXIA_LOG / 'Galaxia-make.log').read_text() != ''
+    assert sorted(path.name for path in places.CACHE.parent.iterdir()) == [places.CACHE.name]
+
+
+def test_a_build_leaves_nothing_next_to_the_cache(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    make_earlier_installation(places)
+    build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source'))
+    assert run_toy(places.GALAXIA) == 'toy galaxia\n'
+    assert sorted(path.name for path in places.CACHE.parent.iterdir()) == [places.CACHE.name]
+
+
+def test_a_build_after_one_that_was_killed_starts_from_the_installation_that_was_put_aside(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    make_earlier_installation(places)
+    build.put_earlier_installation_aside()                                  # the build that was killed did this
+    (places.CACHE / 'bin').mkdir(parents=True)
+    (places.CACHE / 'bin' / 'partial').write_text('what it made before it was killed')
+    build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source'))
+    assert run_toy(places.GALAXIA) == 'toy galaxia\n' and not (places.CACHE / 'bin' / 'partial').exists()
+    assert (places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
+    assert sorted(path.name for path in places.CACHE.parent.iterdir()) == [places.CACHE.name]
+
+
+def test_a_build_deletes_an_earlier_installation_that_a_build_that_was_killed_left_to_delete(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    build.installation_to_delete().mkdir(parents=True)
+    (build.installation_to_delete() / 'left').write_text('by a build that was killed')
+    build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source'))
+    assert sorted(path.name for path in places.CACHE.parent.iterdir()) == [places.CACHE.name]
 
 
 def test_a_make_install_that_fails_does_not_copy_the_data(cache, tmp_path):

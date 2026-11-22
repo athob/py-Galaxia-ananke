@@ -272,52 +272,211 @@ def make_old_installation(cache, custom=True):
         (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat').write_text('my own system')
 
 
-def test_without_an_earlier_installation_there_is_nothing_to_remove(cache, tmp_path):
-    build.remove_existing_galaxia(tmp_path / 'kept')
-    assert not cache.CACHE.exists() and not (tmp_path / 'kept').exists()
+def make_new_installation(cache, isochrones=True):
+    """What a build makes in the cache, which is where the earlier installation was."""
+    (cache.CACHE / 'bin').mkdir(parents=True)
+    (cache.CACHE / 'bin' / 'galaxia').write_text('new')
+    if isochrones:
+        (cache.ISOCHRONES_PATH / 'padova').mkdir(parents=True)
+        (cache.ISOCHRONES_PATH / 'padova' / 'iso.dat').write_text('new data')
 
 
-def test_the_earlier_installation_is_removed(cache, tmp_path):
-    make_old_installation(cache, custom=False)
-    build.remove_existing_galaxia(tmp_path / 'kept')
-    assert not cache.CACHE.exists() and not (tmp_path / 'kept').exists()
+def my_systems(cache):
+    return cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat'
 
 
-def test_the_custom_photometric_systems_are_put_aside_when_the_earlier_installation_is_removed(cache, tmp_path):
+def test_the_earlier_installation_waits_next_to_the_cache_and_goes_to_be_deleted_next_to_it(cache):
+    assert build.installation_aside().parent == build.installation_to_delete().parent == cache.CACHE.parent
+    assert len({cache.CACHE, build.installation_aside(), build.installation_to_delete()}) == 3
+
+
+def test_without_an_earlier_installation_there_is_nothing_to_put_aside(cache):
+    build.put_earlier_installation_aside()
+    assert not cache.CACHE.exists() and not build.installation_aside().exists()
+
+
+def test_the_earlier_installation_is_put_aside_whole(cache):
     make_old_installation(cache)
-    build.remove_existing_galaxia(tmp_path / 'kept')
+    build.put_earlier_installation_aside()
+    aside = build.installation_aside()
     assert not cache.CACHE.exists()
-    assert (tmp_path / 'kept' / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
+    assert (aside / 'bin' / 'galaxia').read_text() == 'old'
+    assert (aside / cache.ISOCHRONES_PATH.relative_to(cache.CACHE) / 'padova' / 'iso.dat').read_text() == 'old data'
+    assert (aside / cache.ISOCHRONES_PATH.relative_to(cache.CACHE) / build.CUSTOM_PHOTOCAT / 'Mine').is_dir()
 
 
-def test_the_custom_photometric_systems_are_put_back_in_the_new_installation(cache, tmp_path):
+# -- giving up the earlier installation
+
+def test_the_custom_photometric_systems_go_to_the_new_installation_and_the_earlier_one_is_given_up(cache):
     make_old_installation(cache)
-    build.remove_existing_galaxia(tmp_path / 'kept')
-    cache.ISOCHRONES_PATH.mkdir(parents=True)                           # what the new installation made
-    build.clean_up_temporary(tmp_path / 'kept')
-    assert (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
-    assert not (tmp_path / 'kept').exists()
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    build.give_up_earlier_installation()
+    assert my_systems(cache).read_text() == 'my own system'
+    assert (cache.ISOCHRONES_PATH / 'padova' / 'iso.dat').read_text() == 'new data'            # next to the new data
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
+    assert sorted(path.name for path in cache.CACHE.parent.iterdir()) == [cache.CACHE.name]    # nothing is left next to it
 
 
-def test_cleaning_up_when_nothing_was_put_aside_does_nothing(cache, tmp_path):
-    cache.ISOCHRONES_PATH.mkdir(parents=True)
-    build.clean_up_temporary(tmp_path / 'kept')
-    assert list(cache.ISOCHRONES_PATH.iterdir()) == []
-
-
-@pytest.mark.xfail(raises=OSError, reason="the custom photometric systems are moved with a rename, which fails between two "
-                   "file systems (the temporary directory and the cache often are): the installation stops, and has not "
-                   "removed the old cache yet, so nothing is lost but it cannot be done")
-def test_the_custom_photometric_systems_can_be_put_aside_between_two_file_systems(cache, tmp_path):
+def test_the_custom_photometric_systems_go_to_a_new_installation_that_has_no_isochrones_directory(cache):
     make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache, isochrones=False)
+    build.give_up_earlier_installation()
+    assert my_systems(cache).read_text() == 'my own system'
 
-    def across_file_systems(*arguments, **keywords):
-        raise OSError(errno.EXDEV, 'Invalid cross-device link')
+
+def test_without_custom_photometric_systems_the_new_installation_gets_none(cache):
+    make_old_installation(cache, custom=False)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    build.give_up_earlier_installation()
+    assert not (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT).exists()
+    assert not build.installation_aside().exists() and not build.installation_to_delete().exists()
+
+
+def test_giving_up_when_there_is_no_earlier_installation_does_nothing(cache):
+    make_new_installation(cache)
+    build.give_up_earlier_installation()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new' and not build.installation_to_delete().exists()
+
+
+def test_the_custom_photometric_systems_are_merged_with_those_that_the_new_installation_has_in_their_place(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Theirs').mkdir(parents=True)
+    (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Theirs' / 'isochrone.dat').write_text('their system')
+    build.give_up_earlier_installation()
+    assert my_systems(cache).read_text() == 'my own system'
+    assert (cache.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Theirs' / 'isochrone.dat').read_text() == 'their system'
+
+
+def test_the_earlier_installation_stays_aside_with_its_custom_systems_if_they_cannot_be_copied(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    with mock.patch('shutil.copytree', side_effect=OSError(errno.ENOSPC, 'No space left on device')):
+        with pytest.raises(OSError):
+            build.give_up_earlier_installation()
+    aside = build.installation_aside()
+    custom = aside / cache.ISOCHRONES_PATH.relative_to(cache.CACHE) / build.CUSTOM_PHOTOCAT
+    assert (custom / 'Mine' / 'isochrone.dat').is_file()
+    assert not build.installation_to_delete().exists()
+
+
+def test_an_earlier_installation_that_cannot_be_deleted_is_a_warning_and_is_deleted_by_the_next_build(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    with mock.patch('shutil.rmtree', side_effect=PermissionError(errno.EACCES, 'Permission denied')):
+        with pytest.warns(RuntimeWarning, match="Could not delete the earlier installation"):
+            build.give_up_earlier_installation()
+    assert not build.installation_aside().exists() and build.installation_to_delete().is_dir()
+    assert my_systems(cache).read_text() == 'my own system'
+    build.recover_from_a_stopped_build()
+    assert not build.installation_to_delete().exists() and (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
+
+
+# -- restoring the earlier installation
+
+def test_a_build_that_stopped_is_replaced_by_the_earlier_installation(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    (cache.CACHE / 'bin' / 'partial').write_text('what the build made before it stopped')
+    build.restore_earlier_installation()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'old' and not (cache.CACHE / 'bin' / 'partial').exists()
+    assert (cache.ISOCHRONES_PATH / 'padova' / 'iso.dat').read_text() == 'old data'
+    assert my_systems(cache).read_text() == 'my own system'
+    assert not build.installation_aside().exists()
+
+
+def test_the_logs_of_the_build_that_stopped_take_the_place_of_the_earlier_ones(cache):
+    make_old_installation(cache)
+    (cache.GALAXIA_LOG).mkdir(parents=True)
+    (cache.GALAXIA_LOG / 'Galaxia-configure.log').write_text('log of the earlier build')
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    cache.GALAXIA_LOG.mkdir(parents=True)
+    (cache.GALAXIA_LOG / 'Galaxia-make.log').write_text('log of the build that failed')
+    build.restore_earlier_installation()
+    assert sorted(path.name for path in cache.GALAXIA_LOG.iterdir()) == ['Galaxia-make.log']
+    assert (cache.GALAXIA_LOG / 'Galaxia-make.log').read_text() == 'log of the build that failed'
+
+
+def test_the_logs_of_the_earlier_installation_are_kept_if_the_build_that_stopped_made_none(cache):
+    make_old_installation(cache)
+    cache.GALAXIA_LOG.mkdir(parents=True)
+    (cache.GALAXIA_LOG / 'Galaxia-make.log').write_text('log of the earlier build')
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    build.restore_earlier_installation()
+    assert (cache.GALAXIA_LOG / 'Galaxia-make.log').read_text() == 'log of the earlier build'
+
+
+def test_without_an_earlier_installation_what_a_build_that_stopped_made_is_left(cache):
+    make_new_installation(cache)
+    cache.GALAXIA_LOG.mkdir(parents=True)
+    (cache.GALAXIA_LOG / 'Galaxia-make.log').write_text('log of the build that failed')
+    build.restore_earlier_installation()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
+    assert (cache.GALAXIA_LOG / 'Galaxia-make.log').read_text() == 'log of the build that failed'
+
+
+# -- recovering from a build that was killed
+
+def test_there_is_nothing_to_recover_when_no_build_was_stopped(cache):
+    make_old_installation(cache)
+    build.recover_from_a_stopped_build()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'old' and my_systems(cache).is_file()
+    assert sorted(path.name for path in cache.CACHE.parent.iterdir()) == [cache.CACHE.name]
+
+
+def test_an_installation_that_waits_aside_is_put_back_when_the_build_that_put_it_there_was_killed(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)                                     # what the build made before it was killed
+    build.recover_from_a_stopped_build()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'old' and my_systems(cache).read_text() == 'my own system'
+    assert sorted(path.name for path in cache.CACHE.parent.iterdir()) == [cache.CACHE.name]
+
+
+def test_an_installation_that_waits_aside_is_put_back_when_the_build_was_killed_before_it_made_anything(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    build.recover_from_a_stopped_build()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'old' and my_systems(cache).is_file()
+
+
+def test_an_installation_to_delete_is_deleted_and_the_complete_new_one_is_kept(cache):
+    make_old_installation(cache)
+    build.put_earlier_installation_aside()
+    make_new_installation(cache)
+    build.installation_aside().rename(build.installation_to_delete())            # the build was killed after this
+    build.recover_from_a_stopped_build()
+    assert (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
+    assert sorted(path.name for path in cache.CACHE.parent.iterdir()) == [cache.CACHE.name]
+
+
+def test_nothing_is_renamed_to_another_directory_so_that_no_file_system_can_get_in_the_way(cache):
+    real_rename, real_path_rename = os.rename, pathlib.Path.rename
+
+    def only_in_the_same_directory(source, target, *arguments, **keywords):
+        if pathlib.Path(source).parent != pathlib.Path(target).parent:
+            raise OSError(errno.EXDEV, 'Invalid cross-device link')
+        return real_rename(source, target, *arguments, **keywords)
+
+    def path_rename(self, target):
+        return only_in_the_same_directory(self, target)
+    make_old_installation(cache)
     # pathlib calls os.rename in the recent versions of python, and the function that it kept when it was imported in the older
-    # ones (3.9 and 3.10): the two are changed, so that nothing can be renamed across file systems, as shutil.move can cope with
-    with mock.patch('os.rename', across_file_systems), mock.patch.object(pathlib.Path, 'rename', across_file_systems):
-        build.remove_existing_galaxia(tmp_path / 'kept')
-    assert (tmp_path / 'kept' / 'Mine' / 'isochrone.dat').read_text() == 'my own system'
+    # ones (3.9 and 3.10): the two are changed, so that nothing can be renamed from a directory to another
+    with mock.patch('os.rename', only_in_the_same_directory), mock.patch.object(pathlib.Path, 'rename', path_rename):
+        build.put_earlier_installation_aside()
+        make_new_installation(cache)
+        build.give_up_earlier_installation()
+    assert my_systems(cache).read_text() == 'my own system' and (cache.CACHE / 'bin' / 'galaxia').read_text() == 'new'
 
 
 # -- the commands that setuptools runs ----------------------------------------------

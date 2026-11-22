@@ -79,8 +79,11 @@ the backend at the commit this version pins, which it asks the GitHub API for), 
 `configure`, `make` and `make install` for it, and copies its data. All of it goes to a cache
 directory, `.cache/galaxia_ananke` under `sys.prefix` (or under the folder
 `ANANKE_SYSTEM_PREFIX` names), with the log of each step in its `log` folder. Installing again
-rebuilds that directory, and keeps the custom photometric catalogue (`py_custom`) that the
-user made in it.
+builds a new installation while the earlier one waits aside, next to the cache
+(`galaxia_ananke.aside`): if the build fails or is interrupted, the earlier installation is put
+back, with the logs of the build that failed in its `log` folder; if it succeeds, the custom
+photometric catalogue (`py_custom`) that the user made is copied to the new installation and
+the earlier one is deleted. A build that was killed is recovered at the next one.
 
 The backend is therefore not in the package, and not in the sdist either: the sdist holds the
 Python sources, `.gitmodules`, and the version that versioneer wrote in it. That is also why only
