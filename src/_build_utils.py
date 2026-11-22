@@ -184,7 +184,10 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
             _temp.wait()
         except RuntimeError as e:
             raise CompileError(str(e) + f"\nError cloning {submodule_name}, aborting...\n")
-        _temp = subprocess.call(['git', 'checkout', galaxia_commit], cwd=root_dir / submodule_name)
+        status = subprocess.call(['git', 'checkout', galaxia_commit], cwd=root_dir / submodule_name)
+        if status:
+            raise CompileError(f"Error checking out the commit {galaxia_commit} of {submodule_name} "
+                               f"(git exit status {status}), see what git says above\naborting...\n")
         # git archive -vvv --remote=<REPO_URL> <REF> | tar -xvf -
 
 

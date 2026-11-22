@@ -474,6 +474,8 @@ far as the commits of this package and of the backend say.
 - When git cannot initialise the submodule of sources that are a git repository, the installation stops with an error about git
   (the command, the directory and its exit status, with what git says above) and no longer with an error about the install
   script of a backend that is not there. The backend is cloned only when the sources are not a git repository.
+- A commit of the backend that cannot be checked out after the clone is now an error that names the commit, and no longer a
+  build from the latest commit of the default branch of the backend without a word.
 
 ## [0.8.0] - 2026-08-10
 

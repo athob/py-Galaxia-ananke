@@ -256,13 +256,11 @@ def test_sources_that_are_not_a_git_repository_end_up_with_the_backend_at_the_pi
     assert os.access(backend / 'build-aux' / 'install-sh', os.X_OK)
 
 
-@pytest.mark.xfail(raises=pytest.fail.Exception, reason="the status of git checkout is not looked at: a commit that cannot be "
-                   "checked out leaves the backend at the latest commit of its default branch, and the package is built "
-                   "from it without a word")
 def test_a_commit_that_cannot_be_checked_out_is_an_error(world, monkeypatch):
     world.github_says(monkeypatch, commit='0' * 40)
     root = world.sources('sdist', git_repository=False)
-    with pytest.raises((OSError, CompileError, subprocess.CalledProcessError)):
+    with pytest.raises(CompileError, match=f"Error checking out the commit {'0' * 40} of {build.GALAXIA_SUBMODULE_NAME} "
+                                           r"\(git exit status [1-9]"):
         build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
 
 
