@@ -471,6 +471,9 @@ far as the commits of this package and of the backend say.
   directory was on another file system than the cache, and it is deleted. A build that was killed is recovered at the next one.
 - The backend is built in the directory that was checked, the one of the submodule at the root of the repository, wherever the
   build runs from, and no longer in a directory that is taken from the working directory.
+- When git cannot initialise the submodule of sources that are a git repository, the installation stops with an error about git
+  (the command, the directory and its exit status, with what git says above) and no longer with an error about the install
+  script of a backend that is not there. The backend is cloned only when the sources are not a git repository.
 
 ## [0.8.0] - 2026-08-10
 

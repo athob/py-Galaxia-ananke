@@ -196,10 +196,15 @@ def check_galaxia_submodule(root_dir):
         _temp = subprocess.call(['git', 'submodule', 'update', '--init', '--recursive'], cwd=root_dir)
     except FileNotFoundError:
         raise OSError("Your system does not have git installed. Please install git before proceeding")
-    if _temp == 128:
+    # 128 is what git says of sources that are not a git repository, as when an sdist is unpacked, but also of other fatal
+    # errors: only the first are cloned
+    if _temp == 128 and not (root_dir / '.git').exists():
         say("\n\tFailed to git submodule init Galaxia, attempting to clone...")
         clone_and_checkout_submodules(root_dir, [GALAXIA_SUBMODULE_NAME])
         say("\n\tClone was successful")
+    elif _temp:
+        raise OSError(f"git submodule update --init --recursive failed in {root_dir} (exit status {_temp}), "
+                      "see what git says above")
         # raise OSError(f"The repository from which you are attempting to install this package is not a git repository.\nPlease follow the online instructions for proper installation ({__url__}/#installation).")
     install_sh_path = root_dir / GALAXIA_SUBMODULE_NAME / 'build-aux' / 'install-sh'
     if not os.access(install_sh_path, os.X_OK):

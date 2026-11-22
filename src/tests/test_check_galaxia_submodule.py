@@ -165,14 +165,20 @@ def test_the_install_script_of_the_backend_has_to_be_executable(world, allow_loc
         build.check_galaxia_submodule(root)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="when git cannot initialise the submodule, for any reason but that the "
-                   "directory is not a repository, nothing is said about git: the error is about the install script, "
-                   "which is not there for want of the backend")
 def test_a_submodule_that_git_cannot_initialise_is_an_error_about_git(world):
     # here git refuses the repository on the same machine, as it would one that cannot be reached
     root = world.sources()
-    with pytest.raises(OSError, match='git submodule'):
+    with pytest.raises(OSError, match=r'git submodule update --init --recursive failed in .* \(exit status [1-9]'):
         build.check_galaxia_submodule(root)
+
+
+def test_a_git_repository_that_git_cannot_read_is_an_error_about_git_and_is_not_cloned_over(world):
+    root = world.sources('broken', git_repository=False)
+    (root / '.git').mkdir()                                  # it is there, and git does not take it for a repository
+    with mock.patch.object(build, 'clone_and_checkout_submodules') as clone:
+        with pytest.raises(OSError, match='git submodule update --init --recursive failed.*exit status 128'):
+            build.check_galaxia_submodule(root)
+    clone.assert_not_called()
 
 
 def test_git_that_is_not_installed_is_an_error_that_says_so(world):
