@@ -21,6 +21,7 @@ makes an executable and installs it in the prefix, and some data to copy. They r
 import pathlib
 import shutil
 import subprocess
+import sys
 import textwrap
 from unittest import mock
 
@@ -233,14 +234,17 @@ STEPS = {'configure': ('configure', 'Galaxia-configure.log'), 'make': ('make', '
          'distclean': ('make distclean', 'Galaxia-make-distclean.log')}
 
 
-@pytest.mark.parametrize('step', list(STEPS))
+FATAL = ['configure', 'make', 'install']                        # distclean only cleans the source: it is a warning
+
+
+@pytest.mark.parametrize('step', FATAL)
 def test_a_step_that_fails_is_an_error(step, tmp_path, monkeypatch):
     patch_cache(monkeypatch, tmp_path / 'prefix')
     with pytest.raises(CompileError):
         build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
 
 
-@pytest.mark.parametrize('step', list(STEPS))
+@pytest.mark.parametrize('step', FATAL)
 def test_the_error_of_a_step_names_it_and_its_log(step, tmp_path, monkeypatch):
     places = patch_cache(monkeypatch, tmp_path / 'prefix')
     name, log = STEPS[step]
@@ -249,7 +253,7 @@ def test_the_error_of_a_step_names_it_and_its_log(step, tmp_path, monkeypatch):
     assert f"Error running {name} for Galaxia" in str(error.value) and str(places.GALAXIA_LOG / log) in str(error.value)
 
 
-@pytest.mark.parametrize('step', list(STEPS))
+@pytest.mark.parametrize('step', FATAL)
 def test_the_steps_after_the_one_that_fails_are_not_taken_but_the_cleaning_is(step, tmp_path, monkeypatch):
     patch_cache(monkeypatch, tmp_path / 'prefix')
     taken = []
@@ -263,7 +267,7 @@ def test_the_steps_after_the_one_that_fails_are_not_taken_but_the_cleaning_is(st
     assert taken == steps[:list(STEPS).index(step) + 1] + ['clean_up_temporary']
 
 
-@pytest.mark.parametrize('step', list(STEPS))
+@pytest.mark.parametrize('step', FATAL)
 def test_the_custom_photometric_systems_survive_a_build_that_fails(step, tmp_path, monkeypatch):
     places = patch_cache(monkeypatch, tmp_path / 'prefix')
     mine = places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine'
@@ -272,6 +276,38 @@ def test_the_custom_photometric_systems_survive_a_build_that_fails(step, tmp_pat
     with pytest.raises(CompileError):
         build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
     assert (mine / 'isochrone.dat').read_text() == 'my own system'
+
+
+def test_a_distclean_that_fails_is_a_warning_and_the_installation_goes_on(tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    mine = places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine'
+    mine.mkdir(parents=True)
+    (mine / 'isochrone.dat').write_text('my own system')
+    with pytest.warns(RuntimeWarning, match="Error running make distclean for Galaxia"):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails='distclean'))
+    assert run_toy(places.GALAXIA) == 'toy galaxia\n'
+    assert (mine / 'isochrone.dat').read_text() == 'my own system'
+
+
+def failing_after(lines, tmp_path, monkeypatch):
+    """The error of a step that prints that many lines (line 1, line 2...) and fails."""
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    places.GALAXIA_LOG.mkdir(parents=True)
+    code = f"for i in range(1, {lines} + 1): print('line', i)\nraise SystemExit(3)"
+    with pytest.raises(CompileError) as error:
+        build.run_step('a step', [sys.executable, '-c', code], 'Galaxia-a-step.log', tmp_path)
+    return str(error.value)
+
+
+def test_the_error_of_a_step_ends_with_the_last_lines_of_its_log(tmp_path, monkeypatch):
+    message = failing_after(50, tmp_path, monkeypatch)
+    assert "exit status 3" in message
+    assert message.split('\n')[1:-2] == [f'line {i}' for i in range(31, 51)] and message.endswith('aborting...\n')
+
+
+def test_the_error_of_a_step_gives_all_of_a_short_log_and_a_step_without_output_gives_none(tmp_path, monkeypatch):
+    assert failing_after(3, tmp_path, monkeypatch).split('\n')[1:-2] == ['line 1', 'line 2', 'line 3']
+    assert failing_after(0, tmp_path / 'again', monkeypatch).split('\n')[1:] == ['aborting...', '']
 
 
 def test_a_make_install_that_fails_does_not_copy_the_data(cache, tmp_path):

@@ -29,6 +29,7 @@ import urllib.parse
 import json
 import configparser
 import tempfile
+from warnings import warn
 from distutils.errors import CompileError
 from setuptools.command.build_ext import build_ext
 from setuptools import Command
@@ -223,13 +224,19 @@ def touch_autotools_files(galaxia_dir: pathlib.Path):
     (galaxia_dir / 'config.h.in').touch()
 
 
-def run_step(name: str, command: list, log: str, galaxia_dir: pathlib.Path):
-    """Run a step of the build with its output in its log, and raise if it fails."""
+def run_step(name: str, command: list, log: str, galaxia_dir: pathlib.Path, fatal: bool = True, tail: int = 20):
+    """
+    Run a step of the build with its output in its log. If it fails, raise an error that gives the last lines of the log, or
+    only warn if the step is not ``fatal``.
+    """
     with (GALAXIA_LOG / log).open('w') as f:
         status = subprocess.call(command, cwd=galaxia_dir, stdout=f, stderr=f)
     if status:
-        raise CompileError(f"Error running {name} for Galaxia (exit status {status}), "
-                           f"see the log {GALAXIA_LOG / log}\naborting...\n")
+        message = f"Error running {name} for Galaxia (exit status {status}), see the log {GALAXIA_LOG / log}"
+        if fatal:
+            last_lines = (GALAXIA_LOG / log).read_text(errors='replace').splitlines()[-tail:]
+            raise CompileError('\n'.join([message] + last_lines + ["aborting...\n"]))
+        warn(message + ": the installation goes on", RuntimeWarning)
 
 
 def configure_galaxia(galaxia_dir: pathlib.Path):
@@ -247,7 +254,7 @@ def make_install_galaxia(galaxia_dir: pathlib.Path):
 
 
 def make_distclean_galaxia(galaxia_dir: pathlib.Path):
-    run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir)
+    run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir, fatal=False)  # it only cleans
 
 
 def clean_up_temporary(temp_photocat: pathlib.Path):
