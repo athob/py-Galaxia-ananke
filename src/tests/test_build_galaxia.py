@@ -226,13 +226,61 @@ def test_the_backend_to_build_can_be_given_as_a_relative_name_or_a_string(cache,
     assert run_toy(cache.GALAXIA) == 'toy galaxia\n'
 
 
-@pytest.mark.parametrize('step', ['configure', 'make', 'install', 'distclean'])
-@pytest.mark.xfail(raises=pytest.fail.Exception, reason="the exit status of the steps of the build is not looked at: a build "
-                   "that fails goes on, and the package installs without a backend, which is only found out at the first import")
+# -- a step that fails ----------------------------------------------------------------
+
+STEPS = {'configure': ('configure', 'Galaxia-configure.log'), 'make': ('make', 'Galaxia-make.log'),
+         'install': ('make install', 'Galaxia-make-install.log'),
+         'distclean': ('make distclean', 'Galaxia-make-distclean.log')}
+
+
+@pytest.mark.parametrize('step', list(STEPS))
 def test_a_step_that_fails_is_an_error(step, tmp_path, monkeypatch):
-    places = patch_cache(monkeypatch, tmp_path / 'prefix')
-    with pytest.raises((OSError, CompileError, subprocess.CalledProcessError)):
+    patch_cache(monkeypatch, tmp_path / 'prefix')
+    with pytest.raises(CompileError):
         build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+
+
+@pytest.mark.parametrize('step', list(STEPS))
+def test_the_error_of_a_step_names_it_and_its_log(step, tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    name, log = STEPS[step]
+    with pytest.raises(CompileError) as error:
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+    assert f"Error running {name} for Galaxia" in str(error.value) and str(places.GALAXIA_LOG / log) in str(error.value)
+
+
+@pytest.mark.parametrize('step', list(STEPS))
+def test_the_steps_after_the_one_that_fails_are_not_taken_but_the_cleaning_is(step, tmp_path, monkeypatch):
+    patch_cache(monkeypatch, tmp_path / 'prefix')
+    taken = []
+    for name in ('configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia', 'clean_up_temporary'):
+        original = getattr(build, name)
+        monkeypatch.setattr(build, name,
+                            lambda *args, _name=name, _original=original: (taken.append(_name), _original(*args))[1])
+    with pytest.raises(CompileError):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+    steps = ['configure_galaxia', 'make_galaxia', 'make_install_galaxia', 'make_distclean_galaxia']
+    assert taken == steps[:list(STEPS).index(step) + 1] + ['clean_up_temporary']
+
+
+@pytest.mark.parametrize('step', list(STEPS))
+def test_the_custom_photometric_systems_survive_a_build_that_fails(step, tmp_path, monkeypatch):
+    places = patch_cache(monkeypatch, tmp_path / 'prefix')
+    mine = places.ISOCHRONES_PATH / build.CUSTOM_PHOTOCAT / 'Mine'
+    mine.mkdir(parents=True)
+    (mine / 'isochrone.dat').write_text('my own system')
+    with pytest.raises(CompileError):
+        build.build_and_install_galaxia(toy_galaxia(tmp_path / 'source', fails=step))
+    assert (mine / 'isochrone.dat').read_text() == 'my own system'
+
+
+def test_a_make_install_that_fails_does_not_copy_the_data(cache, tmp_path):
+    toy = toy_galaxia(tmp_path / 'broken', fails='install')
+    build.configure_galaxia(toy)
+    build.make_galaxia(toy)
+    with pytest.raises(CompileError):
+        build.make_install_galaxia(toy)
+    assert not cache.GALAXIA_DATA.exists()
 
 
 if __name__ == '__main__':

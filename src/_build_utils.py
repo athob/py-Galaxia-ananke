@@ -223,36 +223,38 @@ def touch_autotools_files(galaxia_dir: pathlib.Path):
     (galaxia_dir / 'config.h.in').touch()
 
 
+def run_step(name: str, command: list, log: str, galaxia_dir: pathlib.Path):
+    """Run a step of the build with its output in its log, and raise if it fails."""
+    with (GALAXIA_LOG / log).open('w') as f:
+        status = subprocess.call(command, cwd=galaxia_dir, stdout=f, stderr=f)
+    if status:
+        raise CompileError(f"Error running {name} for Galaxia (exit status {status}), "
+                           f"see the log {GALAXIA_LOG / log}\naborting...\n")
+
+
 def configure_galaxia(galaxia_dir: pathlib.Path):
-    with (GALAXIA_LOG / 'Galaxia-configure.log').open('w') as f:
-        subprocess.call([f"./configure",
-                        f"--prefix={CACHE}",
-                        f"--datadir={GALAXIA_DATA}"],
-                        cwd=galaxia_dir, stdout=f, stderr=f)
+    run_step('configure', ["./configure", f"--prefix={CACHE}", f"--datadir={GALAXIA_DATA}"],
+             'Galaxia-configure.log', galaxia_dir)
 
 
 def make_galaxia(galaxia_dir: pathlib.Path):
-    with (GALAXIA_LOG / 'Galaxia-make.log').open('w') as f:
-        subprocess.call(["make"],
-                        cwd=galaxia_dir, stdout=f, stderr=f)
+    run_step('make', ["make"], 'Galaxia-make.log', galaxia_dir)
 
 
 def make_install_galaxia(galaxia_dir: pathlib.Path):
-    with (GALAXIA_LOG / 'Galaxia-make-install.log').open('w') as f:
-        subprocess.call(["make", "install"],
-                        cwd=galaxia_dir, stdout=f, stderr=f)
+    run_step('make install', ["make", "install"], 'Galaxia-make-install.log', galaxia_dir)
     shutil.copytree(galaxia_dir / GALAXIA_DATA.name, GALAXIA_DATA)
 
 
 def make_distclean_galaxia(galaxia_dir: pathlib.Path):
-    with (GALAXIA_LOG / 'Galaxia-make-distclean.log').open('w') as f:
-        subprocess.call(["make", "distclean"],
-                        cwd=galaxia_dir, stdout=f, stderr=f)
+    run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir)
 
 
 def clean_up_temporary(temp_photocat: pathlib.Path):
     if temp_photocat.is_dir():
-        temp_photocat.rename(ISOCHRONES_PATH / CUSTOM_PHOTOCAT)
+        destination = ISOCHRONES_PATH / CUSTOM_PHOTOCAT
+        destination.parent.mkdir(parents=True, exist_ok=True)      # a build that stopped early has not made it
+        temp_photocat.rename(destination)
 
 
 def build_and_install_galaxia(galaxia_dir: pathlib.Path):
@@ -263,17 +265,19 @@ def build_and_install_galaxia(galaxia_dir: pathlib.Path):
     say("\nBuilding Galaxia")
     GALAXIA.parent.mkdir(parents=True, exist_ok=True)
     GALAXIA_LOG.mkdir(parents=True, exist_ok=True)
-    touch_autotools_files(galaxia_dir)
-    say("\n\tConfiguring")
-    configure_galaxia(galaxia_dir)
-    say("\n\tRunning make")
-    make_galaxia(galaxia_dir)
-    say("\n\tRunning make install")
-    make_install_galaxia(galaxia_dir)
-    say("\n\tRunning make distclean")
-    make_distclean_galaxia(galaxia_dir)
-    say("\n\tCleaning temporary")
-    clean_up_temporary(temp_photocat)
+    try:
+        touch_autotools_files(galaxia_dir)
+        say("\n\tConfiguring")
+        configure_galaxia(galaxia_dir)
+        say("\n\tRunning make")
+        make_galaxia(galaxia_dir)
+        say("\n\tRunning make install")
+        make_install_galaxia(galaxia_dir)
+        say("\n\tRunning make distclean")
+        make_distclean_galaxia(galaxia_dir)
+    finally:  # the custom photometric systems that were put aside go back, whether the build succeeded or not
+        say("\n\tCleaning temporary")
+        clean_up_temporary(temp_photocat)
     say("\n")
 
 

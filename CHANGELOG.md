@@ -460,6 +460,10 @@ far as the commits of this package and of the backend say.
   `Hdf5MemoryMapped._open` is wrapped so that this file object is closed with the HDF5 file. Nothing was leaked (no descriptor
   and no mapping is left, and the memory is flat over 200 cycles, measured with vaex 4.19.0 and 4.20.0), and no descriptor is
   held longer than vaex holds it.
+- A step of the build of the backend that fails (`configure`, `make`, `make install` or `make distclean`) is now an error that
+  names the step and its log, and stops the installation: the package no longer installs without a backend, which was only
+  found out at the first import. The custom photometric systems that the build puts aside are put back whether it succeeds
+  or not.
 
 ## [0.8.0] - 2026-08-10
 
