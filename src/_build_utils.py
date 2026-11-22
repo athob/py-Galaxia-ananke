@@ -173,17 +173,23 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
     gitmodules.read(root_dir / '.gitmodules')
     for submodule_name in submodule_names:
         galaxia_url = parsed_url._replace(path=str((url_path / gitmodules[f'submodule "{submodule_name}"']['url']).resolve())).geturl()
-        galaxia_commit = get_submodule_commit(
-            *(url_path.parts[-2:] + (_version.get_versions()['full-revisionid'], submodule_name))
-            )
         try:
-            _temp = subprocess.Popen(['git', 'clone', galaxia_url], cwd=root_dir,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            for line in iter(_temp.stdout.readline, ""):
-                say(line)
-            _temp.wait()
-        except RuntimeError as e:
-            raise CompileError(str(e) + f"\nError cloning {submodule_name}, aborting...\n")
+            galaxia_commit = get_submodule_commit(
+                *(url_path.parts[-2:] + (_version.get_versions()['full-revisionid'], submodule_name))
+                )
+        except RuntimeError as e:  # the rate limit of GitHub
+            raise CompileError(str(e) + f"\nError finding the commit of {submodule_name} to clone, aborting...\n")
+        output = []
+        process = subprocess.Popen(['git', 'clone', galaxia_url], cwd=root_dir,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        for line in iter(process.stdout.readline, ""):
+            say(line)
+            output.append(line.rstrip('\n'))
+        process.stdout.close()
+        status = process.wait()
+        if status:
+            raise CompileError('\n'.join([f"Error cloning {submodule_name} from {galaxia_url} (git exit status {status})"]
+                                         + output[-20:] + ["aborting...\n"]))
         status = subprocess.call(['git', 'checkout', galaxia_commit], cwd=root_dir / submodule_name)
         if status:
             raise CompileError(f"Error checking out the commit {galaxia_commit} of {submodule_name} "

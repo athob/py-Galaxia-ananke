@@ -20,10 +20,12 @@ next to <owner>/Galaxia-ananke.git. The .gitmodules is the one of this repositor
 version pins is replaced, since nothing here may use the network.
 """
 import configparser
+import gc
 import os
 import pathlib
 import shutil
 import subprocess
+import warnings
 from unittest import mock
 
 import pytest
@@ -264,14 +266,47 @@ def test_a_commit_that_cannot_be_checked_out_is_an_error(world, monkeypatch):
         build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
 
 
-@pytest.mark.xfail(raises=FileNotFoundError, reason="a clone that fails is not noticed (the exception that is caught is the "
-                   "wrong one, and the status of git is not looked at): the checkout that follows fails on a directory "
-                   "that is not there, with an error that says nothing of the clone")
-def test_a_clone_that_fails_is_a_compile_error(world, monkeypatch, tmp_path):
+def test_a_clone_that_fails_is_a_compile_error_that_gives_what_git_said(world, monkeypatch, tmp_path):
     world.github_says(monkeypatch)
     monkeypatch.setattr(build, '__url__', 'file://' + str(tmp_path / 'nowhere' / 'py-Galaxia-ananke'))
     root = world.sources('sdist', git_repository=False)
-    with pytest.raises(CompileError):
+    pattern = rf"Error cloning {build.GALAXIA_SUBMODULE_NAME} from file://.*\(git exit status 128\)"
+    with pytest.raises(CompileError, match=pattern) as error:
+        build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
+    assert 'fatal' in str(error.value) and str(error.value).endswith('aborting...\n')
+
+
+def test_the_error_of_a_clone_gives_the_last_lines_of_what_git_said_and_no_more(world, monkeypatch):
+    world.github_says(monkeypatch)
+    root = world.sources('sdist', git_repository=False)
+    said = [f'line {i}\n' for i in range(1, 51)]
+    process = mock.Mock(stdout=mock.Mock(readline=mock.Mock(side_effect=said + [''])), wait=lambda: 128)
+    monkeypatch.setattr(subprocess, 'Popen', lambda command, **kwargs: process)
+    with pytest.raises(CompileError) as error:
+        build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
+    lines = str(error.value).split('\n')
+    assert lines[1:-2] == [f'line {i}' for i in range(31, 51)] and lines[-2:] == ['aborting...', '']
+
+
+def test_the_pipe_of_the_clone_is_closed_when_it_is_over(world, monkeypatch):
+    world.github_says(monkeypatch)
+    root = world.sources('sdist', git_repository=False)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
+        gc.collect()
+    assert [str(w.message) for w in caught if issubclass(w.category, ResourceWarning)] == []
+
+
+def test_the_rate_limit_of_github_is_a_compile_error_that_says_what_was_being_cloned(world, monkeypatch):
+    world.github_says(monkeypatch)
+
+    def rate_limit(*arguments):
+        raise RuntimeError("GitHub API rate limit exceeded. Try again later.")
+    monkeypatch.setattr(build, 'get_submodule_commit', rate_limit)
+    root = world.sources('sdist', git_repository=False)
+    pattern = rf"rate limit exceeded.*\nError finding the commit of {build.GALAXIA_SUBMODULE_NAME} to clone"
+    with pytest.raises(CompileError, match=pattern):
         build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
 
 

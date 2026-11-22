@@ -476,6 +476,9 @@ far as the commits of this package and of the backend say.
   script of a backend that is not there. The backend is cloned only when the sources are not a git repository.
 - A commit of the backend that cannot be checked out after the clone is now an error that names the commit, and no longer a
   build from the latest commit of the default branch of the backend without a word.
+- A clone of the backend that fails is now an error that gives the last lines of what git said, and no longer goes on to a
+  checkout that fails on a directory that is not there. The error of the rate limit of GitHub, which the installation meant to
+  report as an error of the build, now is one. The pipe from which the output of the clone is read is closed when it is over.
 
 ## [0.8.0] - 2026-08-10
 
