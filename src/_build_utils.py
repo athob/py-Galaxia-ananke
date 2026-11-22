@@ -30,7 +30,7 @@ import json
 import configparser
 from warnings import warn
 from distutils.errors import CompileError
-from setuptools.command.build_ext import build_ext
+from setuptools.command.build_py import build_py
 from setuptools import Command
 from packaging.version import Version
 
@@ -382,9 +382,9 @@ def make_package_data():
 def make_cmdclass():
     """
     """
-    class _build_ext(build_ext):
+    class _build_py(build_py):
         def run(self):
-            build_ext.run(self)
+            build_py.run(self)
             verify_system_dependencies()
             verify_cache_can_be_written()
             check_galaxia_submodule(ROOT_DIR)
@@ -401,4 +401,4 @@ def make_cmdclass():
 
         def run(self): pass
 
-    return versioneer.get_cmdclass({'build_ext': _build_ext, 'test': _test})
+    return versioneer.get_cmdclass({'build_py': _build_py, 'test': _test})

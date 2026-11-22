@@ -576,6 +576,11 @@ def test_contributing_states_the_supported_python_range():
     assert f"each Python version from 3.{first} to 3.{last}," in contributing
 
 
+def test_setup_py_declares_no_extension_as_the_backend_is_a_program_and_not_an_extension():
+    text = read("setup.py")
+    assert "ext_modules" not in text and "Extension(" not in text
+
+
 def test_contributing_says_vaex_is_pinned_if_it_is():
     # the day the pin becomes a range, the guide has to stop saying so
     pinned = re.search(r"['\"]vaex==[\d.]+['\"]", read("setup.py")) is not None

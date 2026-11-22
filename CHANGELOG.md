@@ -487,6 +487,10 @@ far as the commits of this package and of the backend say.
   with a space (the directory of the output, the prefix of the installation) or with a quote is one argument of the command and
   no longer cut in two. `execute` reads all the commands before it starts any, and says so in its documentation: what a shell
   would take apart has to be quoted, with `shlex.quote` or `shlex.join`.
+- The backend is built by the `build_py` command, and no longer by a `build_ext` command that setuptools ran because `setup.py`
+  declared an extension that was not one (a program that the package runs is not an extension that Python loads). The wheel
+  that is built is now tagged `py3-none-any`, there being no extension to make it specific to a platform; only the sdist is
+  published.
 
 ## [0.8.0] - 2026-08-10
 

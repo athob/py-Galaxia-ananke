@@ -72,8 +72,10 @@ To have ruff, and actionlint if you have it, run on every commit by itself, inst
 ## How the package is built
 
 `setup.py` only describes the package: reading it builds nothing. What builds the backend is in
-`src/_build_utils.py` (`make_cmdclass`): a `build_ext` command, which setuptools runs when the
-wheel is built, checks that the system has git, GNU make and g++, makes sure the submodule is
+`src/_build_utils.py` (`make_cmdclass`): a `build_py` command, which setuptools runs when the
+wheel is built, and for an editable install too (the backend is a program that the package runs,
+not an extension that Python loads, so it is not built by `build_ext`), checks that the system
+has git, GNU make and g++, makes sure the submodule is
 there (with `git submodule update`, and, when the sources are not a git repository, by cloning
 the backend at the commit this version pins, which it asks the GitHub API for), then runs
 `configure`, `make` and `make install` for it, and copies its data. All of it goes to a cache

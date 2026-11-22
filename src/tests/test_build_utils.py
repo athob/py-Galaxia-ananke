@@ -530,16 +530,16 @@ def test_a_directory_that_the_system_does_not_let_the_cache_be_made_in_is_refuse
 
 # -- the commands that setuptools runs ----------------------------------------------
 
-def build_ext_of_the_package():
-    """The build_ext command of the package, without the layer versioneer puts on it."""
-    command = build.make_cmdclass()['build_ext']
-    return next(c for c in command.__mro__ if c.__name__ == '_build_ext')
+def build_py_of_the_package():
+    """The build_py command of the package, without the layer versioneer puts on it."""
+    command = build.make_cmdclass()['build_py']
+    return next(c for c in command.__mro__ if c.__name__ == '_build_py')
 
 
-def run_build_ext(**replaced):
+def run_build_py(**replaced):
     """Run the command with the steps replaced: the order in which they were called, and what they were given."""
     from setuptools import Distribution
-    from setuptools.command.build_ext import build_ext
+    from setuptools.command.build_py import build_py
     calls = []
     steps = {'verify_system_dependencies': lambda: calls.append(('verify',)),
              'verify_cache_can_be_written': lambda: calls.append(('cache',)),
@@ -547,49 +547,49 @@ def run_build_ext(**replaced):
              'build_and_install_galaxia': lambda path: calls.append(('build', path))}
     steps.update(replaced)
     with contextlib.ExitStack() as stack:
-        stack.enter_context(mock.patch.object(build_ext, 'run', lambda self: calls.append(('extensions',))))
+        stack.enter_context(mock.patch.object(build_py, 'run', lambda self: calls.append(('python',))))
         for name, step in steps.items():
             stack.enter_context(mock.patch.object(build, name, step))
-        build_ext_of_the_package()(Distribution()).run()
+        build_py_of_the_package()(Distribution()).run()
     return calls
 
 
-def test_build_ext_goes_through_the_extensions_the_system_the_cache_the_submodule_and_the_backend_in_that_order():
-    assert run_build_ext() == [('extensions',), ('verify',), ('cache',), ('check', build.ROOT_DIR),
-                               ('build', build.ROOT_DIR / build.GALAXIA_SUBMODULE_NAME)]
+def test_build_py_goes_through_the_python_modules_the_system_the_cache_the_submodule_and_the_backend_in_that_order():
+    assert run_build_py() == [('python',), ('verify',), ('cache',), ('check', build.ROOT_DIR),
+                              ('build', build.ROOT_DIR / build.GALAXIA_SUBMODULE_NAME)]
 
 
-def test_build_ext_stops_when_the_system_lacks_what_is_needed():
+def test_build_py_stops_when_the_system_lacks_what_is_needed():
     def refuse():
         raise OSError('no compiler')
     calls = []
     with pytest.raises(OSError, match='no compiler'):
-        calls = run_build_ext(verify_system_dependencies=refuse)
+        calls = run_build_py(verify_system_dependencies=refuse)
     assert calls == []
 
 
-def test_build_ext_stops_when_the_cache_cannot_be_written_before_it_asks_git_for_anything():
+def test_build_py_stops_when_the_cache_cannot_be_written_before_it_asks_git_for_anything():
     def refuse():
         raise PermissionError('no write permission')
     checked = []
     with pytest.raises(PermissionError, match='no write permission'):
-        run_build_ext(verify_cache_can_be_written=refuse, check_galaxia_submodule=lambda root: checked.append(root))
+        run_build_py(verify_cache_can_be_written=refuse, check_galaxia_submodule=lambda root: checked.append(root))
     assert checked == []
 
 
-def test_build_ext_does_not_build_a_backend_that_cannot_be_used():
+def test_build_py_does_not_build_a_backend_that_cannot_be_used():
     built = []
 
     def refuse(root):
         raise PermissionError('install-sh cannot be run')
     with pytest.raises(PermissionError):
-        run_build_ext(check_galaxia_submodule=refuse, build_and_install_galaxia=lambda path: built.append(path))
+        run_build_py(check_galaxia_submodule=refuse, build_and_install_galaxia=lambda path: built.append(path))
     assert built == []
 
 
-def test_build_ext_builds_the_backend_it_checked_wherever_it_runs(tmp_path, monkeypatch):
+def test_build_py_builds_the_backend_it_checked_wherever_it_runs(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    calls = run_build_ext()
+    calls = run_build_py()
     checked = [root for step, *rest in calls if step == 'check' for root in rest]
     built = [path for step, *rest in calls if step == 'build' for path in rest]
     assert pathlib.Path(built[0]).resolve() == (pathlib.Path(checked[0]) / build.GALAXIA_SUBMODULE_NAME).resolve()
@@ -597,10 +597,12 @@ def test_build_ext_builds_the_backend_it_checked_wherever_it_runs(tmp_path, monk
 
 def test_the_commands_of_the_build_are_those_of_versioneer_and_a_test_command_that_does_nothing():
     from setuptools import Distribution
-    from setuptools.command.build_ext import build_ext
+    from setuptools.command.build_py import build_py
     commands = build.make_cmdclass()
-    assert 'sdist' in commands and 'build_py' in commands              # what versioneer adds
-    assert issubclass(commands['build_ext'], build_ext)
+    assert 'sdist' in commands and 'build_py' in commands              # what versioneer adds, over the build_py of the package
+    assert issubclass(commands['build_py'], build_py)
+    # the build_py of the package, under the one of versioneer
+    assert [c.__name__ for c in commands['build_py'].__mro__].count('_build_py') == 1
     test = commands['test'](Distribution())
     assert test.user_options == [] and test.description == 'run tests'
     assert test.initialize_options() is None and test.finalize_options() is None and test.run() is None
