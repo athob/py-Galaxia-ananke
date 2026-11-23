@@ -16,8 +16,8 @@
 """
 Docstring
 """
-from typing import Union, List, Dict, Optional
-from numpy.typing import ArrayLike
+from typing import Any, Callable, Union, List, Dict, Optional
+from numpy.typing import NDArray
 from functools import cached_property
 import re
 import warnings
@@ -63,7 +63,9 @@ class PhotoSystem:
         else:
             return cmd_magnames
     
-    def _extract_from_svo_filter_list(self, key: str, unit=None, aggregate=lambda stack: np.nanmean(stack, axis=1)):
+    def _extract_from_svo_filter_list(self, key: str, unit: Optional[units.UnitBase] = None,
+                                      aggregate: Callable[[Any], Any] = lambda stack: np.nanmean(stack, axis=1)
+                                      ) -> units.Quantity:
         parts = [
             None if sfd.svo_filter_list is None else (  # None: the service has no filter for the instrument (with a warning)
                 _colu:= sfd.svo_filter_list[key],  # ignored
@@ -173,9 +175,10 @@ class PhotoSystem:
         asked. The conversion between Vega and AB is that of ``vega_to_ab_offsets``, which needs the network, but nothing
         is asked of the service when there is nothing to convert.
         """
-        target = Isochrone._check_magnitude_system(target)
-        if target is None:
+        checked_target = Isochrone._check_magnitude_system(target)
+        if checked_target is None:
             raise ValueError("A magnitude system to convert to is needed")
+        target = checked_target
         native = self.magnitude_system
         if native is None:
             raise ValueError(f"The magnitude system of {self.key} is not stated (its descriptor has no line "
@@ -196,7 +199,8 @@ class PhotoSystem:
     def mag_names_to_export_keys_mapping(self) -> Dict[str,str]:
         return dict(zip(self.mag_names, self.to_export_keys))
 
-    def get_nearest_isochrone_track_for_age_and_metallicity(self, ages: ArrayLike, metallicities: ArrayLike) -> List[table.QTable]:
+    def get_nearest_isochrone_track_for_age_and_metallicity(self, ages: NDArray[np.floating[Any]],
+                                                            metallicities: NDArray[np.floating[Any]]) -> List[table.QTable]:
         z_keys = np.array(list(self._isochrone.qtables_unique_ages_dictionary.keys()))
         nearest_z_keys = z_keys[np.digitize(metallicities, (z_keys[:-1]+z_keys[1:])/2)]
         nearest_z_sorter = np.argsort(nearest_z_keys)
