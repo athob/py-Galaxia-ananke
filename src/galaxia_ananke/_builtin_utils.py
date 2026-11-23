@@ -40,7 +40,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'tuple_itemgetter', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'format_docstring', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'tuple_itemgetter', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
 
 
 class Singleton(type):
@@ -184,6 +184,17 @@ def execute(cmds: Union[str, List[str]], max_workers: Optional[int] = None, verb
         if verbose:
             # only the last line of a command can lack its end of line, and the next line printed would be glued to it
             print(f"JOB{proc_id: {len_tags}d}/{n_cmds} | {stdout_line}", end="" if stdout_line.endswith("\n") else "\n")
+
+
+def format_docstring(function: Callable[..., Any], **values: Any) -> None:
+    """
+    Fills the placeholders of the docstring of a function (or of a method, whose function holds it) with the values, which is
+    how the documentation of the package gets its defaults. A function has no docstring when Python runs with -OO: nothing is
+    done then.
+    """
+    holder: Any = getattr(function, '__func__', function)
+    if holder.__doc__ is not None:
+        holder.__doc__ = holder.__doc__.format(**values)
 
 
 def make_symlink(file_path: Union[str, pathlib.Path], dest_dir: Union[str, pathlib.Path]) -> None:

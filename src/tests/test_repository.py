@@ -286,6 +286,20 @@ def test_annotations_do_not_need_a_newer_python_than_the_oldest_one_supported():
     assert not problems, f"use typing.List, typing.Optional... (Python 3.{oldest} is supported): {problems}"
 
 
+def test_the_package_reads_no_docstring_but_through_format_docstring():
+    # python -OO removes the docstrings: __doc__ is then None, and `X.__doc__ = X.__doc__.format(...)` raises when the package
+    # is imported, which it then cannot be. format_docstring (in _builtin_utils) does nothing for a function that has none, and
+    # is the only place that reads a docstring.
+    problems = []
+    for path in sorted((ROOT / "src" / "galaxia_ananke").rglob("*.py")):
+        if path.name == "_builtin_utils.py" or path.is_symlink():
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Attribute) and node.attr == "__doc__" and isinstance(node.ctx, ast.Load):
+                problems.append(f"{path.relative_to(ROOT)}:{node.lineno}")
+    assert not problems, f"use format_docstring: a docstring is None with python -OO: {problems}"
+
+
 def test_cd_builds_with_a_supported_python():
     first, last = supported_pythons()
     python = int(re.search(r'python-version:\s*"3\.(\d+)"', read(".github/workflows/cd.yml")).group(1))

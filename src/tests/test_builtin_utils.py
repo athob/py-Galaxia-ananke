@@ -16,16 +16,19 @@
 """
 Tests of the small helpers of _builtin_utils that find things and load them: get_version_of_command,
 import_source_file and classproperty. The first two are the ones that py-EnBiD-ananke has too, and are tested the same.
+format_docstring, which fills the docstrings of the package with its defaults, is tested here too.
 """
 import subprocess
 import sys
+import textwrap
 from operator import itemgetter
 from unittest import mock
 
 import numpy as np
 import pytest
 
-from ..galaxia_ananke._builtin_utils import classproperty, get_version_of_command, import_source_file, tuple_itemgetter
+from ..galaxia_ananke._builtin_utils import (classproperty, format_docstring, get_version_of_command, import_source_file,
+                                            tuple_itemgetter)
 from .utils import in_tmp_wd, fake_commands
 
 
@@ -150,3 +153,61 @@ def test_the_indices_can_be_arrays_as_the_groups_of_particles_are():
 def test_no_index_is_a_type_error():
     with pytest.raises(TypeError):
         tuple_itemgetter()
+
+
+# -- the docstrings that are filled with the defaults ---------------------------------
+
+def test_the_placeholders_of_a_docstring_are_filled_with_the_values():
+    def function():
+        """The default is {default}, and the name {name}."""
+    format_docstring(function, default=3, name='sim')
+    assert function.__doc__ == "The default is 3, and the name sim."
+
+
+def test_the_docstring_of_a_method_is_filled_through_its_function():
+    class Example:
+        @classmethod
+        def made(cls):
+            """Made with {default}."""
+        def called(self):
+            """Called with {default}."""
+    format_docstring(Example.made, default=1)
+    format_docstring(Example.called, default=2)
+    assert Example.made.__doc__ == "Made with 1." and Example.called.__doc__ == "Called with 2."
+
+
+def test_a_value_that_the_docstring_asks_for_and_is_not_given_is_a_key_error():
+    def function():
+        """The default is {missing}."""
+    with pytest.raises(KeyError):
+        format_docstring(function)
+
+
+def test_a_function_that_has_no_docstring_is_left_without_it():
+    def function():
+        pass
+    function.__doc__ = None
+    format_docstring(function, anything=1)
+    assert function.__doc__ is None
+
+
+def test_python_that_removes_the_docstrings_can_fill_them():
+    # python -OO removes every docstring, so the package is imported where each is None: the helper does nothing there, and
+    # does not raise as `function.__doc__.format(...)` does. It is loaded from its file, in a process of its own.
+    helper_file = sys.modules[format_docstring.__module__].__file__
+    code = textwrap.dedent("""
+        import importlib.util, sys
+        spec = importlib.util.spec_from_file_location("helper_under_OO", sys.argv[1])
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["helper_under_OO"] = module
+        spec.loader.exec_module(module)
+        def function():
+            \"\"\"The default is {default}.\"\"\"
+        if function.__doc__ is not None:
+            raise SystemExit("the docstrings were not removed: this is not python -OO")
+        module.format_docstring(function, default=1)
+        print("left without docstring" if function.__doc__ is None else "made a docstring")
+    """)
+    result = subprocess.run([sys.executable, '-OO', '-c', code, helper_file], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "left without docstring"

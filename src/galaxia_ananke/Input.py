@@ -34,7 +34,7 @@ import ebf
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
+from .utils import classproperty, format_docstring, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
 from .photometry.PhotoSystem import PhotoSystem
 
 if TYPE_CHECKING:
@@ -574,13 +574,14 @@ class Input:
         return kernels
 
 
-Input.__init__.__doc__ = Input.__init__.__doc__.format(GALAXIA_TMP=GALAXIA_TMP,
-                                                       DEFAULT_SIMNAME=DEFAULT_SIMNAME,
-                                                       TTAGS_nres=DEFAULTS_FOR_PARFILE[FTTAGS.nres],
-                                                       particles_dictionary_description=Input.particles_dictionary_description)
+format_docstring(Input.__init__,
+                 GALAXIA_TMP=GALAXIA_TMP,
+                 DEFAULT_SIMNAME=DEFAULT_SIMNAME,
+                 TTAGS_nres=DEFAULTS_FOR_PARFILE[FTTAGS.nres],
+                 particles_dictionary_description=Input.particles_dictionary_description)
 
-Input.make_dummy_particles_input.__func__.__doc__ = Input.make_dummy_particles_input.__doc__.format(
-    particles_dictionary_description=Input.particles_dictionary_description)
+format_docstring(Input.make_dummy_particles_input,
+                 particles_dictionary_description=Input.particles_dictionary_description)
 
 
 if __name__ == '__main__':

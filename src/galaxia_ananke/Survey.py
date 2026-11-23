@@ -34,7 +34,7 @@ import numpy as np
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import CallableDFtoInt, execute, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
+from .utils import CallableDFtoInt, execute, format_docstring, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
 from . import photometry
 from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
@@ -82,8 +82,7 @@ class Survey:
         self.__extraparam: Optional[MappingProxyType[str, Union[str,float,int]]] = None
         self.__output: Optional[Output] = None
 
-    __init__.__doc__ = cast(str, __init__.__doc__).format(DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME,
-                                                          DEFAULT_PSYS=DEFAULT_PSYS)
+    format_docstring(__init__, DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME, DEFAULT_PSYS=DEFAULT_PSYS)
     
     def __repr__(self) -> str:
         cls = self.__class__.__name__
@@ -372,13 +371,12 @@ class Survey:
         self.output.post_process_output()
         return self.output
 
-    make_survey.__doc__ = cast(str, make_survey.__doc__).format(DEFAULT_CMD=DEFAULT_CMD,
-                                                               DEFAULT_PARFILE=DEFAULT_PARFILE,
-                                                               DEFAULT_CMD_BOX=('\n'+PrettyPrinter(width=60).
-                                                                                pformat(DEFAULT_CMD_BOX)).
-                                                                               replace('\n','\n                  '),
-                                                               **{f"TTAGS_{key}": val
-                                                                  for key,val in DEFAULTS_FOR_PARFILE.items()})
+    format_docstring(make_survey,
+                     DEFAULT_CMD=DEFAULT_CMD,
+                     DEFAULT_PARFILE=DEFAULT_PARFILE,
+                     DEFAULT_CMD_BOX=('\n'+PrettyPrinter(width=60).pformat(DEFAULT_CMD_BOX)
+                                      ).replace('\n','\n                  '),
+                     **{f"TTAGS_{key}": val for key,val in DEFAULTS_FOR_PARFILE.items()})
 
     @property
     def has_no_fileparam(self) -> bool:

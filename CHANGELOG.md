@@ -512,6 +512,9 @@ far as the commits of this package and of the backend say.
   to it (`JOB 1/2 | abcJOB 2/2 | x`).
 - `Photometry._purge(hard=True)` no longer stops with an error, with part of the isochrones removed, when the directory of the
   isochrones holds a file or a link: it removes files and links as well as directories (a link is removed, not what it points to).
+- The code of the package no longer raises when it is imported where Python removes the docstrings (`python -OO`): it fills
+  some of its docstrings with its defaults when it is imported, and a function that has none is now left as it is. A
+  dependency can still fail there: `pyvo`, which `astroquery` imports, did when this was checked.
 
 ## [0.8.0] - 2026-08-10
 
