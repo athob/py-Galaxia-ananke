@@ -117,5 +117,35 @@ def test_a_prefix_that_cannot_be_written_to_does_not_stop_the_import(tmp_path, m
         prefix.chmod(0o755)
 
 
+# -- what the import says when the backend is missing ---------------------------------
+
+URL = 'https://github.com/athob/py-Galaxia-ananke'
+
+
+def test_the_message_of_a_missing_backend_gives_where_it_should_be_which_follows_the_prefix(tmp_path, monkeypatch, package):
+    constants = constants_with_prefix(monkeypatch, tmp_path)
+    first = constants.backend_missing_message(URL).split('\n')[0]
+    executable = (tmp_path / '.cache' / 'galaxia_ananke' / 'bin' / 'galaxia').resolve()
+    assert first == (f"Galaxia's executable {executable} doesn't exist, which means that galaxia_ananke's installation "
+                     "didn't build the backend Galaxia-ananke submodule appropriately.")
+
+
+def test_the_message_of_a_missing_backend_says_what_uv_and_pip_do_with_it_and_what_to_do(tmp_path, monkeypatch, package):
+    constants = constants_with_prefix(monkeypatch, tmp_path)
+    lines = constants.backend_missing_message(URL).split('\n')
+    assert len(lines) == 3
+    assert ("uv builds in a temporary environment (give ANANKE_SYSTEM_PREFIX the path of the environment to install into)"
+            in lines[1])
+    assert "uv and pip reuse a wheel that they built before, without building it again" in lines[1]
+    assert "`uv cache clean galaxia-ananke` or `pip install --no-cache-dir` make them build it" in lines[1]
+    assert lines[2] == f"Please consult {URL}/#troubleshooting-installation for troubleshooting."
+
+
+def test_the_variable_that_the_message_names_is_the_one_that_gives_the_prefix(tmp_path, monkeypatch, package):
+    constants = constants_with_prefix(monkeypatch, tmp_path)
+    assert f"give {constants.PREFIX_ENV_VAR} the path" in constants.backend_missing_message(URL)
+    assert os.environ[constants.PREFIX_ENV_VAR] == str(tmp_path)
+
+
 if __name__ == '__main__':
     pass

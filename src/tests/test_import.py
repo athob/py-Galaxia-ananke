@@ -19,6 +19,7 @@ files, and what it logs), and it warns, on purpose, that it does. The warning is
 the package is imported once per process and the warning only comes then.
 """
 import logging
+import os
 import pathlib
 import subprocess
 import sys
@@ -36,6 +37,18 @@ def test_importing_the_package_warns_about_the_patch_it_makes_to_vaex():
                           cwd=ROOT, capture_output=True, text=True)
     assert done.returncode == 0, done.stderr
     assert "RuntimeWarning: Importing galaxia_ananke monkey-patches vaex's HDF5 reading" in done.stderr
+
+
+def test_importing_the_package_without_its_backend_fails_with_the_message_that_says_what_to_do(tmp_path):
+    # imported as galaxia_ananke, as an installed package is (the check is made only then), with a prefix that has no backend
+    environment = dict(os.environ, PYTHONPATH=str(ROOT / 'src'), ANANKE_SYSTEM_PREFIX=str(tmp_path))
+    done = subprocess.run([sys.executable, "-W", "ignore", "-c", "import galaxia_ananke"],
+                          cwd=tmp_path, env=environment, capture_output=True, text=True)
+    executable = (tmp_path / '.cache' / 'galaxia_ananke' / 'bin' / 'galaxia').resolve()
+    assert done.returncode != 0
+    assert f"AssertionError: Galaxia's executable {executable} doesn't exist" in done.stderr
+    assert "uv cache clean galaxia-ananke" in done.stderr and "give ANANKE_SYSTEM_PREFIX the path" in done.stderr
+    assert "/#troubleshooting-installation" in done.stderr
 
 
 def test_importing_the_package_replaces_how_vaex_reads_and_opens_files():

@@ -65,5 +65,17 @@ INPUT_METADATA_PREFIX = 'Input_'
 SURVEY_METADATA_PREFIX = 'Survey_'
 
 
+def backend_missing_message(url):
+    """What the AssertionError of the import says when the executable of the backend is not where the installation puts it."""
+    distribution = NAME.replace('_', '-')
+    return (f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend "
+            f"{GALAXIA_SUBMODULE_NAME} submodule appropriately.\n"
+            "The backend is built when the installer builds the wheel, which is not always for the environment that it "
+            f"installs into: uv builds in a temporary environment (give {PREFIX_ENV_VAR} the path of the environment to "
+            "install into), and uv and pip reuse a wheel that they built before, without building it again "
+            f"(`uv cache clean {distribution}` or `pip install --no-cache-dir` make them build it).\n"
+            f"Please consult {url}/#troubleshooting-installation for troubleshooting.")
+
+
 if __name__ == '__main__':
     raise NotImplementedError()

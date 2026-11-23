@@ -28,6 +28,7 @@ refer to its documentation for further help.
 """
 from .__metadata__ import *
 from ._constants import *
+from ._constants import backend_missing_message
 from ._defaults import *
 from .Input import Input
 from .Survey import Survey
@@ -38,7 +39,7 @@ __all__ = ['Input', 'Survey', 'Output', 'make_dummy_particles_input', 'make_dumm
 
 # check Galaxia installation
 if __name__ == NAME:
-    assert GALAXIA.exists(), f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend {GALAXIA_SUBMODULE_NAME} submodule appropriately.\nPlease consult {__url__}/#troubleshooting-installation for troubleshooting."
+    assert GALAXIA.exists(), backend_missing_message(__url__)
 
 
 make_dummy_particles_input = Input.make_dummy_particles_input

@@ -302,6 +302,10 @@ far as the commits of this package and of the backend say.
   `fork`. The recommendation of the same `max_pp_workers` stays, for the memory that each pool of workers keeps alive.
 - The notes of `make_survey` say what a `forkserver` start method avoids: workers started by `fork` are copies of a process
   that has threads, which Python discourages.
+- The `AssertionError` of the import, when the executable of the backend is missing, says what can leave it missing:
+  `uv` builds in a temporary environment (give `ANANKE_SYSTEM_PREFIX` the path of the environment to install into), and
+  `uv` and `pip` reuse a wheel that they built before without building it again (`uv cache clean galaxia-ananke`, or
+  `pip install --no-cache-dir`, makes them build it).
 
 ### Removed
 
