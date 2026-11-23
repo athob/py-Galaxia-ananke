@@ -16,7 +16,7 @@
 """
 Module miscellaneous utilities
 """
-from typing import Any, Protocol, Iterable
+from typing import Any, Protocol, Iterable, Set, Union
 import hashlib
 
 import pandas as pd
@@ -45,15 +45,16 @@ class RecordingDataFrame(pd.DataFrame):
     """
     Pandas DataFrame that records all its used keys from getitem
     """
-    def __init__(self, *args, **kwargs) -> None:
+    _record_of_all_used_keys: Set[Any]
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         object.__setattr__(self, '_record_of_all_used_keys', set())      # not through pandas, which takes a new attribute for a column that someone forgot to make, and warns
-    def _add_to_record_of_all_used_keys(self, keys):
+    def _add_to_record_of_all_used_keys(self, keys: Union[str, Iterable[Any]]) -> None:
         if isinstance(keys, str):
             keys = [keys]
         for key in keys:
             self._record_of_all_used_keys.add(key)
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         self._add_to_record_of_all_used_keys(key)
         return super().__getitem__(key)
     # def __setitem__(self, key, value):
@@ -63,7 +64,7 @@ class RecordingDataFrame(pd.DataFrame):
     #     self._add_to_record_of_all_used_keys(key)
     #     super().__delitem__(key)
     @property
-    def record_of_all_used_keys(self):
+    def record_of_all_used_keys(self) -> Set[Any]:
         return self._record_of_all_used_keys
 
 
