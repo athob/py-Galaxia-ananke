@@ -20,7 +20,7 @@ Please note that this module is private. The Input class is
 available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, OrderedDict, Iterator
+from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Set, Dict, OrderedDict, Iterator, KeysView
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -38,13 +38,15 @@ from .utils import classproperty, format_docstring, in_description_order, make_s
 from .photometry.PhotoSystem import PhotoSystem
 
 if TYPE_CHECKING:
-    from . import Survey
+    from .Survey import Survey
 
 __all__ = ['Input']
 
 
 @collect_metadata_marked_properties
 class Input:
+    _metadata: Dict[str, Any]  # a property that the decorator above adds
+    _input_sorter: NDArray[np.int_]  # set by the setter of input_sorter, which a Survey calls: a new Input has none yet (M14)
     _position_prop = ('pos3', "Position coordinates in $kpc$ (Nx3)")
     _velocity_prop = ('vel3', "Velocity coordinates in $km/s$ (Nx3)")
     _masscurrent_prop = ('mass', "Present-day stellar masses in solar masses")
@@ -66,7 +68,7 @@ class Input:
     _calciumabundance_prop = ('calcium', "Calcium abundance $[Ca/H]$ in $dex$")
     _alphaabundance_prop = ('alpha', "Alpha abundance $[Mg/Fe]$ in $dex$")
     _kernels_prop = ('h_cubic', "Phase-space kernel radii in $kpc$ and $km/s$ (Nx2)")
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """
             Driver to store and prepare the input data for Galaxia.
 
@@ -152,7 +154,7 @@ class Input:
             _k: Dict[str, NDArray] =  ebf.read(_kname)
             kwargs['kernels'] = _k[self._kernels]
             kwargs['k_factor'] = 1.
-            self.__input_files_exist: bool = True
+            self.__input_files_exist = True
         else:
             raise ValueError("Wrong signature: please consult help of the Input constructor")
         # verify and assign attributes based on kwargs
@@ -168,7 +170,7 @@ class Input:
         self.__k_factor: Union[float, NDArray] = kwargs.get('k_factor', 1.)
 
     @classproperty
-    def particles_dictionary_description(cls):
+    def particles_dictionary_description(cls) -> str:
         description = """
             The particle dictionary includes the following properties with
             corresponding keys:
@@ -187,7 +189,7 @@ class Input:
         return description
 
     @classproperty
-    def _required_properties(cls):
+    def _required_properties(cls) -> Set[Tuple[str, str]]:
         return {
             cls._position_prop,
             cls._velocity_prop,
@@ -197,7 +199,7 @@ class Input:
             }
 
     @classproperty
-    def _optional_properties(cls):
+    def _optional_properties(cls) -> Set[Tuple[str, str]]:
         return {
             cls._parentindex_prop,
             cls._partitionindex_prop,
@@ -216,103 +218,103 @@ class Input:
             }
 
     @classproperty
-    def _required_keys_in_particles(cls):
+    def _required_keys_in_particles(cls) -> Set[str]:
         return {_property[0] for _property in cls._required_properties}
 
     @classproperty
-    def _optional_keys_in_particles(cls):
+    def _optional_keys_in_particles(cls) -> Set[str]:
         return {_property[0] for _property in cls._optional_properties}
 
     @classproperty
-    def all_possible_keys_in_particles(cls):
+    def all_possible_keys_in_particles(cls) -> Set[str]:
         return cls._required_keys_in_particles.union(cls._optional_keys_in_particles)
     
     @classproperty
-    def _pos(cls):
+    def _pos(cls) -> str:
         return cls._position_prop[0]
 
     @classproperty
-    def _vel(cls):
+    def _vel(cls) -> str:
         return cls._velocity_prop[0]
 
     @classproperty
-    def _mass(cls):
+    def _mass(cls) -> str:
         return cls._masscurrent_prop[0]
     
     @classproperty
-    def _massinit(cls):
+    def _massinit(cls) -> str:
         return cls._massinitial_prop[0]
 
     @classproperty
-    def _age(cls):
+    def _age(cls) -> str:
         return cls._age_prop[0]
 
     @classproperty
-    def _feh(cls):
+    def _feh(cls) -> str:
         return cls._metallicity_prop[0]
 
     @classproperty
-    def _He(cls):
+    def _He(cls) -> str:
         return cls._heliumabundance_prop[0]
 
     @classproperty
-    def _C(cls):
+    def _C(cls) -> str:
         return cls._carbonabundance_prop[0]
 
     @classproperty
-    def _N(cls):
+    def _N(cls) -> str:
         return cls._nitrogenabundance_prop[0]
 
     @classproperty
-    def _O(cls):
+    def _O(cls) -> str:
         return cls._oxygenabundance_prop[0]
 
     @classproperty
-    def _Ne(cls):
+    def _Ne(cls) -> str:
         return cls._neonabundance_prop[0]
 
     @classproperty
-    def _Mg(cls):
+    def _Mg(cls) -> str:
         return cls._magnesiumabundance_prop[0]
 
     @classproperty
-    def _Si(cls):
+    def _Si(cls) -> str:
         return cls._siliconabundance_prop[0]
 
     @classproperty
-    def _S(cls):
+    def _S(cls) -> str:
         return cls._sulphurabundance_prop[0]
 
     @classproperty
-    def _Ca(cls):
+    def _Ca(cls) -> str:
         return cls._calciumabundance_prop[0]
 
     @classproperty
-    def _elem_list(cls):
+    def _elem_list(cls) -> List[str]:
         return [cls._He, cls._C, cls._N, cls._O, cls._Ne, cls._Mg, cls._Si, cls._S, cls._Ca]
 
     @classproperty
-    def _alph(cls):
+    def _alph(cls) -> str:
         return cls._alphaabundance_prop[0]
 
     @classproperty
-    def _parentid(cls):
+    def _parentid(cls) -> str:
         return cls._parentindex_prop[0]
 
     @classproperty
-    def _partitionid(cls):
+    def _partitionid(cls) -> str:
         return cls._partitionindex_prop[0]
 
     @classproperty
-    def _dform(cls):
+    def _dform(cls) -> str:
         return cls._formationdistance_prop[0]
 
     @classproperty
-    def _pop_id(cls):
+    def _pop_id(cls) -> str:
         return cls._populationindex_prop[0]
 
     @classproperty
-    def _kernels(cls):
+    def _kernels(cls) -> str:
         return cls._kernels_prop[0]
 
     @property
@@ -401,7 +403,7 @@ class Input:
             self.__kname = self.pname.with_name(f"{self.pname.stem}_d{self.hdim}n{self.ngb}_den.ebf")
         return self.__kname
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         return self.particles.keys()
     
     def optional_keys(self) -> List[str]:
@@ -415,7 +417,7 @@ class Input:
         temp_filename = self._write_ebf_files()
         return self.name_hash, parfile, for_parfile
 
-    def _write_ebf_files(self):
+    def _write_ebf_files(self) -> pathlib.Path:
         particlefile: pathlib.Path = self.pname
         kernelfile: pathlib.Path = self.kname
         inputhashfile: pathlib.Path = self._hashname
@@ -439,10 +441,10 @@ class Input:
     @input_sorter.setter
     def input_sorter(self, value: Optional[NDArray[np.int_]]) -> None:
         if value is None:
-            value: NDArray[np.int_] = self.__lex_partitionid_sorter
+            value = self.__lex_partitionid_sorter
         else:
             pass # TODO check validity of input_sorter?
-        self._input_sorter: NDArray[np.int_] = value
+        self._input_sorter = value
         if '_inputhash' in self.__dict__:
             del self._inputhash
 
@@ -464,7 +466,7 @@ class Input:
     def metadata(self) -> Dict[str, Any]:
         return self._metadata
 
-    def __write_particles(self, pname: pathlib.Path):
+    def __write_particles(self, pname: pathlib.Path) -> None:
         if not self.__input_files_exist:
             ebf.initialize(pname)
             for key in self._required_keys_in_particles:
@@ -472,12 +474,12 @@ class Input:
             for key in self._optional_keys_in_particles:
                 ebf.write(pname, f"/{key}", self.particles[key][self.input_sorter] if key in self.keys() else np.zeros(self.length), 'a')
    
-    def __write_kernels(self, kname: pathlib.Path):
+    def __write_kernels(self, kname: pathlib.Path) -> None:
         if not self.__input_files_exist:
             ebf.initialize(self.kname)
             ebf.write(kname, f"/{self._kernels}", self.__actual_kernels[self.input_sorter], "a")
  
-    def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path):
+    def __prepare_nbody1(self, kname: pathlib.Path, pname: pathlib.Path) -> pathlib.Path:
         temp_dir = GALAXIA_NBODY1 / self.name_hash
         temp_dir.mkdir(parents=True, exist_ok=True)
         make_symlink(kname, temp_dir)
@@ -487,7 +489,7 @@ class Input:
         return temp_filename
     
     @classmethod
-    def __verify_particles(cls, particles: Dict[str, NDArray]):
+    def __verify_particles(cls, particles: Dict[str, NDArray]) -> None:
         if cls._mass in particles and cls._massinit not in particles:
             from .__metadata__ import __email__
             raise KeyError(f"BACKWARD INCOMPATIBILITY: please note of recent changes in the py-Galaxia-ananke implementation.\nFrom now on, the input must include the initial mass as well as the present-day mass of the parent particles. Also this quantity should be stored in the input dictionary under key '{cls._massinit}', while keeping the present-day mass under key '{cls._mass}'.\nPlease contact {__email__} if you have any question regarding that change.")
@@ -497,7 +499,7 @@ class Input:
         # TODO check format, if dataframe-like
     
     @classmethod
-    def __complete_particles(cls, particles: Dict[str, NDArray]):
+    def __complete_particles(cls, particles: Dict[str, NDArray]) -> None:
         if cls._parentid not in particles:
             particles[cls._parentid] = np.arange(particles[cls._massinit].shape[0])
         if cls._partitionid not in particles:
@@ -519,7 +521,7 @@ class Input:
         return kernels
 
     @classmethod
-    def make_dummy_particles_input(cls, n_parts=10**5):
+    def make_dummy_particles_input(cls, n_parts: int = 10**5) -> Dict[str, NDArray]:
         """
             Generate an example dummy input particles dictionary for Input
             made of randomly generated arrays.
@@ -538,7 +540,7 @@ class Input:
             -----
             {particles_dictionary_description}
         """
-        p = {}
+        p: Dict[str, NDArray] = {}
         p[cls._pos] = 30*np.random.randn(n_parts, 3)
         p[cls._vel] = 50*np.random.randn(n_parts, 3)
         p[cls._massinit] = 5500 + 700*np.random.randn(n_parts)
@@ -555,7 +557,7 @@ class Input:
         return p
 
     @classmethod
-    def make_dummy_kernels_input(cls, n_parts=10**5):
+    def make_dummy_kernels_input(cls, n_parts: int = 10**5) -> NDArray:
         """
             Generate an example dummy input kernels for Input
             made of randomly generated arrays.
