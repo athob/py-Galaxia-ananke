@@ -17,7 +17,7 @@
 Docstring
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, List, Dict
+from typing import TYPE_CHECKING, Any, Tuple, List, Dict
 from numpy.typing import ArrayLike, NDArray
 from functools import cached_property
 from operator import itemgetter
@@ -60,7 +60,7 @@ class _BaseFormatting:
     # CMD2-label: _label = 'Label'
     # CMD2-label: _unit_label = units.integer
     @classproperty
-    def units_mapper(cls):
+    def units_mapper(cls) -> Dict[str, Any]:
         return {
             cls._zini: cls._unit_zini,
             cls._age: cls._unit_age,
