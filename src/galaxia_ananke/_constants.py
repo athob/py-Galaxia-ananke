@@ -65,7 +65,7 @@ INPUT_METADATA_PREFIX = 'Input_'
 SURVEY_METADATA_PREFIX = 'Survey_'
 
 
-def backend_missing_message(url):
+def backend_missing_message(url: str) -> str:
     """What the AssertionError of the import says when the executable of the backend is not where the installation puts it."""
     distribution = NAME.replace('_', '-')
     return (f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend "
