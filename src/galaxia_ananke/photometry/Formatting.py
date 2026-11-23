@@ -114,7 +114,8 @@ class Formatting(_BaseFormatting):
     def metallicity_converter(self, metallicity: ArrayLike) -> Any:  # as the shape of what it is given: a float gives a float
         return np.log10(metallicity/np.array(self.feh_sun))
 
-    def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> Dict[float, table.QTable]:  # by age
+    # by age; the keys are those of groupby, which pandas types as any scalar: Any, and not float
+    def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> Dict[Any, table.QTable]:
         isochrone: Isochrone = iso_file._isochrone
         units_mapper = self.units_mapper
         column_names: Tuple[str] = self.nonmagnitude_itemgetter(iso_file.data.keys()) + isochrone.magnitude_itemgetter(iso_file.data.keys())
