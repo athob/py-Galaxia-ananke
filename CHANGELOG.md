@@ -515,6 +515,8 @@ far as the commits of this package and of the backend say.
 - The code of the package no longer raises when it is imported where Python removes the docstrings (`python -OO`): it fills
   some of its docstrings with its defaults when it is imported, and a function that has none is now left as it is. A
   dependency can still fail there: `pyvo`, which `astroquery` imports, did when this was checked.
+- Importing the package with `python -O`, which removes the `assert` statements, no longer skips the check that the backend
+  was built: it raises the same `AssertionError`, with the same message, as without `-O`.
 
 ## [0.8.0] - 2026-08-10
 

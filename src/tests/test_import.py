@@ -24,6 +24,7 @@ import pathlib
 import subprocess
 import sys
 
+import pytest
 import vaex
 
 from .. import galaxia_ananke
@@ -39,10 +40,12 @@ def test_importing_the_package_warns_about_the_patch_it_makes_to_vaex():
     assert "RuntimeWarning: Importing galaxia_ananke monkey-patches vaex's HDF5 reading" in done.stderr
 
 
-def test_importing_the_package_without_its_backend_fails_with_the_message_that_says_what_to_do(tmp_path):
-    # imported as galaxia_ananke, as an installed package is (the check is made only then), with a prefix that has no backend
+@pytest.mark.parametrize("flags", [[], ["-O"]], ids=["python", "python -O"])
+def test_importing_the_package_without_its_backend_fails_with_the_message_that_says_what_to_do(flags, tmp_path):
+    # imported as galaxia_ananke, as an installed package is (the check is made only then), with a prefix that has no backend;
+    # python -O removes the assert statements, and the check is made all the same
     environment = dict(os.environ, PYTHONPATH=str(ROOT / 'src'), ANANKE_SYSTEM_PREFIX=str(tmp_path))
-    done = subprocess.run([sys.executable, "-W", "ignore", "-c", "import galaxia_ananke"],
+    done = subprocess.run([sys.executable, *flags, "-W", "ignore", "-c", "import galaxia_ananke"],
                           cwd=tmp_path, env=environment, capture_output=True, text=True)
     executable = (tmp_path / '.cache' / 'galaxia_ananke' / 'bin' / 'galaxia').resolve()
     assert done.returncode != 0

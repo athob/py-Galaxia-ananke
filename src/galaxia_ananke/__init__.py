@@ -39,7 +39,8 @@ __all__ = ['Input', 'Survey', 'Output', 'make_dummy_particles_input', 'make_dumm
 
 # check Galaxia installation
 if __name__ == NAME:
-    assert GALAXIA.exists(), backend_missing_message(__url__)
+    if not GALAXIA.exists():  # not an assert, which python -O removes
+        raise AssertionError(backend_missing_message(__url__))
 
 
 make_dummy_particles_input = Input.make_dummy_particles_input
