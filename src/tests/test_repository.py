@@ -19,6 +19,7 @@ workflows keep the habits they were given, and what has to agree with something 
 (the locks of the CI requirements and the workflows that install them, the matrix and the
 lock each of its Pythons uses). Standard library only, and nothing here needs Galaxia.
 """
+import ast
 import configparser
 import json
 import pathlib
@@ -246,6 +247,43 @@ def test_ruff_checks_for_the_oldest_python_supported():
     # syntax of a newer Python would be accepted by ruff, and fail for the users of the oldest one
     first, _ = supported_pythons()
     assert re.search(r'^target-version\s*=\s*"py3%d"\s*$' % first, read("pyproject.toml"), flags=re.MULTILINE)
+
+
+def test_annotations_do_not_need_a_newer_python_than_the_oldest_one_supported():
+    # An annotation is evaluated when its function is defined: `list[int]` is a TypeError before Python 3.9, and
+    # `int | None` one before 3.10, unless the module has `from __future__ import annotations`. mypy cannot say so, as
+    # it no longer checks against Python 3.9 (it dropped it in 2.0): this does, from the oldest Python in setup.py.
+    oldest, _ = supported_pythons()
+    generics = {"list", "dict", "set", "tuple", "frozenset", "type"} if oldest < 9 else set()
+    unions = oldest < 10
+
+    def annotations(tree):
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                arguments = node.args
+                for argument in (arguments.posonlyargs + arguments.args + arguments.kwonlyargs
+                                 + [a for a in (arguments.vararg, arguments.kwarg) if a]):
+                    if argument.annotation is not None:
+                        yield argument.annotation
+                if node.returns is not None:
+                    yield node.returns
+            elif isinstance(node, ast.AnnAssign):
+                yield node.annotation
+
+    problems = []
+    for path in sorted((ROOT / "src").rglob("*.py")):
+        if path.is_symlink() or path.name in {"versioneer.py", "_version.py"} or not path.is_file():
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        if any(isinstance(n, ast.ImportFrom) and n.module == "__future__" and any(a.name == "annotations" for a in n.names)
+               for n in tree.body):
+            continue
+        for annotation in annotations(tree):
+            for node in ast.walk(annotation):
+                if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name) and node.value.id in generics) or \
+                        (unions and isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr)):
+                    problems.append(f"{path.relative_to(ROOT)}:{node.lineno}")
+    assert not problems, f"use typing.List, typing.Optional... (Python 3.{oldest} is supported): {problems}"
 
 
 def test_cd_builds_with_a_supported_python():

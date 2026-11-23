@@ -237,6 +237,11 @@ rather than bad luck.
   (currently 3.9 up to 3.14). CI covers all of them, and the classifiers in
   `src/galaxia_ananke/__metadata__.py` name them for PyPI: the tests check that the three agree.
   The ceiling is that of the requirements that have been checked on a Python: vaex 4.20 allows up to 3.15.
+- **Type hints** come from the `typing` module (`Optional[int]`, `Union[int, str]`), and not as
+  `int | None`: Python 3.9 evaluates an annotation when its function is defined, and refuses that
+  form, unless the module has `from __future__ import annotations`. mypy cannot warn about it, as
+  it no longer checks against Python 3.9 (mypy 2.0 dropped it), so a test does (it follows the
+  oldest Python in `setup.py`, and relaxes when that is raised).
 - **vaex is pinned to one version** in `setup.py`, because `src/galaxia_ananke/_patch_vaex.py`
   patches the way vaex reads and closes HDF5 files and the threads that it hashes with: moving to another version of vaex
   means checking that the patch still works.
