@@ -181,7 +181,9 @@ def execute(cmds: Union[str, List[str]], max_workers: Optional[int] = None, verb
         for proc_id, cmd in enumerate(commands, start=1):
             print(f"Executing JOB{proc_id: {len_tags}d}/{n_cmds} = {cmd}")
     for proc_id, stdout_line in _execute_generator(commands, max_workers=max_workers, **kwargs):
-        print(f"JOB{proc_id: {len_tags}d}/{n_cmds} | {stdout_line}", end="") if verbose else None
+        if verbose:
+            # only the last line of a command can lack its end of line, and the next line printed would be glued to it
+            print(f"JOB{proc_id: {len_tags}d}/{n_cmds} | {stdout_line}", end="" if stdout_line.endswith("\n") else "\n")
 
 
 def make_symlink(file_path: Union[str, pathlib.Path], dest_dir: Union[str, pathlib.Path]) -> None:

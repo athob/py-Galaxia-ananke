@@ -69,6 +69,13 @@ def lines(tmp_path):
     return lambda prefix, count: f"{sys.executable} {script} {prefix} {count}"
 
 
+@pytest.fixture
+def unfinished(tmp_path):
+    """The command that prints the word it is given, and does not end the line."""
+    script = write_script(tmp_path, "unfinished.py", "import sys\nsys.stdout.write(sys.argv[1])\n")
+    return lambda word: f"{sys.executable} {script} {word}"
+
+
 def test_what_a_command_writes_to_its_error_stream_is_printed_too(tmp_path, capsys):
     # the backend reports its own failures there (an uncaught C++ exception, for one)
     script = write_script(tmp_path, "oops.py", "import sys\nprint('oops', file=sys.stderr)\n")
@@ -99,6 +106,20 @@ def test_commands_that_print_different_numbers_of_lines_print_what_they_say_and_
     assert printed[:len(counts)] == announced
     assert sorted(printed[len(counts):]) == sorted(f"JOB {tag}/{len(counts)} | {chr(96 + tag)}{row}"
                                                   for tag, count in enumerate(counts, 1) for row in range(count))
+
+
+def test_the_last_line_of_a_command_that_does_not_end_it_is_ended_so_that_the_next_line_is_not_glued_to_it(
+        unfinished, lines, capsys):
+    commands = [unfinished("abc"), lines("x", 3)]
+    execute(commands)
+    printed = capsys.readouterr().out.splitlines()
+    assert sorted(printed[2:]) == ["JOB 1/2 | abc", "JOB 2/2 | x0", "JOB 2/2 | x1", "JOB 2/2 | x2"]
+
+
+def test_a_command_that_does_not_end_its_last_line_has_it_ended_when_it_is_alone(unfinished, capsys):
+    command = unfinished("abc")
+    execute(command)
+    assert capsys.readouterr().out == f"Executing JOB 1/1 = {command}\nJOB 1/1 | abc\n"
 
 
 def test_the_tags_are_as_wide_as_the_number_of_commands_needs(say, capsys):

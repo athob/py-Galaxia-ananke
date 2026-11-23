@@ -508,6 +508,8 @@ far as the commits of this package and of the backend say.
 - `execute` no longer prints `None` for a command that has finished: when the commands that it runs at the same time print
   different numbers of lines, the one that finished first left `JOB 1/2 | None` in the output, with no end of line, so that the next
   line was glued to it (the commands themselves ran correctly).
+- `execute` now ends the last line of a command that does not end it, so that the line that a command printed after it is no longer glued
+  to it (`JOB 1/2 | abcJOB 2/2 | x`).
 
 ## [0.8.0] - 2026-08-10
 
