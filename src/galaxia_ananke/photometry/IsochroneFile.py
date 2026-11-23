@@ -17,7 +17,7 @@
 Docstring
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, IO, List, Optional, Union
 from functools import cached_property
 import pathlib
 import re
@@ -36,7 +36,7 @@ __all__ = ['IsochroneFile']
 
 class IsochroneFile:
     _file_format = "output_{}.dat"
-    def __init__(self, *args, isochrone: Isochrone = None) -> None:
+    def __init__(self, *args: Any, isochrone: Optional[Isochrone] = None) -> None:
         if isochrone is None:
             raise TypeError(f"Keyword argument 'isochrone' missing")
         self._isochrone = isochrone
@@ -62,24 +62,24 @@ class IsochroneFile:
         data = data[np.lexsort((data[self.isochrone._mini], data[self.isochrone._age]))]  # age first, then mass; stable, unlike Table.sort, and not in place
         data.write(self.path, format='ascii.commented_header')
 
-    def _open(self, *args, **kwargs):
+    def _open(self, *args: Any, **kwargs: Any) -> IO[Any]:
         return open(self._path, *args, **kwargs)
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         return self._path
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return self._path.name
 
     @property
-    def metallicity(self):
+    def metallicity(self) -> float:
         return float(re.findall("(?<={})(.*)(?={})".format(*tuple(self._file_format.split('{}'))),
                                 self.filename)[0])
 
     @cached_property
-    def column_names(self):
+    def column_names(self) -> List[str]:
         with self._open('r') as f:
             _temp = '#'
             while (_temp[0] == '#') if _temp else False:
@@ -93,7 +93,7 @@ class IsochroneFile:
         return ascii.read(self._path, names=self.column_names)
     
     @property
-    def isochrone(self):
+    def isochrone(self) -> Isochrone:
         return self._isochrone
 
 
