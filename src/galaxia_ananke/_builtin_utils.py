@@ -246,7 +246,7 @@ def get_version_of_command(cmd: str) -> str:
                       str(subprocess.check_output([cmd, '--version'])))[0]
 
 
-def lexicalorder_dict(dictionary: Dict[str, Any]) -> OrderedDict[str, Any]:
+def lexicalorder_dict(dictionary: Dict[Any, Any]) -> OrderedDict[Any, Any]:
     return ODict({k: dictionary[k] for k in sorted(dictionary)})
 
 
@@ -262,7 +262,10 @@ def import_source_file(module_name: str, file_path: Union[str, pathlib.Path]) ->
 METADATA_MARK = '_marked_for_metadata'
 
 
-def mark_metadata_prop(prop_or_getter: Union[Callable, property]) -> Union[Callable, property]:
+_PG = TypeVar('_PG', bound=Union[Callable[..., Any], property])   # a getter or a property
+
+
+def mark_metadata_prop(prop_or_getter: _PG) -> _PG:
     """
     Marks a property getter so that the corresponding property can be
     included in the parent Class collected dictionary of metadata
