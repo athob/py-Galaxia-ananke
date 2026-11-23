@@ -21,13 +21,15 @@ available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Set, Dict, Iterable
-from numpy.typing import NDArray, ArrayLike
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, Tuple, List, Set, Dict, Iterable, Iterator, Sequence, cast
+from numpy.typing import NDArray
 from warnings import warn
 import re
 import shlex
 import pathlib
 from pprint import PrettyPrinter
+
+import numpy as np
 
 from ._constants import *
 from ._templates import *
@@ -38,13 +40,14 @@ from .photometry.PhotoSystem import PhotoSystem
 from .Output import Output
 
 if TYPE_CHECKING:
-    from . import Input
+    from .Input import Input
 
 __all__ = ['Survey']
 
 
 @collect_metadata_marked_properties
 class Survey:
+    _metadata: Dict[str, Any]  # a property that the decorator above adds
     def __init__(self, input: Input, photo_sys: Union[str,List[str]] = DEFAULT_PSYS, surveyname: str = DEFAULT_SURVEYNAME, verbose: bool = True) -> None:
         """
             Driver to exploit the input object and run Galaxia with it.
@@ -75,12 +78,12 @@ class Survey:
         self.__input: Input = input
         self.__photosystems: List[PhotoSystem] = self.prepare_photosystems(photo_sys)
         self.__verbose: bool = verbose
-        self.__fileparam: MappingProxyType[str, Union[str,float,int]] = None
-        self.__extraparam: MappingProxyType[str, Union[str,float,int]] = None
-        self.__output: Output = None
+        self.__fileparam: Optional[MappingProxyType[str, Union[str,float,int]]] = None
+        self.__extraparam: Optional[MappingProxyType[str, Union[str,float,int]]] = None
+        self.__output: Optional[Output] = None
 
-    __init__.__doc__ = __init__.__doc__.format(DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME,
-                                               DEFAULT_PSYS=DEFAULT_PSYS)
+    __init__.__doc__ = cast(str, __init__.__doc__).format(DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME,
+                                                          DEFAULT_PSYS=DEFAULT_PSYS)
     
     def __repr__(self) -> str:
         cls = self.__class__.__name__
@@ -88,17 +91,18 @@ class Survey:
         return f'{cls}({description})'
 
     @classmethod
-    def prepare_photosystems(cls, photo_sys: str) -> list[PhotoSystem]:
+    def prepare_photosystems(cls, photo_sys: Union[str,List[str]]) -> list[PhotoSystem]:
         if isinstance(photo_sys, str):
             photo_sys = [photo_sys]
         return [photometry.available_photo_systems[psys] for psys in photo_sys]
 
     @classmethod
-    def set_isochrones_from_photosys(cls, photo_sys: str) -> list[PhotoSystem]:
+    def set_isochrones_from_photosys(cls, photo_sys: Union[str,List[str]]) -> list[PhotoSystem]:
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
-    def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], n_gens: Iterable[int], **kwargs) -> None:
+    def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], n_gens: Sequence[int],
+                                              **kwargs: Any) -> None:
         if len(n_gens) == 0:
             raise ValueError("n_gens must hold at least one generation (or be an integer above 0), but none is given")
         if FTTAGS.nres in kwargs:
@@ -108,9 +112,10 @@ class Survey:
         if unknown:
             raise TypeError(f"Unknown survey parameter(s) {unknown}: the survey parameters are {sorted(set(DEFAULTS_FOR_PARFILE) - {FTTAGS.nres})}")
         photosys = self.photosystems[0]
-        cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
+        checked_cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()
-        parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name, FTTAGS.mag_color_names: cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
+        parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name,
+                             FTTAGS.mag_color_names: checked_cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
         n_gen_tag_length = len(str(max(n_gens)))
         self.__fileparam = MappingProxyType(parameters)
         self.__extraparam = MappingProxyType({
@@ -153,16 +158,16 @@ class Survey:
         execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
     @staticmethod
-    def _fsample_of_one_generation(sampling_factor: float, n_gens: Iterable[int]) -> float:
+    def _fsample_of_one_generation(sampling_factor: float, n_gens: Sequence[int]) -> float:
         """The fsample of the backend, that of each generation, for a sampling factor of the whole survey."""
         n = len(n_gens)
         # a single generation (or none, which is refused later) keeps the value as it was given
         return sampling_factor / n if n > 1 else sampling_factor
 
     def _vanilla_survey(self, cmd_magnames: Union[str,Dict[str,str]] = DEFAULT_CMD,
-                              sampling_factor: float = None, input_sorter: ArrayLike = None,
-                              n_jobs: int = None, n_gens: Union[int, Iterable[int]] = (0,),
-                              max_gen_workers: int = None, fsample: float = None, **kwargs) -> None:
+                              sampling_factor: Optional[float] = None, input_sorter: Optional[NDArray[np.int_]] = None,
+                              n_jobs: Optional[int] = None, n_gens: Union[int, Sequence[int]] = (0,),
+                              max_gen_workers: Optional[int] = None, fsample: Optional[float] = None, **kwargs: Any) -> None:
         """
             TODO
         """
@@ -193,8 +198,8 @@ class Survey:
         for photosystem in self.photosystems[1:]:
             self.check_state_before_running(description=f'append_{photosystem.name}_complete', level=1)(self._append_survey)(photosystem, max_gen_workers=max_gen_workers)
 
-    def make_survey(self, *, verbose: bool = True, partitioning_rule: CallableDFtoInt = None,
-                             max_pp_workers: int = 1, pp_auto_flush: bool = True, **kwargs) -> Output:
+    def make_survey(self, *, verbose: bool = True, partitioning_rule: Optional[CallableDFtoInt] = None,
+                             max_pp_workers: int = 1, pp_auto_flush: bool = True, **kwargs: Any) -> Output:
         """
             Driver to exploit the input object and run Galaxia with it.
             
@@ -365,13 +370,13 @@ class Survey:
         self.output.post_process_output()
         return self.output
 
-    make_survey.__doc__ = make_survey.__doc__.format(DEFAULT_CMD=DEFAULT_CMD,
-                                                     DEFAULT_PARFILE=DEFAULT_PARFILE,
-                                                     DEFAULT_CMD_BOX=('\n'+PrettyPrinter(width=60).
-                                                                      pformat(DEFAULT_CMD_BOX)).
-                                                                     replace('\n','\n                  '),
-                                                     **{f"TTAGS_{key}": val
-                                                        for key,val in DEFAULTS_FOR_PARFILE.items()})
+    make_survey.__doc__ = cast(str, make_survey.__doc__).format(DEFAULT_CMD=DEFAULT_CMD,
+                                                               DEFAULT_PARFILE=DEFAULT_PARFILE,
+                                                               DEFAULT_CMD_BOX=('\n'+PrettyPrinter(width=60).
+                                                                                pformat(DEFAULT_CMD_BOX)).
+                                                                               replace('\n','\n                  '),
+                                                               **{f"TTAGS_{key}": val
+                                                                  for key,val in DEFAULTS_FOR_PARFILE.items()})
 
     @property
     def has_no_fileparam(self) -> bool:
@@ -382,13 +387,13 @@ class Survey:
         if self.has_no_fileparam:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
-            return dict(self.__fileparam)
+            return dict(cast("MappingProxyType[str, Union[str,float,int]]", self.__fileparam))
 
     @property
-    def _extraparam(self) -> Dict[str, Union[str,float,int]]:
+    def _extraparam(self) -> MappingProxyType[str, Union[str,float,int]]:
         if self.has_no_fileparam:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
-        return self.__extraparam
+        return cast("MappingProxyType[str, Union[str,float,int]]", self.__extraparam)
 
     @property
     def parameters(self) -> Dict[str, Union[str,float,int]]:
@@ -405,7 +410,7 @@ class Survey:
     @property
     @mark_metadata_prop
     def sampling_factor(self) -> float:
-        return len(self.n_gens)*self.fileparam[FTTAGS.fsample]
+        return len(self.n_gens)*cast(float, self.fileparam[FTTAGS.fsample])
 
     @property
     def fsample(self) -> float:
@@ -450,7 +455,7 @@ class Survey:
         return self.__photosystems
 
     @property
-    def isochrones(self):
+    def isochrones(self) -> List[PhotoSystem]:
         warn('This property will be deprecated, please use instead property photosystems', DeprecationWarning, stacklevel=2)
         return self.photosystems
 
@@ -472,11 +477,11 @@ class Survey:
         return self.__output is None
 
     @property
-    def output(self):
+    def output(self) -> Output:
         if self.has_no_output:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
-            return self.__output
+            return cast(Output, self.__output)
     
     @property
     def caching(self) -> bool:
@@ -499,11 +504,11 @@ class Survey:
         return self.input.ngb
 
     @property
-    def check_state_before_running(self):
+    def check_state_before_running(self) -> Callable[..., Callable[[Callable[..., None]], Callable[..., None]]]:
         return self.output.check_state_before_running
 
     @property
-    def __ebf_output_files_glob(self):
+    def __ebf_output_files_glob(self) -> Iterator[pathlib.Path]:
         return self.output._ebf_glob
 
 
