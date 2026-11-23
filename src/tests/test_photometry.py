@@ -270,6 +270,26 @@ def test_everything_is_removed_when_it_is_asked_hard_and_yes(isochrones_path):
     assert isochrones_path.is_dir() and list(isochrones_path.iterdir()) == []
 
 
+def test_what_is_in_the_directory_of_the_isochrones_is_removed_whatever_it_is(isochrones_path):
+    make_installation(isochrones_path)
+    (isochrones_path / 'README.txt').write_text('a file that is not an isochrone')
+    scan()._purge(hard=True, yes=True)
+    assert list(isochrones_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("target", ['directory', 'file', 'nothing'])
+def test_a_link_in_the_directory_of_the_isochrones_is_removed_and_not_what_it_points_to(target, isochrones_path, tmp_path):
+    make_installation(isochrones_path)
+    elsewhere = tmp_path / 'elsewhere'
+    elsewhere.mkdir()
+    (elsewhere / 'kept.txt').write_text('kept')
+    goal = {'directory': elsewhere, 'file': elsewhere / 'kept.txt', 'nothing': elsewhere / 'missing'}[target]
+    (isochrones_path / 'link').symlink_to(goal)
+    scan()._purge(hard=True, yes=True)
+    assert list(isochrones_path.iterdir()) == []
+    assert (elsewhere / 'kept.txt').read_text() == 'kept'
+
+
 @pytest.mark.parametrize("answer, removed", [('y', True), ('yes', True), ('YES', True), ('n', False), ('', False), ('maybe', False)])
 def test_what_is_removed_when_it_is_asked_hard_depends_on_the_answer(answer, removed, isochrones_path, monkeypatch):
     make_installation(isochrones_path)

@@ -97,8 +97,11 @@ class Photometry(nested_dict, metaclass=Singleton):
 
     def _purge(self, hard: bool = False, yes: bool = False) -> None:
         if hard and (True if yes else (input("WARNING!! This will remove all the isochrones cached in your installation. Are you certain (y/[n])? ").lower() in ['y', 'yes'])):
-            for dir in ISOCHRONES_PATH.glob('*'):
-                shutil.rmtree(dir)
+            for path in ISOCHRONES_PATH.glob('*'):
+                if path.is_dir() and not path.is_symlink():
+                    shutil.rmtree(path)
+                else:  # a file, or a link, which is removed and not what it points to (rmtree refuses a link)
+                    path.unlink()
 
 
 if __name__ == '__main__':

@@ -510,6 +510,8 @@ far as the commits of this package and of the backend say.
   line was glued to it (the commands themselves ran correctly).
 - `execute` now ends the last line of a command that does not end it, so that the line that a command printed after it is no longer glued
   to it (`JOB 1/2 | abcJOB 2/2 | x`).
+- `Photometry._purge(hard=True)` no longer stops with an error, with part of the isochrones removed, when the directory of the
+  isochrones holds a file or a link: it removes files and links as well as directories (a link is removed, not what it points to).
 
 ## [0.8.0] - 2026-08-10
 
