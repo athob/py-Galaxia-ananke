@@ -114,8 +114,10 @@ class Survey:
         photosys = self.photosystems[0]
         checked_cmd_magnames: str = photosys.check_cmd_magnames(cmd_magnames)
         parameters: Dict[str, Union[str,float,int]] = DEFAULTS_FOR_PARFILE.copy()
-        parameters.update(**{FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name,
-                             FTTAGS.mag_color_names: checked_cmd_magnames, FTTAGS.nres: self.ngb}, **kwargs)
+        own_parameters: Dict[str, Union[str,float,int]] = {
+            FTTAGS.photo_categ: photosys.category, FTTAGS.photo_sys: photosys.name,
+            FTTAGS.mag_color_names: checked_cmd_magnames, FTTAGS.nres: self.ngb}
+        parameters.update(**own_parameters, **kwargs)
         n_gen_tag_length = len(str(max(n_gens)))
         self.__fileparam = MappingProxyType(parameters)
         self.__extraparam = MappingProxyType({
