@@ -18,18 +18,20 @@ Docstring
 """
 import re
 import sys
-from typing import Tuple, List, Callable, Sequence, Optional
+from typing import Any, Dict, KeysView, Tuple, List, Callable, Sequence, Optional
 from numpy.typing import NDArray
 from functools import cached_property
 import pathlib
 import shutil
 
 import numpy as np
+from astropy.table import QTable
 
 from .._constants import *
 from ..utils import compare_given_and_required, tuple_itemgetter
 from .IsochroneFile import IsochroneFile
 from .Formatting import *
+from .Formatting import Formatting
 
 __all__ = ['Isochrone']
 
@@ -50,7 +52,7 @@ class Isochrone:
     _file_descriptor = "IsoFileDescriptor.txt"
     _magnitude_systems = ('Vega', 'AB', 'ST')
     _magnitude_system_line = re.compile(r'^#\s*Magnitude system\s*:\s*(.*?)\s*$', re.IGNORECASE)
-    def __init__(self, *args, overwrite=False, magnitude_system: Optional[str] = None) -> None:
+    def __init__(self, *args: Any, overwrite: bool = False, magnitude_system: Optional[str] = None) -> None:
         if not args:
             raise TypeError("Isochrone requires at least one argument")
         elif len(args) == 1:
@@ -86,7 +88,8 @@ class Isochrone:
             raise ValueError(f"The magnitude system has to be one of {allowed}, not {value!r}")
         return known[value.strip().casefold()]
 
-    def _write_isochrone_files(self, isochrone_data: dict, iso_column_order: list, magnitude_system: Optional[str] = None):
+    def _write_isochrone_files(self, isochrone_data: dict, iso_column_order: list,
+                               magnitude_system: Optional[str] = None) -> None:
         self.path.mkdir(parents=True, exist_ok=True)
         try:
             self._write_file_descriptor(iso_column_order, magnitude_system)
@@ -121,12 +124,12 @@ class Isochrone:
                                  f"the metallicity {feh} has {len(others)}" + ("" if len(ages[0]) != len(others) else ", at other values"))
         return self._required_keys + magnames
 
-    def _ages_as_the_backend_reads_them(self, table) -> NDArray:
+    def _ages_as_the_backend_reads_them(self, table: Any) -> NDArray:
         """The distinct ages of a table as the backend counts them: as floats, and leaving out the rows that have no current mass."""
         with_mass = ~np.isnan(np.asarray(table[self._mact], dtype=float))
         return np.unique(np.asarray(table[self._age], dtype=np.float32)[with_mass])
 
-    def _write_file_descriptor(self, iso_column_order: list, magnitude_system: Optional[str] = None):
+    def _write_file_descriptor(self, iso_column_order: list, magnitude_system: Optional[str] = None) -> None:
         magnames = iso_column_order[len(self._required_keys):]
         lines = [f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}"]
         if magnitude_system is not None:
@@ -134,27 +137,27 @@ class Isochrone:
         with self.file_descriptor_path.open('w') as f: f.write('\n'.join(lines) + "\n\n")
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         return self._path
     
     @property
-    def category(self):
+    def category(self) -> str:
         return self.path.parent.name
     
     @property
-    def name(self):
+    def name(self) -> str:
         return self.path.name
 
     @property
-    def file_descriptor_path(self):
+    def file_descriptor_path(self) -> pathlib.Path:
         return self._path / self._file_descriptor
 
     @property
-    def has_file_descriptor(self):
+    def has_file_descriptor(self) -> bool:
         return self.file_descriptor_path.exists()
 
     @cached_property
-    def isochrone_files(self):
+    def isochrone_files(self) -> List[IsochroneFile]:
         return list(map(lambda path: IsochroneFile(path, isochrone=self),
                         sorted(self._path.glob(IsochroneFile._file_format.format('*')))))
     
@@ -208,7 +211,7 @@ class Isochrone:
         return self.file_descriptor_content[4:]
 
     @cached_property
-    def formatting(self):
+    def formatting(self) -> Formatting:
         if False: # sys.version_info >= (3,10):  # TODO uncomment below when upgrading officially to 3.10
             # match self.name:
             #     case ('APO__SDSS' | 'DCMC' | 'Generic__Johnson_UBVRIJHK' | 'Generic__Stroemgren') if self.category == 'padova':
@@ -231,20 +234,20 @@ class Isochrone:
                 return python_formatting  # what is made in Python, and a system that is not known
 
     @cached_property
-    def qtables_dictionary(self):  # by log10(Z/Zsun), with the Zsun of the layout
+    def qtables_dictionary(self) -> Dict[float, Dict[float, QTable]]:  # by log10(Z/Zsun) (Zsun of the layout), then by age
         return {self.formatting.metallicity_converter(iso_file.metallicity): self.formatting.qtable_per_age_from_isochronefile(iso_file)
                 for iso_file in self.isochrone_files}
     
     @cached_property
-    def qtables_unique_ages_dictionary(self):
+    def qtables_unique_ages_dictionary(self) -> Dict[float, KeysView[float]]:
         return {metallicity: qtables_per_age_dict.keys() for metallicity, qtables_per_age_dict in self.qtables_dictionary.items()}
 
     @cached_property
     def consolidated_points_and_values(self) -> Tuple[NDArray,NDArray]:
         list_of_points = []
         list_of_values = []
-        for metallicity, unique_ages in self.qtables_unique_ages_dictionary.items():
-            unique_ages = list(unique_ages)
+        for metallicity, unique_ages_view in self.qtables_unique_ages_dictionary.items():
+            unique_ages = list(unique_ages_view)
             qtables = self.qtables_dictionary[metallicity]
             if qtables[unique_ages[-1]][-1][self._lum].value != -9.999:  # the same marker as below for the white dwarfs
                 raise ValueError(f"The oldest age of the isochrone (log age {unique_ages[-1]}) at metallicity {metallicity} does not end with a white dwarf "
