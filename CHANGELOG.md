@@ -479,6 +479,9 @@ far as the commits of this package and of the backend say.
 - A clone of the backend that fails is now an error that gives the last lines of what git said, and no longer goes on to a
   checkout that fails on a directory that is not there. The error of the rate limit of GitHub, which the installation meant to
   report as an error of the build, now is one. The pipe from which the output of the clone is read is closed when it is over.
+- A GitHub that cannot be asked for the commit of the backend to clone (no network, a proxy, a certificate, a timeout, a
+  refusal, an answer that is not GitHub's) is now an error of the build that says what GitHub answered or what to check,
+  and no longer a bare error of `urllib`.
 - An installation in a directory that cannot be written to now stops, before anything is built, with the error that the
   installation meant to raise and only built: it says to give write permission to the directory that the cache is in, or to
   define another prefix with the environment variable `ANANKE_SYSTEM_PREFIX`. The check is made by the build and not when the

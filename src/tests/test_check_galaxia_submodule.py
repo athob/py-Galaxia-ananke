@@ -21,10 +21,15 @@ version pins is replaced, since nothing here may use the network.
 """
 import configparser
 import gc
+import http.client
+import json
 import os
 import pathlib
 import shutil
+import socket
+import ssl
 import subprocess
+import urllib.error
 import warnings
 from unittest import mock
 
@@ -308,6 +313,77 @@ def test_the_rate_limit_of_github_is_a_compile_error_that_says_what_was_being_cl
     pattern = rf"rate limit exceeded.*\nError finding the commit of {build.GALAXIA_SUBMODULE_NAME} to clone"
     with pytest.raises(CompileError, match=pattern):
         build.clone_and_checkout_submodules(root, [build.GALAXIA_SUBMODULE_NAME])
+
+
+# -- GitHub cannot be asked for the commit to clone -----------------------------------
+
+def lookup_that_raises(world, monkeypatch, error):
+    """Sources that are not a git repository, to which GitHub answers with `error` when asked for the commit to clone."""
+    world.github_says(monkeypatch)
+
+    def raises(*arguments):
+        raise error
+    monkeypatch.setattr(build, 'get_submodule_commit', raises)
+    monkeypatch.setattr(subprocess, 'Popen', lambda *a, **k: pytest.fail("the backend must not be cloned without its commit"))
+    return world.sources('sdist', git_repository=False)
+
+
+NAME = build.GALAXIA_SUBMODULE_NAME
+
+
+@pytest.mark.parametrize('error', [
+    urllib.error.URLError(socket.gaierror(-2, 'Name or service not known')),
+    urllib.error.URLError(ssl.SSLCertVerificationError('CERTIFICATE_VERIFY_FAILED')),
+    ConnectionResetError('Connection reset by peer'),
+    ConnectionRefusedError('Connection refused'),
+    TimeoutError('timed out'),
+    socket.timeout('timed out'),
+    ssl.SSLError('handshake failure'),
+    http.client.IncompleteRead(b'abc', 10),
+    http.client.RemoteDisconnected('Remote end closed connection without response'),
+], ids=['URLError-gaierror', 'URLError-certificate', 'ConnectionResetError', 'ConnectionRefusedError', 'TimeoutError',
+        'socket.timeout', 'SSLError', 'IncompleteRead', 'RemoteDisconnected'])
+def test_a_github_that_cannot_be_reached_is_a_compile_error_that_says_what_to_check(world, monkeypatch, error):
+    root = lookup_that_raises(world, monkeypatch, error)
+    with pytest.raises(CompileError) as raised:
+        build.clone_and_checkout_submodules(root, [NAME])
+    lines = str(raised.value).split('\n')
+    assert lines[0].startswith(f"GitHub could not be reached ({type(error).__name__}: ")
+    assert "api.github.com and github.com" in lines[0]
+    assert "https_proxy" in lines[0] and "SSL_CERT_FILE or SSL_CERT_DIR" in lines[0]
+    assert lines[1:] == [f"Error finding the commit of {NAME} to clone, aborting...", ""]
+
+
+@pytest.mark.parametrize('code, reason', [(403, 'Forbidden'), (404, 'Not Found'), (500, 'Internal Server Error')])
+def test_a_refusal_of_github_is_a_compile_error_that_says_what_it_answered_and_for_what(world, monkeypatch, code, reason):
+    root = lookup_that_raises(world, monkeypatch, urllib.error.HTTPError('https://api.github.com', code, reason, {}, None))
+    with pytest.raises(CompileError) as raised:
+        build.clone_and_checkout_submodules(root, [NAME])
+    assert str(raised.value) == (f"GitHub answered {code} ({reason}) when asked for the commit of {NAME} that the revision "
+                                 f"{REVISION} of this package pins\n"
+                                 f"Error finding the commit of {NAME} to clone, aborting...\n")
+
+
+def test_an_answer_that_is_not_json_is_a_compile_error_that_says_that_something_else_may_have_answered(world, monkeypatch):
+    with pytest.raises(json.JSONDecodeError) as bad:
+        json.loads('<html>Sign in to the network</html>')
+    root = lookup_that_raises(world, monkeypatch, bad.value)
+    with pytest.raises(CompileError) as raised:
+        build.clone_and_checkout_submodules(root, [NAME])
+    lines = str(raised.value).split('\n')
+    assert lines[0].startswith(f"The answer to the request for the commit of {NAME} is not what GitHub sends (Expecting value")
+    assert lines[0].endswith("a proxy or a portal may have answered in its place")
+    assert lines[1:] == [f"Error finding the commit of {NAME} to clone, aborting...", ""]
+
+
+@pytest.mark.parametrize('error', [FileNotFoundError("Submodule path 'Galaxia-ananke' not found in repository"),
+                                   ValueError("Path 'Galaxia-ananke' is not a submodule (type: tree)")],
+                         ids=['FileNotFoundError', 'ValueError'])
+def test_what_is_not_about_reaching_github_is_raised_as_it_is(world, monkeypatch, error):
+    root = lookup_that_raises(world, monkeypatch, error)
+    with pytest.raises(type(error)) as raised:
+        build.clone_and_checkout_submodules(root, [NAME])
+    assert raised.value is error
 
 
 if __name__ == '__main__':

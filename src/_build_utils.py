@@ -23,7 +23,10 @@ import pathlib
 import shutil
 import sys
 import subprocess
+import socket
 import ssl
+import http.client
+import urllib.error
 import urllib.request
 import urllib.parse
 import json
@@ -48,6 +51,10 @@ if platform.system() == "Windows":
 ROOT_DIR = pathlib.Path(__file__).parent.parent
 MIN_GPP_VERSION = Version("8.5")
 MIN_MAKE_VERSION = Version("4.2")
+# what a request to GitHub raises when GitHub cannot be reached (an HTTPError, which is a URLError too, is GitHub that
+# answers: it comes first). socket.timeout is not the TimeoutError of Python 3.9, and is the same one from Python 3.10
+GITHUB_UNREACHABLE = (urllib.error.URLError, ConnectionError, TimeoutError, socket.timeout, ssl.SSLError,
+                      http.client.HTTPException)
 
 
 # force printing to the terminal even if stdout was redirected
@@ -153,6 +160,11 @@ def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
     raise FileNotFoundError(f"Submodule path '{submodule_path}' not found in repository")
 
 
+def commit_lookup_error(reason, submodule_name):
+    """The error of the build when the commit of a submodule to clone cannot be found, whatever the reason."""
+    return CompileError(f"{reason}\nError finding the commit of {submodule_name} to clone, aborting...\n")
+
+
 def clone_and_checkout_submodules(root_dir, submodule_names):
     parsed_url = urllib.parse.urlparse(__url__)
     url_path = pathlib.Path(parsed_url.path)
@@ -160,12 +172,21 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
     gitmodules.read(root_dir / '.gitmodules')
     for submodule_name in submodule_names:
         galaxia_url = parsed_url._replace(path=str((url_path / gitmodules[f'submodule "{submodule_name}"']['url']).resolve())).geturl()
+        revision = _version.get_versions()['full-revisionid']
         try:
-            galaxia_commit = get_submodule_commit(
-                *(url_path.parts[-2:] + (_version.get_versions()['full-revisionid'], submodule_name))
-                )
+            galaxia_commit = get_submodule_commit(*(url_path.parts[-2:] + (revision, submodule_name)))
         except RuntimeError as e:  # the rate limit of GitHub
-            raise CompileError(str(e) + f"\nError finding the commit of {submodule_name} to clone, aborting...\n")
+            raise commit_lookup_error(str(e), submodule_name)
+        except urllib.error.HTTPError as e:  # GitHub answers, and refuses
+            raise commit_lookup_error(f"GitHub answered {e.code} ({e.reason}) when asked for the commit of {submodule_name} "
+                                      f"that the revision {revision} of this package pins", submodule_name)
+        except GITHUB_UNREACHABLE as e:
+            raise commit_lookup_error(f"GitHub could not be reached ({type(e).__name__}: {e}): the installation needs "
+                                      "api.github.com and github.com, check the network, the proxy variables (https_proxy) "
+                                      "and, for a certificate error, SSL_CERT_FILE or SSL_CERT_DIR", submodule_name)
+        except json.JSONDecodeError as e:  # something that is not GitHub answers
+            raise commit_lookup_error(f"The answer to the request for the commit of {submodule_name} is not what GitHub sends "
+                                      f"({e}): a proxy or a portal may have answered in its place", submodule_name)
         output = []
         process = subprocess.Popen(['git', 'clone', galaxia_url], cwd=root_dir,
                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
