@@ -43,7 +43,7 @@ from .__metadata__ import *
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, format_docstring, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, State, common_entries, metadata_dicts_to_consolidated_json
+from .utils import classproperty, format_docstring, in_description_order, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, State, common_entries, metadata_dicts_to_consolidated_json
 from .photometry.PhotoSystem import PhotoSystem
 from . import Input
 
@@ -1086,10 +1086,11 @@ class Output:
 format_docstring(Output.__init__,
                  _output_properties=''.join(
                      [f"\n            * {desc} via key{'' if isinstance(key, str) else 's'} ``{str(key).replace(chr(39),'')}``"
-                      for key, desc in Output._export_properties.union(Output._postprocess_properties)]),
+                      for key, desc in in_description_order(
+                          Output._export_properties.union(Output._postprocess_properties))]),
                  _optional_properties=''.join(
                      [f"\n            * {desc} via key{'' if isinstance(key, str) else 's'} ``{str(key).replace(chr(39),'')}``"
-                      for key, desc in Output._all_optional_properties]),
+                      for key, desc in in_description_order(Output._all_optional_properties)]),
                  STARCATALOG_GROUP=STARCATALOG_GROUP,
                  PARENTPARTICLE_GROUP=PARENTPARTICLE_GROUP)
 

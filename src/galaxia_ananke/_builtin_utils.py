@@ -40,7 +40,7 @@ import json
 import re
 
 
-__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'format_docstring', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'tuple_itemgetter', 'get_version_of_command', 'lexicalorder_dict', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
+__all__ = ['Singleton', 'classproperty', 'State', 'execute', 'format_docstring', 'make_symlink', 'compare_given_and_required', 'confirm_equal_length_arrays_in_dict', 'common_entries', 'tuple_itemgetter', 'get_version_of_command', 'lexicalorder_dict', 'in_description_order', 'import_source_file', 'mark_metadata_prop', 'collect_metadata_marked_properties', 'metadata_dicts_to_consolidated_json']
 
 
 class Singleton(type):
@@ -259,6 +259,15 @@ def get_version_of_command(cmd: str) -> str:
 
 def lexicalorder_dict(dictionary: Dict[Any, Any]) -> OrderedDict[Any, Any]:
     return ODict({k: dictionary[k] for k in sorted(dictionary)})
+
+
+def in_description_order(properties: Iterable[Tuple[Any, str]]) -> List[Tuple[Any, str]]:
+    """
+    The (key, description) pairs of properties in the alphabetical order of their descriptions. A set has no order that stays
+    the same from one run to the next (it depends on the hash seed), so a docstring that lists the properties of a set does it
+    in this one.
+    """
+    return sorted(properties, key=lambda item: (item[1], str(item[0])))
 
 
 def import_source_file(module_name: str, file_path: Union[str, pathlib.Path]) -> ModuleType:

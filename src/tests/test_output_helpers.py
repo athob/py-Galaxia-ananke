@@ -146,5 +146,13 @@ def test_the_documentation_of_the_constructor_has_what_it_is_made_of_filled_in()
     assert f"``{STARCATALOG_GROUP}``" in documentation and f"``{PARENTPARTICLE_GROUP}``" in documentation
 
 
+def test_the_documentation_of_the_constructor_lists_the_properties_in_the_alphabetical_order_of_their_descriptions():
+    documentation = Output.__init__.__doc__
+    for properties in (Output._export_properties | Output._postprocess_properties, Output._all_optional_properties):
+        descriptions = sorted(description for key, description in properties)
+        positions = [documentation.index(f"* {description} via key") for description in descriptions]
+        assert positions == sorted(positions)
+
+
 if __name__ == '__main__':
     pass

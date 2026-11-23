@@ -28,7 +28,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke._builtin_utils import (classproperty, format_docstring, get_version_of_command, import_source_file,
-                                            tuple_itemgetter)
+                                            in_description_order, tuple_itemgetter)
 from .utils import in_tmp_wd, fake_commands
 
 
@@ -211,3 +211,22 @@ def test_python_that_removes_the_docstrings_can_fill_them():
     result = subprocess.run([sys.executable, '-OO', '-c', code, helper_file], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "left without docstring"
+
+
+# -- the order of the properties that a docstring lists -------------------------------
+
+def test_properties_are_put_in_the_alphabetical_order_of_their_descriptions():
+    properties = {('b', 'Second'), (('x', 'y'), 'First'), ('a', 'Third')}
+    assert in_description_order(properties) == [(('x', 'y'), 'First'), ('b', 'Second'), ('a', 'Third')]
+
+
+def test_the_order_does_not_depend_on_the_order_in_which_the_properties_come():
+    pairs = [(f'key{i}', f'Description {i % 3}') for i in range(9)]
+    expected = in_description_order(pairs)
+    for shuffled in (pairs[::-1], pairs[3:] + pairs[:3], set(pairs), frozenset(pairs)):
+        assert in_description_order(shuffled) == expected
+
+
+def test_keys_that_are_strings_and_tuples_are_put_in_order_together_by_how_they_are_written():
+    # the same description: the keys are compared as the text that the docstring shows, not a string with a tuple
+    assert in_description_order([('a', 'Same'), (('b', 'a'), 'Same')]) == [(('b', 'a'), 'Same'), ('a', 'Same')]

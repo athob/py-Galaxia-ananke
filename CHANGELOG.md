@@ -517,6 +517,9 @@ far as the commits of this package and of the backend say.
   dependency can still fail there: `pyvo`, which `astroquery` imports, did when this was checked.
 - Importing the package with `python -O`, which removes the `assert` statements, no longer skips the check that the backend
   was built: it raises the same `AssertionError`, with the same message, as without `-O`.
+- The docstrings that list the properties of the particles and of the output (`Input.particles_dictionary_description`, and
+  the documentation of `Input` and of `Output`) list them in the alphabetical order of their descriptions, and no longer in an
+  order that changed from one run of Python to the next.
 
 ## [0.8.0] - 2026-08-10
 

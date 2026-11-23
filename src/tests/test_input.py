@@ -20,6 +20,7 @@ test_input_files.py. The inputs here are the smallest valid ones (see utils.mini
 """
 import collections
 import pathlib
+import re
 import warnings
 
 import numpy as np
@@ -54,6 +55,14 @@ def test_the_description_of_the_particles_names_every_key():
     description = Input.particles_dictionary_description
     for key in REQUIRED | OPTIONAL:
         assert f"via key ``{key}``" in description
+
+
+def test_the_description_of_the_particles_lists_the_properties_in_the_alphabetical_order_of_their_descriptions():
+    # they are in sets, whose order changes with the hash seed: the lists are sorted
+    required, optional = Input.particles_dictionary_description.split("Additionally")
+    for section in (required, optional):
+        descriptions = re.findall(r"\* (.*) via key ``", section)
+        assert len(descriptions) > 1 and descriptions == sorted(descriptions)
 
 
 def test_the_documentation_of_the_constructor_has_what_it_is_made_of_filled_in():

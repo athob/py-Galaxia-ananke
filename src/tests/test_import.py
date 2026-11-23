@@ -54,6 +54,21 @@ def test_importing_the_package_without_its_backend_fails_with_the_message_that_s
     assert "/#troubleshooting-installation" in done.stderr
 
 
+def test_the_docstrings_that_list_properties_are_the_same_whatever_the_hash_seed():
+    # the properties are in sets, whose order changes with the hash seed: the docstrings list them in a fixed order
+    code = ("import hashlib, src.galaxia_ananke as package\n"
+            "docs = [package.Input.__init__.__doc__, package.Input.particles_dictionary_description,\n"
+            "        package.Output.__init__.__doc__]\n"
+            "print(hashlib.sha256('\\0'.join(docs).encode()).hexdigest())")
+    digests = set()
+    for seed in ('1', '2'):
+        done = subprocess.run([sys.executable, "-W", "ignore", "-c", code], cwd=ROOT,
+                              env=dict(os.environ, PYTHONHASHSEED=seed), capture_output=True, text=True)
+        assert done.returncode == 0, done.stderr
+        digests.add(done.stdout.strip())
+    assert len(digests) == 1
+
+
 def test_importing_the_package_replaces_how_vaex_reads_and_opens_files():
     assert vaex.hdf5.dataset.Hdf5MemoryMapped._load is _patch_vaex.new_hdf5_load
     assert vaex.open_many is _patch_vaex.new_open_many

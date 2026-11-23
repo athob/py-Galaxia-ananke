@@ -34,7 +34,7 @@ import ebf
 from ._constants import *
 from ._templates import *
 from ._defaults import *
-from .utils import classproperty, format_docstring, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
+from .utils import classproperty, format_docstring, in_description_order, make_symlink, compare_given_and_required, confirm_equal_length_arrays_in_dict, lexicalorder_dict, mark_metadata_prop, collect_metadata_marked_properties, hash_iterable
 from .photometry.PhotoSystem import PhotoSystem
 
 if TYPE_CHECKING:
@@ -180,10 +180,10 @@ class Input:
             {_optional_properties}
         """.format(_required_properties=''.join(
                        [f"\n            * {desc} via key ``{str(key)}``"
-                        for key, desc in Input._required_properties]),
+                        for key, desc in in_description_order(Input._required_properties)]),
                    _optional_properties=''.join(
                        [f"\n            * {desc} via key ``{str(key)}``"
-                        for key, desc in Input._optional_properties]))
+                        for key, desc in in_description_order(Input._optional_properties)]))
         return description
 
     @classproperty
