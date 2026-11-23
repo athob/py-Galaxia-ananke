@@ -184,6 +184,8 @@ far as the commits of this package and of the backend say.
 - The README says how to install with `uv`, which builds in a temporary environment and reuses the wheels it built:
   give `ANANKE_SYSTEM_PREFIX` the path of the environment to install into, and run `uv cache clean galaxia-ananke`
   before installing in another one. The troubleshooting names `uv` and `pip` among what can leave the backend missing.
+- A CI job checks the type hints of the package with mypy (the settings are in `pyproject.toml`). For now it informs, and does not
+  hold `stable` back.
 
 ### Changed
 

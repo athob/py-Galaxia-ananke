@@ -161,13 +161,37 @@ jobs:
         # the installer looks up is a commit
         python .github/scripts/check_dist.py dist
 
+  types:
+    name: Check the type hints
+    # For now this only informs: it shows in red when mypy finds something, and does not hold stable
+    # back (continue-on-error makes a failed job count as passed for the jobs that need it). When the
+    # hints of the package are complete, it will hold stable back like the other jobs.
+    # A pull request from a branch of this repository is already covered by the
+    # push to that branch: only those from forks need to run here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.12"
+    - name: Install the type checker
+      run: pip install --require-hashes -r .github/requirements/requirements-types.txt
+    - name: Check the type hints
+      run: mypy
+
   promote:
     name: Promote develop to stable
     # Only for a push to develop, and only once lint and the tests have passed.
     # This is a fast-forward by construction: git refuses to push SHA to stable
     # unless stable is an ancestor of SHA, so stable is always exactly a commit
     # that passed CI, and no merge commit (or git identity) is ever needed.
-    needs: [lint, workflows, install, package]
+    needs: [lint, workflows, install, package, types]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:

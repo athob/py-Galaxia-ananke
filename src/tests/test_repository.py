@@ -110,9 +110,12 @@ def test_cd_publishes_only_on_a_push():
             f"{name} has to run only on a push: a run by hand must not publish"
 
 
-def test_no_job_of_ci_is_allowed_to_fail():
-    # a job that may fail is red without holding stable back: if one is ever meant to, say so here
-    assert "continue-on-error" not in read(".github/workflows/ci.yml")
+def test_no_job_of_ci_is_allowed_to_fail_but_types():
+    # a job that may fail is red without holding stable back: if one is ever meant to, say so here.
+    # `types` is, until the hints of the package are complete and it holds stable back like the others.
+    ci = read(".github/workflows/ci.yml")
+    assert ci.count("continue-on-error") == jobs_of("ci.yml")["types"].count("continue-on-error"), \
+        "only the types job may be allowed to fail"
 
 
 def test_cd_waits_for_a_workflow_that_exists():

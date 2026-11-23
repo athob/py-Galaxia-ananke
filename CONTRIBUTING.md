@@ -116,8 +116,12 @@ takes about four minutes. Its jobs:
   and `.github/scripts/check_dist.py`: the sdist has to hold what installing needs
   (`.gitmodules` among it), with a version and a revision id that the installer can use, and
   not the backend.
-- **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`
-  forward to that commit.
+- **types**: checks the type hints of the package with [mypy](https://mypy.readthedocs.io/), on
+  Python 3.12 (its settings are in `pyproject.toml`). For now it only informs: it shows in
+  red when mypy finds something, and does not stop `stable` from moving. Once the hints of the
+  package are complete, it will be one of the jobs `promote` waits for.
+- **promote**: on a push to `develop`, once the jobs above have passed (`types` aside, for now), moves
+  `stable` forward to that commit.
 
 Apart from CI, two workflows report to Security > Code scanning: **CodeQL** (GitHub's code
 scanning of the Python source; on `develop`, on pull requests and every Wednesday) and
@@ -125,7 +129,7 @@ scanning of the Python source; on `develop`, on pull requests and every Wednesda
 supply-chain habits; from `main`, every Thursday). Their findings are meant to be looked at,
 and `stable` does not wait for them.
 
-The tools the workflows install (ruff, pytest, build and twine, and what the CD workflow builds with) are
+The tools the workflows install (ruff, pytest, mypy, build and twine, and what the CD workflow builds with) are
 locked with hashes in
 [`.github/requirements/`](.github/requirements): each `requirements-X.in` says what is
 wanted, and `requirements-X.txt` pins every package, transitive ones included, to a version
