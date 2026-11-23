@@ -59,9 +59,10 @@ class SvoFpsDriver:
         return self.__facility_instrument[0]
     
     @cached_property
-    def instrument(self) -> str:
+    def instrument(self) -> Optional[str]:
         if len(self.__facility_instrument) > 1:
             return self.__facility_instrument[1]
+        return None
 
     @cached_property
     def svo_filter_list(self) -> Optional[Table]:
