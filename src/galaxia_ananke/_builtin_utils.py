@@ -149,8 +149,7 @@ class classproperty(object):
         return self.f(owner)
 
 
-def _execute_generator(cmds: List[str], max_workers: Optional[int] = None, **kwargs: Any
-                       ) -> Iterator[Tuple[int, Optional[str]]]:
+def _execute_generator(cmds: List[str], max_workers: Optional[int] = None, **kwargs: Any) -> Iterator[Tuple[int, str]]:
     arguments = [shlex.split(cmd) for cmd in cmds]          # all of them are read before any is run
     popens = [subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
@@ -158,7 +157,8 @@ def _execute_generator(cmds: List[str], max_workers: Optional[int] = None, **kwa
     master_stdout_readline_iter = zip_longest(*(iter(cast(IO[str], popen.stdout).readline, "") for popen in popens))
     for stdout_lines in master_stdout_readline_iter:
         for tag, stdout_line in enumerate(stdout_lines, start=1):
-            yield tag, stdout_line
+            if stdout_line is not None:     # zip_longest gives None for a command that has no more lines
+                yield tag, stdout_line
     return_codes = [popen.wait() for popen in popens if cast(IO[str], popen.stdout).close() is None]
     for return_code, cmd in zip(return_codes, cmds):
         if return_code:

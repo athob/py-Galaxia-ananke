@@ -505,6 +505,9 @@ far as the commits of this package and of the backend say.
   declared an extension that was not one (a program that the package runs is not an extension that Python loads). The wheel
   that is built is now tagged `py3-none-any`, there being no extension to make it specific to a platform; only the sdist is
   published.
+- `execute` no longer prints `None` for a command that has finished: when the commands that it runs at the same time print
+  different numbers of lines, the one that finished first left `JOB 1/2 | None` in the output, with no end of line, so that the next
+  line was glued to it (the commands themselves ran correctly).
 
 ## [0.8.0] - 2026-08-10
 

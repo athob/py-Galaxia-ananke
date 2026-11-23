@@ -61,6 +61,14 @@ def test_a_list_of_one_command_is_the_same_as_the_command(say, capsys):
     assert capsys.readouterr().out == alone
 
 
+@pytest.fixture
+def lines(tmp_path):
+    """The command that prints a number of lines, each made of the prefix it is given and of its own number."""
+    script = write_script(tmp_path, "lines.py",
+                          "import sys\nfor i in range(int(sys.argv[2])):\n    print(f'{sys.argv[1]}{i}')\n")
+    return lambda prefix, count: f"{sys.executable} {script} {prefix} {count}"
+
+
 def test_what_a_command_writes_to_its_error_stream_is_printed_too(tmp_path, capsys):
     # the backend reports its own failures there (an uncaught C++ exception, for one)
     script = write_script(tmp_path, "oops.py", "import sys\nprint('oops', file=sys.stderr)\n")
@@ -79,6 +87,18 @@ def test_several_commands_are_announced_first_and_tagged_each(say, capsys):
     lines = capsys.readouterr().out.splitlines()
     assert lines[:2] == [f"Executing JOB 1/2 = {commands[0]}", f"Executing JOB 2/2 = {commands[1]}"]
     assert sorted(lines[2:]) == ["JOB 1/2 | one", "JOB 2/2 | two"]
+
+
+@pytest.mark.parametrize("counts", [(1, 3), (3, 1), (0, 2), (2, 0, 3)])
+def test_commands_that_print_different_numbers_of_lines_print_what_they_say_and_nothing_more(counts, lines, capsys):
+    # zip_longest reads the commands together and gives None where one has finished: that is not a line to print
+    commands = [lines(chr(97 + i), count) for i, count in enumerate(counts)]
+    execute(commands)
+    printed = capsys.readouterr().out.splitlines()
+    announced = [f"Executing JOB {tag}/{len(counts)} = {command}" for tag, command in enumerate(commands, 1)]
+    assert printed[:len(counts)] == announced
+    assert sorted(printed[len(counts):]) == sorted(f"JOB {tag}/{len(counts)} | {chr(96 + tag)}{row}"
+                                                  for tag, count in enumerate(counts, 1) for row in range(count))
 
 
 def test_the_tags_are_as_wide_as_the_number_of_commands_needs(say, capsys):
