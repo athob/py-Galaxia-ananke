@@ -181,6 +181,9 @@ far as the commits of this package and of the backend say.
   filter that SVO has no Vega zero point of has NaN, with a warning); `PhotoSystem.offsets_to_magnitude_system` and
   `Output.offsets_to_magnitude_system` give what to add to have the magnitudes in `Vega` or `AB` whichever system they are in (zero for
   those that already are), and need the network only when something has to be converted.
+- The README says how to install with `uv`, which builds in a temporary environment and reuses the wheels it built:
+  give `ANANKE_SYSTEM_PREFIX` the path of the environment to install into, and run `uv cache clean galaxia-ananke`
+  before installing in another one. The troubleshooting names `uv` and `pip` among what can leave the backend missing.
 
 ### Changed
 

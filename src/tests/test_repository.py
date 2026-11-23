@@ -435,6 +435,23 @@ def test_the_dois_agree():
     assert any(item["identifier"] == JOSS_DOI for item in related)
 
 
+def test_the_readme_says_how_to_install_with_uv_with_the_variable_and_the_name_that_the_package_has():
+    readme = read("README.md")
+    variable = re.search(r'^PREFIX_ENV_VAR = "(\w+)"$', read("src/galaxia_ananke/_constants.py"), flags=re.MULTILINE).group(1)
+    name = re.search(r"^NAME = '(\w+)'$", read("src/galaxia_ananke/_name.py"), flags=re.MULTILINE).group(1)
+    command = f"{variable}=/path/to/environment uv pip install --python /path/to/environment/bin/python {name}\n"
+    assert "\n#### With uv\n" in readme
+    assert command in readme
+    assert f"\nuv cache clean {name.replace('_', '-')}\n" in readme            # the name of the distribution, as uv knows it
+
+
+def test_the_troubleshooting_of_the_readme_sends_to_uv_and_says_what_pip_does():
+    readme = read("README.md")
+    section = readme.split("\n#### Installed with uv, or from a wheel built before\n")[1].split("\n## ")[0]
+    assert "[With uv](#with-uv)" in section
+    assert "`pip install --no-cache-dir` builds the wheel again" in section
+
+
 def test_the_license_is_said_the_same_way_everywhere():
     assert json.loads(read(".zenodo.json"))["license"] == "AGPL-3.0-or-later"
     assert re.search(r"^license: AGPL-3.0-or-later$", read("CITATION.cff"), flags=re.MULTILINE)

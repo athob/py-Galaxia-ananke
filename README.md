@@ -41,6 +41,22 @@ Please note that the command with flag `pip install . --no-cache-dir` may be nec
 
 After installation, the module can be imported in Python under the name `galaxia_ananke` and be ran as such.
 
+#### With uv
+
+`uv` builds `galaxia_ananke` in a temporary environment, which it deletes afterwards, and the build puts the backend in the environment that it runs in: the installation completes, and importing the package then fails with the `AssertionError` described in [Troubleshooting installation](#troubleshooting-installation). To have the backend built for the environment to install into, give the path of that environment (the one that `sys.prefix` gives in it) in the environment variable `ANANKE_SYSTEM_PREFIX`:
+
+```bash
+ANANKE_SYSTEM_PREFIX=/path/to/environment uv pip install --python /path/to/environment/bin/python galaxia_ananke
+```
+
+`uv` also keeps the wheel that it builds, and installs it in another environment without building it again: that environment has no backend, even with `ANANKE_SYSTEM_PREFIX` set. Before installing in another environment, remove that wheel from the cache of `uv`:
+
+```bash
+uv cache clean galaxia-ananke
+```
+
+These steps were checked with `uv pip install` (uv 0.13.9, Python 3.14.10); the other commands of `uv` that install packages were not.
+
 ### Requirements
 
 Python 3.9 to 3.14 (3.15 waits for pandas 3, which vaex 4.20 requires from that version), on a Unix system: Windows is not supported. Installing `py-Galaxia-ananke` builds its C++ backend, [`Galaxia-ananke`](https://github.com/athob/Galaxia-ananke), but the package does not carry that source: the installation fetches it from GitHub (it is a git submodule of this repository, pinned to one commit). It therefore needs network access and git, as well as GNU make (4.2 or later) and g++ (8.5 or later) to build it. The `Galaxia-ananke` repository is large, about 7.4 GB at the time of writing (most of it is data, such as the isochrones), and the installation copies its data into a cache directory under `sys.prefix`: make sure that there is enough free disk space before installing.
@@ -60,6 +76,10 @@ In the log files, check if `Galaxia-make-install.log` contains a mention regardi
 #### no writing permission in sys.prefix directory
 
 When you run in a python terminal the following `import sys; sys.prefix`, the resulting path is the path of the directory where the Galaxia-ananke cached data is meant to be stored. If this directory doesn't have write permission, the installation will not complete. It is ideal to let the installation use that directory, so troubleshooting that missing write permission should be the priority. That said in last resort, it is possible to set a custom prefix directory by exporting its full path in the environment variable `ANANKE_SYSTEM_PREFIX`.
+
+#### Installed with uv, or from a wheel built before
+
+The backend is built when the installer builds the wheel, in the environment where the installer builds it. `uv` builds in a temporary environment, and `uv` and `pip` install a wheel that they built before, from their cache, without building it again: in both cases the environment that the package is installed in has no backend. For `uv`, see [With uv](#with-uv). For `pip`, `pip install --no-cache-dir` builds the wheel again.
 
 ## Usage
 
