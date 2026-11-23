@@ -20,7 +20,7 @@ Please note that this module is private. The Output class is
 available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Optional, Union, Tuple, List, Dict, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Optional, Union, Tuple, List, Dict, Iterable, cast
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -45,10 +45,10 @@ from ._templates import *
 from ._defaults import *
 from .utils import classproperty, format_docstring, in_description_order, CallableDFtoNone, CallableDFtoInt, RecordingDataFrame, State, common_entries, metadata_dicts_to_consolidated_json
 from .photometry.PhotoSystem import PhotoSystem
-from . import Input
+from .Input import Input
 
 if TYPE_CHECKING:
-    from . import Survey
+    from .Survey import Survey
 
 __all__ = ['Output']
 
@@ -58,7 +58,7 @@ def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
 
 
 def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Path,
-                                 with_columns: Optional[Iterable] = (),
+                                 with_columns: Iterable[str] = (),
                                  update_metadata: Optional[Dict[str, Union[str,float,int]]] = None,
                                  verbose: bool = True) -> None:  # temporary until vaex supports it
     _temp = vaex.open(hdf5_file, group=STARCATALOG_GROUP)
@@ -82,7 +82,10 @@ def _flush_extra_columns_to_hdf5(vaex_df: vaex.DataFrame, hdf5_file: pathlib.Pat
                 f5.attrs[k] = v if isinstance(v, (bool, int, float, str)) else v(f5.attrs)
 
 
-def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Optional[Iterable] = (), max_thread_workers: int = None, update_metadata: Optional[Dict[str, Union[str,float,int]]] = None, verbose: bool = True) -> CallableDFtoNone:
+def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = False, flush_with_columns: Iterable[str] = (),
+                              max_thread_workers: Optional[int] = None,
+                              update_metadata: Optional[Dict[str, Union[str,float,int]]] = None,
+                              verbose: bool = True) -> Callable[..., None]:
     def new_pp(*args) -> None:
         first_arg = args[0]
         if not isinstance(first_arg, list):
@@ -94,7 +97,7 @@ def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = Fals
                 vaex.dataframe.main_executor = vaex.execution.ExecutorLocal(vaex.multithreading.ThreadPoolIndex(max_workers=max_thread_workers))
                 vaex_df: vaex.DataFrame = vaex.open(hdf5_file, group=STARCATALOG_GROUP)
             else:
-                vaex_df: vaex.DataFrame = _temp
+                vaex_df = _temp
             pp(vaex_df, *args[1:])
             if hdf5_path_input:
                 _flush_extra_columns_to_hdf5(vaex_df, hdf5_file, with_columns=flush_with_columns, update_metadata=update_metadata, verbose=verbose)
@@ -203,8 +206,8 @@ class Output:
             metadata (e.g., software versions and run parameters).
         """
         self.__survey: Survey = survey
-        self.__vaex = None
-        self.__path = None
+        self.__vaex: Any = None
+        self.__path: Optional[pathlib.Path] = None
         self.__make_state()
         if not self.caching:
             self.__clear_ebfs(force=True)
@@ -367,24 +370,24 @@ class Output:
             return self.__getattribute__(item)
 
     @classmethod
-    def _compile_export_mag_names(cls, photosystems: list[PhotoSystem]) -> Tuple[str]:
+    def _compile_export_mag_names(cls, photosystems: list[PhotoSystem]) -> Tuple[str, ...]:
         return tuple(itertools.chain.from_iterable([photosystem.to_export_keys for photosystem in photosystems]))
     
     @classmethod
-    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str]:
+    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str, ...]:
         return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(photosystems)))
 
     @classmethod
-    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str]:
+    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str, ...]:
         return cls._make_export_keys(photosystems, extra_keys=cls._postprocess_keys+extra_keys)
 
-    def _make_input_optional_keys(self) -> Tuple[str]:
+    def _make_input_optional_keys(self) -> Tuple[str, ...]:
         return tuple(k if k != self._satindex_prop[0] else self._satindex for k in self.survey.input.optional_keys())
 
     def _redefine_partitions_in_ebfs(self, partitioning_rule: Optional[CallableDFtoInt]) -> None:
         if partitioning_rule is not None:  # TODO test instead partitioning_rule?
             ebfs: List[pathlib.Path] = self._ebfs
-            export_keys: Tuple[str] = self.export_keys
+            export_keys: Tuple[str, ...] = self.export_keys
             # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
             #     # Submit tasks to the executor
             #     futures = [executor.submit(self._singlethread_redefine_partitions, ebf_file, partitioning_rule, export_keys)
@@ -399,7 +402,7 @@ class Output:
                 _ = [future.get() for future in futures]
 
     @classmethod
-    def _singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str]) -> None:
+    def _singlethread_redefine_partitions(cls, ebf_file: pathlib.Path, partitioning_rule: CallableDFtoInt, export_keys: Tuple[str, ...]) -> None:
         dummy_df = RecordingDataFrame([], columns=export_keys, dtype=float)
         _ = partitioning_rule(dummy_df)
         ebf_df = pd.DataFrame({key: ebf.read(str(ebf_file), f"/{key}") for key in dummy_df.record_of_all_used_keys})
@@ -429,9 +432,9 @@ class Output:
         
     def _ebf_to_hdf5(self) -> None:
         ebfs: List[pathlib.Path] = self._ebfs
-        export_keys: Tuple[str] = self.export_keys
+        export_keys: Tuple[str, ...] = self.export_keys
         partition_ids: List[int] = list(self._hdf5s.keys())
-        photosystem_names: Tuple[str] = tuple(photosystem.name for photosystem in self.photosystems)
+        photosystem_names: Tuple[str, ...] = tuple(photosystem.name for photosystem in self.photosystems)
         # with concurrent.futures.ThreadPoolExecutor(max_workers=self._max_pp_workers) as executor:  # credit to https://www.squash.io/how-to-parallelize-a-simple-python-loop/
         #     # Submit tasks to the executor
         #     futures = [executor.submit(self._singlethread_ebf_to_hdf5, i, hdf5_file, part_slices_in_ebfs, part_lengths_in_ebfs, ebfs, export_keys)
@@ -453,16 +456,16 @@ class Output:
                                   hdf5_file: pathlib.Path,
                                   part_slices_in_ebfs: Dict[str, List[slice]],
                                   part_lengths_in_ebfs: Dict[str, int],
-                                  ebfs: List[pathlib.Path], export_keys: Tuple[str],
+                                  ebfs: List[pathlib.Path], export_keys: Tuple[str, ...],
                                   metadata: Dict[str, Union[str,float,int]],
-                                  verbose: bool = True, photosystem_names: Tuple[str] = ()) -> None:
+                                  verbose: bool = True, photosystem_names: Tuple[str, ...] = ()) -> None:
         header_ebf: str          = str(ebfs[0].resolve())
-        ebfs: List[pathlib.Path] = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
+        ebfs = [ebf_path for ebf_path in ebfs if ebf_path.name in part_lengths_in_ebfs]
         n_ebfs: int              = len(ebfs)
         if ebfs:
             i_ebf: int               = i % n_ebfs
-            ebfs: List[pathlib.Path] = ebfs[i_ebf:]+ebfs[:i_ebf]
-            header_ebf: str          = str(ebfs[0].resolve())
+            ebfs = ebfs[i_ebf:]+ebfs[:i_ebf]
+            header_ebf = str(ebfs[0].resolve())
         #
         data_length: int         = sum(part_lengths_in_ebfs.values())
         ebfs_slices: Dict[str, slice] = {
@@ -520,11 +523,11 @@ class Output:
                 f5.attrs[k] = v
 
     @classmethod
-    def __parse_galaxia_ebf_log(cls, ebf_str: str, photosystem_names: Tuple[str] = ()) -> Dict[str, str]:
+    def __parse_galaxia_ebf_log(cls, ebf_str: str, photosystem_names: Tuple[str, ...] = ()) -> Dict[str, str]:
         log_string: str = str(ebf.read(ebf_str, '/log'))
         log_header, log_body = log_string.split('\n# <parameterfile>\n')
         log_body, log_footer = log_body.split('\n# </parameterfile>\n')
-        log_body: str = log_body.replace('\n# ','\n')
+        log_body = log_body.replace('\n# ','\n')
         log_dict: Dict[str, str] = {parts[0]: ' '.join(parts[1:]) for parts in (line.split() for line in log_body.splitlines()) if len(parts)>0}
         # the backend documents each photometric system in an item of its own, `<system>_isochrone_info`: the raw descriptor
         # and the raw header of its isochrones (a backend that does not do it leaves them out, and so does the log)
@@ -635,7 +638,7 @@ class Output:
         self.__pp_auto_flush: bool = value
 
     @staticmethod
-    def __consolidate_partitions_per_process(partitions: NDArray, lengths: NDArray, max_workers: int) -> Dict[int, List[int]]:
+    def __consolidate_partitions_per_process(partitions: NDArray, lengths: NDArray, max_workers: int) -> Dict[Hashable, pd.Index]:
         df = pd.DataFrame({'partition': partitions, 'length': lengths, 'process_id': 0*lengths})
         df.set_index('partition', drop=True, inplace=True)
         df.sort_values('length', inplace=True)
@@ -695,7 +698,7 @@ class Output:
         # post_process(self._vaex, *args)
         vaex_df_or_hdf5_or_list_s = self._hdf5s if self._pp_auto_flush else self._vaex_per_partition
         if consolidate_partitions_per_process:
-            partitions_per_process: Dict[int, List[int]] = self.__consolidate_partitions_per_process(
+            partitions_per_process: Dict[Hashable, pd.Index] = self.__consolidate_partitions_per_process(
                 np.array(list(self.__partitions_lengths.keys())),
                 np.array(list(self.__partitions_lengths.values())),
                 self._max_pp_workers
@@ -710,7 +713,7 @@ class Output:
                 futures = [executor.apipe(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
-                                                                    max_thread_workers=int(np.ceil(os.cpu_count()/self._max_pp_workers)),
+                                                                    max_thread_workers=int(np.ceil(cast(int, os.cpu_count())/self._max_pp_workers)),
                                                                     update_metadata=update_metadata,
                                                                     verbose=self.verbose),
                                         vaex_df_or_hdf5_or_list, *args)
@@ -831,16 +834,16 @@ class Output:
                 for key, offset in photosystem.offsets_to_magnitude_system(target).items()}
 
     @property
-    def export_keys(self) -> Tuple[str]:
+    def export_keys(self) -> Tuple[str, ...]:
         return self._make_export_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
-    def catalogue_keys(self) -> Tuple[str]:
+    def catalogue_keys(self) -> Tuple[str, ...]:
         return self._make_catalogue_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
     def output_dir(self):
-        return pathlib.Path(self.parameters[FTTAGS.output_dir])
+        return pathlib.Path(cast("Union[str, pathlib.Path]", self.parameters[FTTAGS.output_dir]))
 
     @property
     def output_name(self):
@@ -857,19 +860,19 @@ class Output:
     
     @property
     def parameter_mag_color_names(self) -> str:
-        return self.parameters[FTTAGS.mag_color_names]
+        return cast(str, self.parameters[FTTAGS.mag_color_names])
     
     @property
     def parameter_magnitude_name(self) -> str:
         return self.parameter_mag_color_names.split(',')[0]
 
     @property
-    def parameter_abs_mag_hi(self) -> str:
-        return self.parameters[FTTAGS.abs_mag_lim_hi]
+    def parameter_abs_mag_hi(self) -> float:
+        return cast(float, self.parameters[FTTAGS.abs_mag_lim_hi])
 
     @property
-    def parameter_app_mag_hi(self) -> str:
-        return self.parameters[FTTAGS.app_mag_lim_hi]
+    def parameter_app_mag_hi(self) -> float:
+        return cast(float, self.parameters[FTTAGS.app_mag_lim_hi])
 
     @property
     def all_metadata(self) -> Dict[str, Any]:
@@ -884,7 +887,7 @@ class Output:
 
     @cached_property
     def __ebfs_partitions(self) -> Dict[int, Dict[str, NDArray]]:
-        return_dict = {}
+        return_dict: Dict[int, Dict[str, NDArray]] = {}
         for ebf_path in self._ebfs:
             if ebf_path.exists():
                 ebf_name: str = ebf_path.name
@@ -893,8 +896,9 @@ class Output:
                                      for item in pd.DataFrame(
                                          ebf.read(ebf_str, f"/{self._partitionid}")
                                          ).groupby([0]).indices.items() # groupby ignores ids that don't appear
-                                     if item[0]>=0)  # hard-coded condition to only take partition id >= 0
-                for i, ind in indices_generator:
+                                     if cast(int, item[0])>=0)  # hard-coded condition to only take partition id >= 0
+                for key, ind in indices_generator:
+                    i = cast(int, key)
                     if i in return_dict:
                         return_dict[i][ebf_name] = ind
                     else:
@@ -1000,7 +1004,7 @@ class Output:
         length_tags = len(str(max(tuple(partitions.keys())+(0,))))
         return {i: pattern.parent / pattern.name.replace('*',f"{i:0{length_tags}d}") for i in partitions.keys()}
 
-    def flush_extra_columns_to_hdf5(self, with_columns: Optional[Iterable] = (), update_metadata: Optional[Dict[str, Union[str,float,int]]] = None) -> None:  # temporary until vaex supports it
+    def flush_extra_columns_to_hdf5(self, with_columns: Iterable[str] = (), update_metadata: Optional[Dict[str, Union[str,float,int]]] = None) -> None:  # temporary until vaex supports it
         """
             Flush the dataframe new columns to its backend memory-mapped file
 
@@ -1033,7 +1037,7 @@ class Output:
         if self.__vaex is not None:
             self.__vaex.close()
         if self._hdf5s.values():
-            self.__vaex: vaex.dataframe.DataFrameLocal = vaex.open_many(map(str,self._hdf5s.values()), group=STARCATALOG_GROUP)
+            self.__vaex = vaex.open_many(map(str,self._hdf5s.values()), group=STARCATALOG_GROUP)
         else:
             raise RuntimeError("Corrupted HDF5 internal dictionary")
         if '_vaex_per_partition' in self.__dict__ and not self._pp_auto_flush:
