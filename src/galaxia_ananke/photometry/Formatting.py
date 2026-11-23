@@ -18,7 +18,7 @@ Docstring
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Tuple, List, Dict
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike
 from functools import cached_property
 from operator import itemgetter
 import dataclasses as dc
@@ -111,10 +111,10 @@ class Formatting(_BaseFormatting):
     def nonmagnitude_itemgetter(self) -> itemgetter:
         return itemgetter(*self.format_mapper.keys())
 
-    def metallicity_converter(self, metallicity: ArrayLike) -> NDArray:
+    def metallicity_converter(self, metallicity: ArrayLike) -> Any:  # as the shape of what it is given: a float gives a float
         return np.log10(metallicity/np.array(self.feh_sun))
 
-    def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> table.QTable:
+    def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> Dict[float, table.QTable]:  # by age
         isochrone: Isochrone = iso_file._isochrone
         units_mapper = self.units_mapper
         column_names: Tuple[str] = self.nonmagnitude_itemgetter(iso_file.data.keys()) + isochrone.magnitude_itemgetter(iso_file.data.keys())
