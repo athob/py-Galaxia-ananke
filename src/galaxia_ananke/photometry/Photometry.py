@@ -18,6 +18,7 @@ Docstring
 """
 import shutil
 from glob import glob
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 
@@ -29,7 +30,7 @@ from .PhotoSystem import PhotoSystem
 __all__ = ['Photometry']
 
 
-def _set_with_slashes(dictionary: dict, key: str, value) -> None:
+def _set_with_slashes(dictionary: dict, key: str, value: Any) -> None:
     """Sets `value` where the name with slashes `key` goes down to in `dictionary`, which is changed itself, making the dictionaries on the way."""
     head, *rest = key.split('/', 1)
     if not rest:
@@ -41,12 +42,12 @@ def _set_with_slashes(dictionary: dict, key: str, value) -> None:
 
 
 class nested_dict(dict):
-    def __getitem__(self, __key):
+    def __getitem__(self, __key: str) -> Any:
         _key = __key.split('/')
         _temp = super().__getitem__(_key[0])
         return _temp if len(_key) == 1 else nested_dict(_temp)['/'.join(_key[1:])]
     
-    def __setitem__(self, __key, __value):
+    def __setitem__(self, __key: str, __value: Any) -> None:
         _key = __key.split('/', 1)
         if len(_key) == 1:
             return super().__setitem__(_key[0], __value)
@@ -62,21 +63,22 @@ class nested_dict(dict):
 class Photometry(nested_dict, metaclass=Singleton):
     _category = 'category'
     _isochrone = 'isochrone'
-    def __new__(cls):
+    instance: ClassVar['Photometry']  # the only one, made by __new__
+    def __new__(cls) -> 'Photometry':
         cls.instance = super(Photometry, cls).__new__(cls)
         _temp = pd.DataFrame([[iso_path.parent.name, Isochrone(iso_path)]
                                for iso_path in ISOCHRONES_PATH.glob('*/*')
                                if iso_path.is_dir() and iso_path.parent.name != 'BolCorr'],
                              columns=[cls._category, cls._isochrone])
-        _temp = {key: _temp[cls._isochrone].loc[item].to_list()
-                 for key, item in _temp.groupby(cls._category).groups.items()}
-        for key, item in _temp.items():
-            cls.instance[key] = {iso.name: PhotoSystem(iso)
-                                 for iso in item if iso.has_file_descriptor}
+        isochrones_per_category = {key: _temp[cls._isochrone].loc[item].to_list()
+                                   for key, item in _temp.groupby(cls._category).groups.items()}
+        for key, item in isochrones_per_category.items():
+            cls.instance[cast(str, key)] = {iso.name: PhotoSystem(iso)
+                                            for iso in item if iso.has_file_descriptor}
         if not CUSTOM_PHOTOCAT in cls.instance.keys(): cls.instance[CUSTOM_PHOTOCAT] = {}
         return cls.instance
     
-    def __setitem__(self, __key, __value) -> None:
+    def __setitem__(self, __key: str, __value: Any) -> None:
         __key_split = __key.split('/')
         if __key_split[0] == LEGACY_PHOTOCAT and LEGACY_PHOTOCAT in self.keys():
             raise ValueError(f"The '{LEGACY_PHOTOCAT}' entry is protected")
@@ -84,16 +86,16 @@ class Photometry(nested_dict, metaclass=Singleton):
         #         __key = f"{CUSTOM_CATEGORY}/{__key}"
         return super().__setitem__(__key, __value)
 
-    def __delitem__(self, __key):
+    def __delitem__(self, __key: str) -> None:
         raise NotImplementedError()
         # return super().__delitem__(__key)
         
-    def add_isochrone(self, name, isochrone_data, **kwargs):
+    def add_isochrone(self, name: str, isochrone_data: dict, **kwargs: Any) -> None:
         if '/' in name:
             raise ValueError()
         self[CUSTOM_PHOTOCAT][name] = PhotoSystem(Isochrone(name, isochrone_data, **kwargs))
 
-    def _purge(self, hard=False, yes=False):
+    def _purge(self, hard: bool = False, yes: bool = False) -> None:
         if hard and (True if yes else (input("WARNING!! This will remove all the isochrones cached in your installation. Are you certain (y/[n])? ").lower() in ['y', 'yes'])):
             for dir in ISOCHRONES_PATH.glob('*'):
                 shutil.rmtree(dir)
