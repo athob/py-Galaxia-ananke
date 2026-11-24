@@ -898,11 +898,11 @@ class Output:
                                          ).groupby([0]).indices.items() # groupby ignores ids that don't appear
                                      if cast(int, item[0])>=0)  # hard-coded condition to only take partition id >= 0
                 for key, ind in indices_generator:
-                    i = cast(int, key)
+                    i, indices = cast(int, key), cast(NDArray, ind)  # pandas types them widely
                     if i in return_dict:
-                        return_dict[i][ebf_name] = ind
+                        return_dict[i][ebf_name] = indices
                     else:
-                        return_dict[i] = {ebf_name: ind}
+                        return_dict[i] = {ebf_name: indices}
             else:
                 raise RuntimeError("Don't attempt creating an Output object on your own, those are meant to be returned by Survey")
         if not return_dict:
