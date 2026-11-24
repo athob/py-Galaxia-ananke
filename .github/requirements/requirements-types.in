@@ -1,6 +1,10 @@
-# What the types job checks the type hints with (ci.yml): the checker, and what the package imports that has type hints of its
-# own (numpy) or stubs (pandas). The other libraries it imports (astropy, astroquery, ebf, h5py, pathos, vaex) have none that mypy
-# finds: see [tool.mypy] in pyproject.toml. The stubs of pandas are those of the pandas that setup.py allows (2.x).
+# What the types job checks the type hints with (ci.yml): the checker, and what the package and the tools that build it
+# import that has type hints of its own (numpy, packaging) or stubs (pandas, setuptools: setuptools itself has none for
+# mypy to use, and the stubs do not need it installed). The other libraries that the package imports (astropy, astroquery,
+# ebf, h5py, pathos, vaex) have none that mypy finds: see [tool.mypy] in pyproject.toml. The stubs of pandas are those of
+# the pandas that setup.py allows (2.x).
 mypy
 numpy
+packaging
 pandas-stubs<3
+types-setuptools

@@ -111,6 +111,18 @@ def test_cd_publishes_only_on_a_push():
             f"{name} has to run only on a push: a run by hand must not publish"
 
 
+def test_ci_type_checks_the_tools_that_build_galaxia_with_the_settings_made_for_them():
+    ci = read(".github/workflows/ci.yml")
+    assert "mypy --config-file .github/mypy-build.ini src/_build_utils.py" in ci
+    settings = read(".github/mypy-build.ini")
+    assert "[mypy]" in settings and "disallow_untyped_defs = True" in settings
+    # what the checker reads the hints of: packaging has its own, setuptools has none and the stubs are used
+    types = {line.strip() for line in read(".github/requirements/requirements-types.in").splitlines()}
+    assert {"packaging", "types-setuptools"} <= types
+    # and setuptools is not to be left unchecked: nothing in the settings may say its imports can be missing
+    assert "[mypy-setuptools" not in settings
+
+
 def test_no_job_of_ci_is_allowed_to_fail_but_types():
     # a job that may fail is red without holding stable back: if one is ever meant to, say so here.
     # `types` is, until the hints of the package are complete and it holds stable back like the others.

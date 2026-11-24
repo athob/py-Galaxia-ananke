@@ -117,9 +117,12 @@ takes about four minutes. Its jobs:
   (`.gitmodules` among it), with a version and a revision id that the installer can use, and
   not the backend.
 - **types**: checks the type hints of the package with [mypy](https://mypy.readthedocs.io/), on
-  Python 3.12 (its settings are in `pyproject.toml`). For now it only informs: it shows in
-  red when mypy finds something, and does not stop `stable` from moving. Once the hints of the
-  package are complete, it will be one of the jobs `promote` waits for.
+  Python 3.12 (its settings are in `pyproject.toml`), and, in a second run with its own
+  settings (`.github/mypy-build.ini`), the tools that build py-Galaxia-ananke, which `setup.py`
+  imports under another name: `mypy --config-file .github/mypy-build.ini src/_build_utils.py`.
+  For now it only informs: it shows in red when mypy finds something, and does not stop
+  `stable` from moving. Once the hints of the package are complete, it will be one of the jobs
+  `promote` waits for.
 - **promote**: on a push to `develop`, once the jobs above have passed (`types` aside, for now), moves
   `stable` forward to that commit.
 

@@ -184,6 +184,9 @@ jobs:
       run: pip install --require-hashes -r .github/requirements/requirements-types.txt
     - name: Check the type hints
       run: mypy
+    - name: Check the type hints of the tools that build py-Galaxia-ananke
+      # not named like the package is in pyproject.toml: see the settings
+      run: mypy --config-file .github/mypy-build.ini src/_build_utils.py
 
   promote:
     name: Promote develop to stable
