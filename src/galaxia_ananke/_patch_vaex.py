@@ -57,6 +57,18 @@ __all__ = ['apply_vaex_patch']
 _original_hdf5_load = vaex.hdf5.dataset.Hdf5MemoryMapped._load
 
 def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped) -> None:  # https://github.com/vaexio/vaex/blob/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-hdf5/vaex/hdf5/dataset.py#L186-L221
+    """
+    Load the columns and the variables of an HDF5 file, taking the datasets of a given group for the columns.
+
+    This replaces ``Hdf5MemoryMapped._load`` of vaex. The files of the catalogues hold their columns in the group itself
+    (what vaex calls version 1), and vaex 4.19.0 and later take a group to hold its columns in a subgroup ``columns``
+    (version 2). Without a group, the file is read as vaex reads it.
+
+    Parameters
+    ----------
+    self : vaex.hdf5.dataset.Hdf5MemoryMapped
+        The dataset that loads its file.
+    """
     self.ucds = {}
     self.descriptions = {}
     self.units = {}
@@ -97,13 +109,27 @@ def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped) -> None:  # https://
 _original_open_many = vaex.open_many
 
 def new_open_many(filenames: Iterable[str], **kwargs: Any) -> vaex.dataframe.DataFrame:  # github.com/vaexio/vaex/tree/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-core/vaex/__init__.py#L273-L286
-    """Open a list of filenames, and return a DataFrame with all DataFrames concatenated.
+    """
+    Open a list of filenames, and give a DataFrame with all their DataFrames concatenated.
 
-    The filenames can be of any format that is supported by :py:func:`vaex.open`, namely hdf5, arrow, parquet, csv, etc.
+    This replaces ``vaex.open_many``, whose only argument is the list of files: the keyword arguments are given to
+    ``vaex.open`` for each file. The comment lines and the blank lines of the list are left out, as vaex does, and the names
+    are stripped. The filenames can be of any format that ``vaex.open`` supports.
 
-    :param list[str] filenames: list of filenames/paths
-    :param kwargs: given to :py:func:`vaex.open` for each file (for example ``group``), which vaex's own function does not do
-    :rtype: DataFrame
+    Adapted from
+    https://github.com/vaexio/vaex/blob/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-core/vaex/__init__.py
+
+    Parameters
+    ----------
+    filenames : iterable of str
+        The filenames, or the paths.
+    **kwargs
+        Given to ``vaex.open`` for each file (for instance ``group``).
+
+    Returns
+    -------
+    df : vaex.dataframe.DataFrame
+        The DataFrames of the files, concatenated.
     """
     dfs = []
     for filename in filenames:
@@ -119,8 +145,15 @@ def new_hdf5_open(self: vaex.hdf5.dataset.Hdf5MemoryMapped, path: Any) -> None:
     """
     Open the file as vaex does, and close the file object that h5py was given when h5py closes the HDF5 file.
 
-    A file object of the caller, and a vaex whose ``_open`` no longer leaves a file object in ``file_map``, are left as vaex
-    has them.
+    This wraps ``Hdf5MemoryMapped._open`` of vaex. A file object of the caller, and a vaex whose ``_open`` no longer leaves
+    a file object in ``file_map``, are left as vaex has them.
+
+    Parameters
+    ----------
+    self : vaex.hdf5.dataset.Hdf5MemoryMapped
+        The dataset that opens its file.
+    path : str or path or file object
+        What the file is opened from.
     """
     _original_hdf5_open(self, path)
     file = getattr(self, 'file_map', {}).get(self.path)
@@ -139,11 +172,36 @@ _original_create_hasher = vaex.utils.create_hasher
 _in_forked_child = False
 
 def _mark_forked_child() -> None:
+    """
+    Say that this process was made by ``fork``.
+
+    It is registered with ``os.register_at_fork`` to run in the child, where ``new_create_hasher`` then hashes with one
+    thread.
+    """
     global _in_forked_child
     _in_forked_child = True
 
 def new_create_hasher(initial_data: Any = None, large_data: bool = True) -> Any:
-    """Create a blake3 hasher as vaex does, with one thread (``large_data=False``) in a process that was made by ``fork``."""
+    """
+    Create a blake3 hasher as vaex does, with one thread (``large_data=False``) in a process that was made by ``fork``.
+
+    This wraps ``vaex.utils.create_hasher``. Vaex hashes large data with the thread pool of blake3, which a forked child
+    inherits without its threads, so that a child that hashes after its parent did waits forever: the parent keeps its
+    threads, and a digest does not depend on their number.
+
+    Parameters
+    ----------
+    initial_data : bytes, optional
+        The data that the hasher starts with, as ``vaex.utils.create_hasher`` takes it. Default to none.
+    large_data : bool, optional
+        Whether the data is large, which makes vaex hash with many threads: ignored in a process made by ``fork``. Default
+        to True.
+
+    Returns
+    -------
+    hasher : object
+        The blake3 hasher.
+    """
     return _original_create_hasher(initial_data, large_data=large_data and not _in_forked_child)
 
 
