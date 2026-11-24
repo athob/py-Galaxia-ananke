@@ -33,7 +33,8 @@ Currently includes:
   the file object of h5py is no longer known to the dataset, and is finalized unclosed when the end of ``__init__`` closes the
   HDF5 file, which makes a ``ResourceWarning`` at every ``vaex.open``. Nothing leaks (its descriptor is released then).
 - Suppression of all vaex internal logging (which is excessively verbose for a
-  backend library and can show non-critical errors from uninstalled plugins).
+  backend library and can show non-critical errors from the plugins of vaex that cannot be loaded: with numpy 2, the ``tap``
+  plugin of vaex-astro fails on ``np.bool8``, which numpy 2 removed).
 """
 from __future__ import annotations
 from typing import Any, Iterable
