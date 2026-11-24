@@ -716,7 +716,7 @@ class Output:
                 futures = [executor.apipe(_decorate_post_processing(post_process,
                                                                     self._pp_auto_flush,
                                                                     flush_with_columns=flush_with_columns,
-                                                                    max_thread_workers=int(np.ceil(cast(int, os.cpu_count())/self._max_pp_workers)),
+                                                                    max_thread_workers=int(np.ceil((os.cpu_count() or 1)/self._max_pp_workers)),
                                                                     update_metadata=update_metadata,
                                                                     verbose=self.verbose),
                                         vaex_df_or_hdf5_or_list, *args)

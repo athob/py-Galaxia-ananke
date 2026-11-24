@@ -520,6 +520,8 @@ far as the commits of this package and of the backend say.
 - The docstrings that list the properties of the particles and of the output (`Input.particles_dictionary_description`, and
   the documentation of `Input` and of `Output`) list them in the alphabetical order of their descriptions, and no longer in an
   order that changed from one run of Python to the next.
+- `Output.apply_post_process_pipeline_and_flush` no longer raises a `TypeError` on a machine where Python cannot tell its
+  number of CPUs (`os.cpu_count()` is then `None`): it gives one thread to each process, as for a single CPU.
 
 ## [0.8.0] - 2026-08-10
 

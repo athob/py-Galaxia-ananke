@@ -18,6 +18,9 @@ Tests of the pipelines that a user applies to the catalogue with Output.apply_po
 the HDF5 file of each partition, in processes, and flushes what they made), of the options of it, and of the flushing of the columns
 of the loaded catalogue by itself. The catalogue is made of the HDF5 files of synthetic output of the backend.
 """
+import sys
+import types
+
 import h5py
 import numpy as np
 import pytest
@@ -57,6 +60,34 @@ def made(tmp_path, monkeypatch):
 def test_a_pipeline_is_run_on_each_partition_with_its_arguments_and_what_it_makes_is_in_the_file(made):
     output, columns = made
     output.apply_post_process_pipeline_and_flush(add_column, 3)
+    for partition, path in output._hdf5s.items():
+        rows = np.asarray(columns['partitionid']) == partition
+        assert stars(path)['z'].tolist() == (3 * columns['px'][rows]).tolist()
+
+
+def decided_by(monkeypatch, output, cpus):
+    """The threads that the process of each partition is given, recorded, for a machine that has this number of cpus (or does
+    not know it: None). Only the module of Output is told so, and not the pool of processes, which would ask the machine."""
+    module = sys.modules[type(output).__module__]
+    threads, decorate = [], module._decorate_post_processing
+    monkeypatch.setattr(module, '_decorate_post_processing',
+                        lambda *args, **kwargs: (threads.append(kwargs['max_thread_workers']), decorate(*args, **kwargs))[1])
+    monkeypatch.setattr(module, 'os', types.SimpleNamespace(cpu_count=lambda: cpus))
+    return threads
+
+
+def test_the_cpus_of_the_machine_are_shared_among_the_processes_as_threads(made, monkeypatch):
+    output, _ = made
+    threads = decided_by(monkeypatch, output, 8)
+    output.apply_post_process_pipeline_and_flush(add_column, 3)
+    assert threads == [4] * len(output._hdf5s)     # 8 cpus for 2 processes
+
+
+def test_a_machine_that_does_not_know_its_number_of_cpus_gives_one_thread_to_each_process(made, monkeypatch):
+    output, columns = made
+    threads = decided_by(monkeypatch, output, None)
+    output.apply_post_process_pipeline_and_flush(add_column, 3)
+    assert threads == [1] * len(output._hdf5s)
     for partition, path in output._hdf5s.items():
         rows = np.asarray(columns['partitionid']) == partition
         assert stars(path)['z'].tolist() == (3 * columns['px'][rows]).tolist()
