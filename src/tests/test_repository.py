@@ -129,6 +129,12 @@ def test_the_marker_of_the_type_hints_is_there_and_says_nothing_is_partial():
     assert marker.is_file() and marker.read_bytes() == b""
 
 
+def test_the_classifiers_say_the_package_is_typed_if_and_only_if_it_ships_the_marker():
+    # PyPI shows "Typing :: Typed" to those who look for typed packages: it has to be true
+    typed = '"Typing :: Typed"' in read("src/galaxia_ananke/__metadata__.py")
+    assert typed == (ROOT / "src" / "galaxia_ananke" / "py.typed").is_file()
+
+
 def test_no_job_of_ci_is_allowed_to_fail():
     # a job that may fail is red without holding stable back: if one is ever meant to, say so here
     assert "continue-on-error" not in read(".github/workflows/ci.yml")

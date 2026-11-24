@@ -189,6 +189,9 @@ far as the commits of this package and of the backend say.
 - A test checks that the annotations are valid on the oldest Python supported, 3.9, which mypy no longer checks against since its
   version 2.0: a union written `int | None` fails it, in a module that does not have `from __future__ import annotations`.
 - Every function of the package and of the tools that build it has type hints, and a test checks it.
+- The package ships a `py.typed` marker ([PEP 561](https://peps.python.org/pep-0561/)), and the `Typing :: Typed` classifier
+  says so: the type checkers of the people who use it read its type hints. The check of the sdist before it is published
+  requires the marker, and a test checks that setuptools ships it.
 
 ### Changed
 

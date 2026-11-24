@@ -244,7 +244,10 @@ rather than bad luck.
   it no longer checks against Python 3.9 (mypy 2.0 dropped it), so a test does (it follows the
   oldest Python in `setup.py`, and relaxes when that is raised). Every function of the package,
   and of the tools that build it, is annotated, which another test checks, and mypy is told to
-  refuse the ones of the package that are not.
+  refuse the ones of the package that are not. The package ships the `py.typed` marker
+  ([PEP 561](https://peps.python.org/pep-0561/)), so the type checkers of the people who use it
+  read those hints: changing the type of an argument or of a result of a public function changes
+  the interface, and goes in the changelog.
 - **vaex is pinned to one version** in `setup.py`, because `src/galaxia_ananke/_patch_vaex.py`
   patches the way vaex reads and closes HDF5 files and the threads that it hashes with: moving to another version of vaex
   means checking that the patch still works.
