@@ -42,6 +42,7 @@ units.Zsun = units.def_unit('Zsun') # TODO could define PhysicalType "abundance"
 
 
 class _BaseFormatting:
+    """The names and the units of the columns of the tables of isochrones, which the layouts of the files have in common."""
     _zini = 'Z_ini'
     _unit_zini = units.LogUnit(units.Zsun)
     _age = 'Age'
@@ -61,6 +62,7 @@ class _BaseFormatting:
     # CMD2-label: _unit_label = units.integer
     @classproperty
     def units_mapper(cls) -> Dict[str, Any]:
+        """The unit of each column that has one, by the name of the column."""
         return {
             cls._zini: cls._unit_zini,
             cls._age: cls._unit_age,
@@ -97,6 +99,10 @@ class Formatting(_BaseFormatting):
 
     @cached_property
     def format_mapper(self) -> Dict[int,str]:
+        """
+        The name that the package gives to each column that is not a magnitude,
+        by the index of that column in the files.
+        """
         return {
             self.i_age: self._age,
             self.i_mini: self._mini,
@@ -109,13 +115,51 @@ class Formatting(_BaseFormatting):
 
     @cached_property
     def nonmagnitude_itemgetter(self) -> itemgetter:
+        """
+        The getter that takes, from the names of the columns of a file, those that are not magnitudes,
+        in the order of ``format_mapper``.
+        """
         return itemgetter(*self.format_mapper.keys())
 
     def metallicity_converter(self, metallicity: ArrayLike) -> Any:  # as the shape of what it is given: a float gives a float
+        """
+        Convert metallicities to the decimal logarithm of their ratio to the solar one.
+
+        The solar metallicity is the one of the layout, ``feh_sun``.
+
+        Parameters
+        ----------
+        metallicity : array_like
+            The metallicities, as the files give them: a mass fraction.
+
+        Returns
+        -------
+        log_metallicity : float or numpy.ndarray
+            The decimal logarithm of the metallicities over the solar one, in the shape of what was given: a float for a
+            float.
+        """
         return np.log10(metallicity/np.array(self.feh_sun))
 
     # by age; the keys are those of groupby, which pandas types as any scalar: Any, and not float
     def qtable_per_age_from_isochronefile(self, iso_file: IsochroneFile) -> Dict[Any, table.QTable]:
+        """
+        Make the tables of an isochrone file, one for each age, with the names and the units of the package.
+
+        The rows of the file are sorted by age, then by initial mass, then in the order of the file. The metallicity of the
+        file is added as the first column, and the radius is computed from the current mass and the gravity. The magnitudes
+        are given as magnitudes, and the other columns have their units (see ``units_mapper``). If the layout gives the ages
+        linearly, they are converted to their logarithm.
+
+        Parameters
+        ----------
+        iso_file : IsochroneFile
+            The file, which knows the isochrone that it is a file of.
+
+        Returns
+        -------
+        tables : dict
+            The table of each age, by age.
+        """
         isochrone: Isochrone = iso_file._isochrone
         units_mapper = self.units_mapper
         column_names: Tuple[str] = self.nonmagnitude_itemgetter(iso_file.data.keys()) + isochrone.magnitude_itemgetter(iso_file.data.keys())

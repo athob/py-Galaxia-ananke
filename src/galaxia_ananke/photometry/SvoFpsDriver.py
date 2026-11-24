@@ -35,31 +35,52 @@ __all__ = ['SvoFpsDriver']
 
 class SvoFpsDriver:
     """
-    SvoFpsDriver
+    The questions that the SVO Filter Profile Service is asked for one instrument of a photometric system.
+
+    The name of an instrument of the service is its facility, then ``__``, then the instrument of the facility if there is
+    one.
     """
     _slash_in_isochrone_name: str = '__'
     def __init__(self, interface: InterfaceSvoFpsDriver, instrument_index: int = 0) -> None:
+        """
+        Make the driver of an instrument of a photometric system.
+
+        Parameters
+        ----------
+        interface : InterfaceSvoFpsDriver
+            The interface of the system, which knows the instruments and the magnitudes.
+        instrument_index : int, optional
+            The place of the instrument among those of the system. Default to 0.
+        """
         self.__interface: InterfaceSvoFpsDriver = interface
         self.__instrument_index: int = instrument_index
     
     @property
     def _interface(self) -> InterfaceSvoFpsDriver:
+        """The interface of the photometric system that the instrument is one of."""
         return self.__interface
 
     @cached_property
     def __facility_instrument(self) -> List[str]:
+        """
+        The name of the instrument of the service, split at ``__``: the facility,
+        and the instrument of the facility if there is one.
+        """
         return self._instrument_name.split(self._slash_in_isochrone_name)
     
     @property
     def _instrument_name(self) -> str:
+        """The name that the service has for the instrument."""
         return self._interface.list_of_instruments[self.__instrument_index]
 
     @cached_property
     def facility(self) -> str:
+        """The facility of the instrument."""
         return self.__facility_instrument[0]
     
     @cached_property
     def instrument(self) -> Optional[str]:
+        """The instrument of the facility, or None where the name of the instrument has no such part."""
         if len(self.__facility_instrument) > 1:
             return self.__facility_instrument[1]
         return None
