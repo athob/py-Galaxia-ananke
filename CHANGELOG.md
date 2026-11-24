@@ -542,6 +542,7 @@ far as the commits of this package and of the backend say.
   `Output.flush_extra_columns_to_hdf5` (`consolidate_partitions_per_process`, `update_metadata`): they are filled in.
 - The documentation build warned of duplicate section labels, for the "Submodules" section that the API pages of a package and
   of its subpackage `photometry` both have: the labels are now made of the name of the page and the title of the section.
+- The documentation build gave a warning for the example notebook, whose title was followed by a horizontal rule.
 
 ## [0.8.0] - 2026-08-10
 
