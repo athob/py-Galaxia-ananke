@@ -241,7 +241,8 @@ rather than bad luck.
   `int | None`: Python 3.9 evaluates an annotation when its function is defined, and refuses that
   form, unless the module has `from __future__ import annotations`. mypy cannot warn about it, as
   it no longer checks against Python 3.9 (mypy 2.0 dropped it), so a test does (it follows the
-  oldest Python in `setup.py`, and relaxes when that is raised).
+  oldest Python in `setup.py`, and relaxes when that is raised). Every function of the package is
+  annotated, which another test checks, and mypy is told to refuse the ones that are not.
 - **vaex is pinned to one version** in `setup.py`, because `src/galaxia_ananke/_patch_vaex.py`
   patches the way vaex reads and closes HDF5 files and the threads that it hashes with: moving to another version of vaex
   means checking that the patch still works.
