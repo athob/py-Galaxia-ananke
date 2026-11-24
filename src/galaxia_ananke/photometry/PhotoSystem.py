@@ -36,20 +36,60 @@ __all__ = ['PhotoSystem']
 
 class PhotoSystem:
     """
-    PhotoSystem
+    A photometric system: its isochrones and the magnitudes that they give, with what the SVO Filter Profile Service knows
+    of its filters.
+
+    A system is told by its category and its name, which make its key ``category/name``. The name of each magnitude in the
+    catalogue is made of the name of the system and the one of the magnitude (see ``to_export_keys``).
     """
     _required_cmd_magnames_dictkeys = {'magnitude', 'color_minuend', 'color_subtrahend'}
     _ab_zeropoint = 3631 * units.Jy  # by definition of the AB system
     def __init__(self, isochrone: Isochrone) -> None:
+        """
+        Make the photometric system of an isochrone.
+
+        Parameters
+        ----------
+        isochrone : Isochrone
+            The isochrone, whose category and name are those of the system.
+        """
         self.__isochrone = isochrone
         self.__interface_svofps = InterfaceSvoFpsDriver(self)
     
     def __repr__(self) -> str:
+        """
+        Give the representation of the system.
+
+        Returns
+        -------
+        representation : str
+            The class, with the category and the name of the system.
+        """
         cls = self.__class__.__name__
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['category', 'name']])
         return f'{cls}({description})'
     
     def check_cmd_magnames(self, cmd_magnames: Union[str,Dict[str,str]]) -> str:
+        """
+        Check that the magnitude and the colors of a selection in the color-magnitude diagram are magnitudes of the system.
+
+        Parameters
+        ----------
+        cmd_magnames : str or dict
+            The names, either as ``"band1,band2-band3"`` (the magnitude, and the two filters whose difference is the color),
+            or as a dictionary with the keys ``magnitude``, ``color_minuend`` and ``color_subtrahend``.
+
+        Returns
+        -------
+        cmd_magnames : str
+            The names as ``"band1,band2-band3"``.
+
+        Raises
+        ------
+        ValueError
+            If it is neither a string nor a dictionary, if the keys of the dictionary are not the three, or if a name is not
+            a magnitude of the system: the message gives those that are.
+        """
         if isinstance(cmd_magnames, str):
             check = set(re.split('[ ,-]', cmd_magnames))
         elif isinstance(cmd_magnames, dict):
@@ -66,6 +106,27 @@ class PhotoSystem:
     def _extract_from_svo_filter_list(self, key: str, unit: Optional[units.UnitBase] = None,
                                       aggregate: Callable[[Any], Any] = lambda stack: np.nanmean(stack, axis=1)
                                       ) -> units.Quantity:
+        """
+        Give, for each magnitude of the system, a quantity of the SVO service for its filter.
+
+        The service is asked for each instrument of the system. A filter that no instrument has gives NaN, and a filter that
+        several have gives the aggregate of what they say.
+
+        Parameters
+        ----------
+        key : str
+            The column of the table of the service that holds the quantity.
+        unit : astropy.units.UnitBase, optional
+            The unit to give the quantity in. Default to the unit of the column of the service, if it has one.
+        aggregate : callable, optional
+            What gives the quantity of a filter from what each instrument says of it: it takes the array of the instruments,
+            one row for each magnitude, and reduces the instruments. Default to the mean that leaves out the NaN.
+
+        Returns
+        -------
+        quantity : astropy.units.Quantity
+            The quantity of each magnitude, in the order of ``mag_names``.
+        """
         parts = [
             None if sfd.svo_filter_list is None else (  # None: the service has no filter for the instrument (with a warning)
                 _colu:= sfd.svo_filter_list[key],  # ignored
@@ -84,30 +145,37 @@ class PhotoSystem:
 
     @property
     def _isochrone(self) -> Isochrone:
+        """The isochrone of the system."""
         return self.__isochrone
 
     @property
     def _interface_svofps(self) -> InterfaceSvoFpsDriver:
+        """The interface of the system with the SVO Filter Profile Service."""
         return self.__interface_svofps
 
     @property
     def category(self) -> str:
+        """The category of the system: the one of its isochrone."""
         return self._isochrone.category
     
     @property
     def name(self) -> str:
+        """The name of the system: the one of its isochrone."""
         return self._isochrone.name
 
     @property
     def categ_and_name(self) -> List[str]:
+        """The category and the name of the system, as a list."""
         return [self.category, self.name]
 
     @property
     def key(self) -> str:
+        """The key of the system: its category and its name, with a slash between."""
         return f"{self.category}/{self.name}"
 
     @cached_property
     def mag_names(self) -> List[str]:
+        """The names of the magnitudes of the system, as the descriptor of its isochrones gives them."""
         return self._isochrone.mag_names
     
     @cached_property
@@ -170,10 +238,29 @@ class PhotoSystem:
 
     def offsets_to_magnitude_system(self, target: str) -> Dict[str, float]:
         """
-        What to add to each magnitude of the system, by its key in the output, to have it in the magnitude system `target`
-        ('Vega' or 'AB'), whichever system the magnitudes are in (``magnitude_system``): zero if it is the one that is
-        asked. The conversion between Vega and AB is that of ``vega_to_ab_offsets``, which needs the network, but nothing
-        is asked of the service when there is nothing to convert.
+        Give what to add to each magnitude of the system to have it in a magnitude system.
+
+        It is zero for the magnitudes that are in it already, whichever system they are in (``magnitude_system``). The
+        conversion between Vega and AB is the one of ``vega_to_ab_offsets``, which needs the network, but nothing is asked
+        of the service when there is nothing to convert.
+
+        Parameters
+        ----------
+        target : str
+            The magnitude system to convert to: 'Vega' or 'AB', whatever the case.
+
+        Returns
+        -------
+        offsets : dict
+            What to add to each magnitude, by its key in the catalogue (``to_export_keys``).
+
+        Raises
+        ------
+        ValueError
+            If the target is not given, is not a magnitude system, or if the descriptor of the isochrones does not say which
+            system the magnitudes are in.
+        NotImplementedError
+            If the conversion is not one between Vega and AB.
         """
         checked_target = Isochrone._check_magnitude_system(target)
         if checked_target is None:
@@ -193,14 +280,36 @@ class PhotoSystem:
 
     @cached_property
     def to_export_keys(self) -> List[str]:
+        """
+        The names of the magnitudes in the catalogue: the name of the system and the one of the magnitude,
+        in lower case, joined by an underscore.
+        """
         return [f"{self.name.lower()}_{mag_name.lower()}" for mag_name in self.mag_names]
     
     @cached_property
     def mag_names_to_export_keys_mapping(self) -> Dict[str,str]:
+        """The name of each magnitude in the catalogue, by its name in the isochrones."""
         return dict(zip(self.mag_names, self.to_export_keys))
 
     def get_nearest_isochrone_track_for_age_and_metallicity(self, ages: NDArray[np.floating[Any]],
                                                             metallicities: NDArray[np.floating[Any]]) -> List[table.QTable]:
+        """
+        Give, for each age and metallicity, the table of the isochrone at the nearest age of the nearest metallicity.
+
+        The nearest is the one of the values that the isochrone has, the limit between two of them being halfway.
+
+        Parameters
+        ----------
+        ages : numpy.ndarray
+            The ages, in the decimal logarithm of the years, one for each star.
+        metallicities : numpy.ndarray
+            The metallicities, as the decimal logarithm of their ratio to the solar one, one for each star.
+
+        Returns
+        -------
+        tables : list of astropy.table.QTable
+            The table of each star, in the order that was given.
+        """
         z_keys = np.array(list(self._isochrone.qtables_unique_ages_dictionary.keys()))
         nearest_z_keys = z_keys[np.digitize(metallicities, (z_keys[:-1]+z_keys[1:])/2)]
         nearest_z_sorter = np.argsort(nearest_z_keys)
