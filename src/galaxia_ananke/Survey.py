@@ -47,6 +47,12 @@ __all__ = ['Survey']
 
 @collect_metadata_marked_properties
 class Survey:
+    """
+    Driver that runs the backend on an input, in one or several photometric systems, and gives the output that it makes.
+
+    The survey is made by ``make_survey``, which gives its parameters their values: those that are asked for are read from
+    the survey afterwards (``fileparam`` for the parameters of the backend).
+    """
     _metadata: Dict[str, Any]  # a property that the decorator above adds
     def __init__(self, input: Input, photo_sys: Union[str,List[str]] = DEFAULT_PSYS, surveyname: str = DEFAULT_SURVEYNAME, verbose: bool = True) -> None:
         """
@@ -73,6 +79,9 @@ class Survey:
             surveyname : string
                 Optional name Galaxia should use for the output files. Default
                 to '{DEFAULT_SURVEYNAME}'.
+
+            verbose : bool
+                Whether the survey prints what it does. Default to True.
         """
         self.__surveyname: str = surveyname
         self.__input: Input = input
@@ -85,23 +94,88 @@ class Survey:
     format_docstring(__init__, DEFAULT_SURVEYNAME=DEFAULT_SURVEYNAME, DEFAULT_PSYS=DEFAULT_PSYS)
     
     def __repr__(self) -> str:
+        """
+        Give the representation of the survey.
+
+        Returns
+        -------
+        representation : str
+            The class, with the name of the survey and its photometric systems.
+        """
         cls = self.__class__.__name__
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['surveyname', 'photo_sys']])
         return f'{cls}({description})'
 
     @classmethod
     def prepare_photosystems(cls, photo_sys: Union[str,List[str]]) -> list[PhotoSystem]:
+        """
+        Give the photometric systems that are asked for.
+
+        Parameters
+        ----------
+        photo_sys : str or list of str
+            The key of a photometric system, ``category/name``, or the keys of several.
+
+        Returns
+        -------
+        photosystems : list of PhotoSystem
+            The systems, in the order that was given.
+
+        Raises
+        ------
+        KeyError
+            If a key is not the one of an available photometric system.
+        """
         if isinstance(photo_sys, str):
             photo_sys = [photo_sys]
         return [photometry.available_photo_systems[psys] for psys in photo_sys]
 
     @classmethod
     def set_isochrones_from_photosys(cls, photo_sys: Union[str,List[str]]) -> list[PhotoSystem]:
+        """
+        Give the photometric systems that are asked for, as ``prepare_photosystems`` does: this is the deprecated name of
+        it.
+
+        Parameters
+        ----------
+        photo_sys : str or list of str
+            The key of a photometric system, ``category/name``, or the keys of several.
+
+        Returns
+        -------
+        photosystems : list of PhotoSystem
+            The systems, in the order that was given.
+        """
         warn('This class method will be deprecated, please use instead class method prepare_photosystems', DeprecationWarning, stacklevel=2)
         return cls.prepare_photosystems(photo_sys)
 
     def _prepare_survey_parameters_and_output(self, cmd_magnames: Union[str,Dict[str,str]], n_gens: Sequence[int],
                                               **kwargs: Any) -> None:
+        """
+        Check the parameters of the survey, set them, and make the output that the survey will fill.
+
+        The parameters of the survey are those of the backend (the defaults, the parameters of the survey itself, and those
+        that were given), and the generations and the photometric systems after the first, which identify the survey without
+        being parameters of the backend.
+
+        Parameters
+        ----------
+        cmd_magnames : str or dict
+            The magnitude and the colors of the selection in the color-magnitude diagram, as
+            ``PhotoSystem.check_cmd_magnames`` takes them.
+        n_gens : sequence of int
+            The numbers of the generations.
+        **kwargs
+            The parameters of the survey that are not the defaults.
+
+        Raises
+        ------
+        ValueError
+            If there is no generation, or if the names of ``cmd_magnames`` are not magnitudes of the first photometric
+            system.
+        TypeError
+            If the number of neighbours is given, which is the one of the input, or a parameter is not one of the survey.
+        """
         if len(n_gens) == 0:
             raise ValueError("n_gens must hold at least one generation (or be an integer above 0), but none is given")
         if FTTAGS.nres in kwargs:
@@ -127,6 +201,18 @@ class Survey:
         self.__output = Output(self)
 
     def _write_parameter_file(self) -> Tuple[pathlib.Path, Dict[str, Union[str,float,int]]]:
+        """
+        Write the parameter file of the backend, in the directory of the input.
+
+        When the survey caches its results, a file that already holds this text is not written again.
+
+        Returns
+        -------
+        parfile : pathlib.Path
+            The file.
+        parameters : dict
+            The parameters of the survey that are in the file.
+        """
         parameters: Dict[str, Union[str,float,int]] = self.fileparam
         surveyname_hash: str = self.surveyname_hash
         parfile: pathlib.Path = self.inputdir / PARFILENAME_TEMPLATE.substitute({FTTAGS.name: surveyname_hash})  # TODO make temporary? create a global record of temporary files?
@@ -139,6 +225,18 @@ class Survey:
         return parfile, parameters
 
     def _run_survey(self, parfile: pathlib.Path, n_gens: Iterable[int], max_gen_workers: int) -> None:
+        """
+        Run the backend, a command for each generation, all at the same time.
+
+        Parameters
+        ----------
+        parfile : pathlib.Path
+            The parameter file.
+        n_gens : iterable of int
+            The numbers of the generations.
+        max_gen_workers : int
+            The number of workers for the generations, which the commands do not use: all of them are started at once.
+        """
         cmds = [RUN_TEMPLATE.substitute(**{
             CTTAGS.hdim_block : '' if self.hdim is None
                                 else HDIMBLOCK_TEMPLATE.substitute(**{CTTAGS.hdim: self.hdim}),
@@ -149,6 +247,16 @@ class Survey:
         execute(cmds, max_workers=max_gen_workers, verbose=self.verbose)
 
     def _append_survey(self, photosystem: PhotoSystem, max_gen_workers: Optional[int]) -> None:
+        """
+        Append a photometric system to the files that the backend made, a command for each file, all at the same time.
+
+        Parameters
+        ----------
+        photosystem : PhotoSystem
+            The system, which is not the first one.
+        max_gen_workers : int or None
+            The number of workers, which the commands do not use. None for the number of the files.
+        """
         if max_gen_workers is None:
             max_gen_workers = len(list(self.__ebf_output_files_glob))
         cmds = [APPEND_TEMPLATE.substitute(**{
@@ -160,7 +268,23 @@ class Survey:
 
     @staticmethod
     def _fsample_of_one_generation(sampling_factor: float, n_gens: Sequence[int]) -> float:
-        """The fsample of the backend, that of each generation, for a sampling factor of the whole survey."""
+        """
+        Give the sampling factor of one generation, for a sampling factor of the whole survey.
+
+        The factor is shared among the generations: a single generation keeps it as it was given.
+
+        Parameters
+        ----------
+        sampling_factor : float
+            The sampling factor of the whole survey.
+        n_gens : sequence of int
+            The numbers of the generations.
+
+        Returns
+        -------
+        fsample : float
+            The factor that the backend is given, which is the sampling factor of each generation.
+        """
         n = len(n_gens)
         # a single generation (or none, which is refused later) keeps the value as it was given
         return sampling_factor / n if n > 1 else sampling_factor
@@ -170,7 +294,38 @@ class Survey:
                               n_jobs: Optional[int] = None, n_gens: Union[int, Sequence[int]] = (0,),
                               max_gen_workers: Optional[int] = None, fsample: Optional[float] = None, **kwargs: Any) -> None:
         """
-            TODO
+        Run the backend on the input: make the parameters and the files, run the generations, and append the other
+        photometric systems.
+
+        Each step that is done once is skipped when the survey caches its results and the state file says that it was done.
+        The keywords that ``make_survey`` does not take are given to this method: ``make_survey`` documents them.
+
+        Parameters
+        ----------
+        cmd_magnames : str or dict, optional
+            The magnitude and the colors of the selection in the color-magnitude diagram. Default to ``DEFAULT_CMD``.
+        sampling_factor : float, optional
+            The sampling factor of the whole survey. Default to 1.
+        input_sorter : numpy.ndarray, optional
+            The indices that order the particles of the input. Default to the order of their partition ids.
+        n_jobs : int, optional
+            The deprecated name of ``n_gens``: an integer here replaces it.
+        n_gens : int or sequence of int, optional
+            The number of generations, or their numbers. Default to a single generation, the number 0.
+        max_gen_workers : int, optional
+            Not implemented: a warning says so when it is given, and the generations all run at once.
+        fsample : float, optional
+            The deprecated sampling factor of one generation: it cannot be given with ``sampling_factor``.
+        **kwargs
+            The other parameters of the survey, which are those of the backend: see ``make_survey``.
+
+        Raises
+        ------
+        TypeError
+            If ``sampling_factor`` and ``fsample`` are both given, and for what ``_prepare_survey_parameters_and_output``
+            refuses.
+        ValueError
+            If there is no generation.
         """
         if isinstance(n_jobs, int):
             n_gens = n_jobs
@@ -237,8 +392,11 @@ class Survey:
                 of one single generation, as Galaxia understands it: a survey
                 of n_gens generations samples n_gens times fsample.
 
-            input_sorter : array_like
-                TODO
+            input_sorter : array_like of int
+                The indices that put the particles of the input, and their
+                kernels, in the order in which they are given to Galaxia and
+                hashed. Default to the order of the partition ids of the
+                particles.
             
             n_gens, n_jobs : int or iterable of int
                 Number of independent catalog generations ran in parallel. Can
@@ -260,14 +418,27 @@ class Survey:
                 notes below.
             
             pp_auto_flush : bool
-                TODO
+                Whether the post-processing pipelines are run by the workers
+                on the HDF5 file of each partition, which they update as they
+                go (True), or on the data of the partitions in the memory of
+                this process, in threads, which is written in the files
+                afterwards (False). Default to True.
             
             verbose : bool
                 Verbose boolean flag to allow pipeline to print what it's doing
                 to stdout. Default to True.
             
-            partitioning_rule : TODO
-                TODO
+            partitioning_rule : callable
+                A function that gives the partition of each star of the
+                catalogue. It takes the table of the stars, with the columns
+                of the catalogue that it uses, and gives an integer for each
+                row: the number of the partition of the star. A negative
+                number puts the star in no partition, and leaves it out of the
+                catalogue. The rule is first applied to an empty table, to
+                know the columns that it uses. Without one, a star is in the
+                partition of its parent particle, which the key
+                ``partitionid`` of the particles gives (0 for all of them if
+                there is none: a single partition). Default to None.
             
             parfile : string
                 Name of file where Input should save the parameters for
@@ -380,10 +551,16 @@ class Survey:
 
     @property
     def has_no_fileparam(self) -> bool:
+        """Whether the parameters of the survey are not set yet, which they are when the survey is made."""
         return self.__fileparam is None
 
     @property
     def fileparam(self) -> Dict[str, Union[str,float,int]]:
+        """
+        The parameters of the survey that are in the parameter file of the backend, by name.
+
+        Reading it raises RuntimeError if the survey has not been made yet.
+        """
         if self.has_no_fileparam:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
@@ -391,16 +568,24 @@ class Survey:
 
     @property
     def _extraparam(self) -> MappingProxyType[str, Union[str,float,int]]:
+        """
+        The parameters that identify the survey without being in the parameter file: the numbers of its generations, and the
+        category and the name of its photometric systems after the first.
+
+        Reading it raises RuntimeError if the survey has not been made yet.
+        """
         if self.has_no_fileparam:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         return cast("MappingProxyType[str, Union[str,float,int]]", self.__extraparam)
 
     @property
     def parameters(self) -> Dict[str, Union[str,float,int]]:
+        """All the parameters of the survey: those of the parameter file, and those that only identify the survey."""
         return {**self.fileparam, **self._extraparam}
 
     @property
     def n_gens(self) -> List[int]:
+        """The numbers of the generations of the survey, in order."""
         return list(lexicalorder_dict({
             int(n_gen[0]): value
             for key, value in self._extraparam.items()
@@ -410,10 +595,15 @@ class Survey:
     @property
     @mark_metadata_prop
     def sampling_factor(self) -> float:
+        """
+        The sampling factor of the whole survey: the factor of each generation, that the backend is given,
+        times the number of generations.
+        """
         return len(self.n_gens)*cast(float, self.fileparam[FTTAGS.fsample])
 
     @property
     def fsample(self) -> float:
+        """The sampling factor of the whole survey. This is deprecated: it is ``sampling_factor``, and a warning says so."""
         value = self.sampling_factor  # refuses first if the survey was not made
         warn('Survey.fsample is deprecated and will be removed, please use instead Survey.sampling_factor: '
              'the sampling factor of the whole survey.', DeprecationWarning, stacklevel=2)
@@ -421,50 +611,68 @@ class Survey:
 
     @property
     def _surveyhash(self) -> bytes:  # not cached: the parameters change each time the survey is made
+        """
+        The hash of the values of the parameters of the survey, in the alphabetical order of their names.
+
+        It is not kept: the parameters change each time the survey is made.
+        """
         return hash_iterable(map(lambda el: str(el).encode(HASH_ENCODING),
                                  lexicalorder_dict(self.parameters).values()))
 
     @property
     @mark_metadata_prop
     def hash(self) -> str:
+        """The hash of the parameters of the survey, as a string."""
         return self._surveyhash.decode()
 
     @property
     @mark_metadata_prop
     def surveyname(self) -> str:
+        """The name of the survey."""
         return self.__surveyname
     
     @property
     def append_hash(self) -> bool:
+        """Whether the names of the files get the beginning of the hash: it is the choice of the input."""
         return self.input.append_hash
 
     @property
     def surveyname_hash(self) -> str:
+        """
+        The name of the survey, followed by an underscore and the first 7 characters of its hash
+        if the names of the files get it.
+        """
         return self.surveyname + (f"_{self.hash[:7]}" if self.append_hash else "")
     
     @property
     def metadata(self) -> Dict[str, Any]:
+        """The metadata of the survey: the values of its properties that are marked for it."""
         return self._metadata
 
     @property
     def input(self) -> Input:
+        """The input that the survey runs the backend on."""
         return self.__input
 
     @property
     def photosystems(self) -> List[PhotoSystem]:
+        """The photometric systems of the survey, the first one being the one that the backend runs on."""
         return self.__photosystems
 
     @property
     def isochrones(self) -> List[PhotoSystem]:
+        """The photometric systems of the survey. This is deprecated: it is ``photosystems``, and a warning says so."""
         warn('This property will be deprecated, please use instead property photosystems', DeprecationWarning, stacklevel=2)
         return self.photosystems
 
     @property
     def photo_sys(self) -> Set[str]:
+        """The keys of the photometric systems of the survey, as a set."""
         return {photosystem.key for photosystem in self.photosystems}
 
     @property
     def verbose(self) -> bool:
+        """Whether the survey prints what it does. It can be set, and ``None`` leaves it as it is."""
         return self.__verbose
 
     @verbose.setter
@@ -474,10 +682,16 @@ class Survey:
 
     @property
     def has_no_output(self) -> bool:
+        """Whether the survey has no output yet, which it has when it is made."""
         return self.__output is None
 
     @property
     def output(self) -> Output:
+        """
+        The output of the survey, which handles the catalogue.
+
+        Reading it raises RuntimeError if the survey has not been made yet.
+        """
         if self.has_no_output:
             raise RuntimeError("Survey hasn't been made yet, run method `make_survey` first")
         else:
@@ -485,30 +699,37 @@ class Survey:
     
     @property
     def caching(self) -> bool:
+        """Whether the results are cached: it is the choice of the input."""
         return self.input.caching
 
     @property
     def hdim(self) -> int:
+        """The dimension of the kernels, as the input says it."""
         return self.input.hdim
     
     @property
     def inputname_hash(self) -> str:
+        """The name of the files of the input, with the hash: the one of the input."""
         return self.input.name_hash
     
     @property
     def inputdir(self) -> pathlib.Path:
+        """The directory of the files of the input."""
         return self.input._input_dir
     
     @property
     def ngb(self) -> int:
+        """The number of neighbours of the particles: the one of the input."""
         return self.input.ngb
 
     @property
     def check_state_before_running(self) -> Callable[..., Callable[[Callable[..., None]], Callable[..., None]]]:
+        """The function of the output that makes a decorator which runs a function only if its work is not done yet."""
         return self.output.check_state_before_running
 
     @property
     def __ebf_output_files_glob(self) -> Iterator[pathlib.Path]:
+        """The files that the backend wrote, as the output finds them."""
         return self.output._ebf_glob
 
 
