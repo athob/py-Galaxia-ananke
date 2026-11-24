@@ -1086,8 +1086,8 @@ class Output:
                 f5[PARENTPARTICLE_GROUP].create_dataset(name=self._parentid, data=particles_parentids)
                 for key, array in self.survey.input.parent_particles_data_generator:
                     f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=array[particles_mask])
-                for key, column in reordered_stats.items():
-                    f5[PARENTPARTICLE_GROUP].create_dataset(name=key, data=column.to_numpy())
+                for column_name, column in reordered_stats.items():
+                    f5[PARENTPARTICLE_GROUP].create_dataset(name=column_name, data=column.to_numpy())
 
 
 format_docstring(Output.__init__,
