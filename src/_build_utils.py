@@ -509,9 +509,12 @@ def make_distclean_galaxia(galaxia_dir: pathlib.Path) -> None:
 
 def give_up_earlier_installation() -> None:
     """
-    The new installation is complete: take the custom photometric systems of the earlier one, and give it up. The systems are
-    copied before the earlier installation is renamed to be deleted, so that a build that is killed before the rename leaves
-    them in it.
+    Finish a build that went well: carry the custom photometric systems of the earlier installation over to the new one,
+    and delete the earlier one.
+
+    Nothing is done if no earlier installation was put aside, as in a first build. The systems are copied before the
+    earlier installation is renamed to be deleted, so that a build that is killed before the rename leaves them in the
+    earlier installation. If it cannot be deleted, a warning says so, and the next build deletes it.
     """
     aside = installation_aside()
     if not aside.is_dir():

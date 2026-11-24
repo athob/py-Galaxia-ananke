@@ -82,11 +82,6 @@ class Formatting(_BaseFormatting):
     Formatting object: where the columns that the package needs are in the files of the isochrones of a photometric system. The files of
     the systems were made at different times by different versions of the CMD service, so their layouts differ. The magnitudes are not
     part of it: the descriptor of the system says where they start.
-
-    The label is retired for now: the column that the layouts took for it is a label in the files of CMD 3.x, but the bolometric magnitude
-    in the files of CMD 2.x (and so for the default layout), and neither the package nor the backend uses it. Its logic is commented out,
-    here, in the layouts below and in the tests, with the mark `CMD2-label`: uncomment it, and drop what replaces it, once the systems of
-    CMD 2.x are retired (`grep -rn CMD2-label src/` lists it all).
     """
     i_age: int
     i_mini: int

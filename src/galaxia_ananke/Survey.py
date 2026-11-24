@@ -611,11 +611,7 @@ class Survey:
 
     @property
     def _surveyhash(self) -> bytes:  # not cached: the parameters change each time the survey is made
-        """
-        The hash of the values of the parameters of the survey, in the alphabetical order of their names.
-
-        It is not kept: the parameters change each time the survey is made.
-        """
+        """The hash of the values of the parameters of the survey, in the alphabetical order of their names."""
         return hash_iterable(map(lambda el: str(el).encode(HASH_ENCODING),
                                  lexicalorder_dict(self.parameters).values()))
 

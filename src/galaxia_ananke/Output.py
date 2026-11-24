@@ -647,10 +647,6 @@ class Output:
         """
         Give the stars of a file of the backend the partition that a rule gives them, and sort them by partition.
 
-        The rule is first applied to an empty table to know the columns that it uses, and then to a table of those columns,
-        read in the file. The partitions are written in the file, the arrays of stars are put in the order of the partitions
-        (the other items of the file are not changed), and the log of the file says that Python changed it.
-
         Parameters
         ----------
         ebf_file : pathlib.Path
@@ -659,6 +655,12 @@ class Output:
             The rule: see ``Survey.make_survey``.
         export_keys : tuple of str
             The keys of the columns of the catalogue, which the empty table has.
+
+        Notes
+        -----
+        The rule is first applied to an empty table to know the columns that it uses, and then to a table of those columns,
+        read in the file. The partitions are written in the file, the arrays of stars are put in the order of the partitions
+        (the other items of the file are not changed), and the log of the file says that Python changed it.
         """
         dummy_df = RecordingDataFrame([], columns=export_keys, dtype=float)
         _ = partitioning_rule(dummy_df)

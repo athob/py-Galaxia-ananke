@@ -207,15 +207,17 @@ class Photometry(nested_dict, metaclass=Singleton):
         """
         Remove all the isochrones that are cached in the installation.
 
-        What is in the folder of the isochrones is removed, whatever it is: a folder, a file, or a link, which is removed
-        and not what it points to. Nothing is removed unless ``hard`` is set, and the user is asked first unless ``yes`` is.
-
         Parameters
         ----------
         hard : bool, optional
             Whether to remove. Default to False, which does nothing.
         yes : bool, optional
             Whether to remove without asking. Default to False.
+
+        Warnings
+        --------
+        What is in the folder of the isochrones is removed, whatever it is: a folder, a file, or a link, which is removed
+        and not what it points to. Nothing is removed unless ``hard`` is set, and the user is asked first unless ``yes`` is.
         """
         if hard and (True if yes else (input("WARNING!! This will remove all the isochrones cached in your installation. Are you certain (y/[n])? ").lower() in ['y', 'yes'])):
             for path in ISOCHRONES_PATH.glob('*'):

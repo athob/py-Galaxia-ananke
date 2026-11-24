@@ -148,8 +148,6 @@ class Isochrone:
         """
         Write the folder of the isochrone: the descriptor, and a file for each metallicity.
 
-        If the data is refused or a file cannot be written, nothing is left of what was started.
-
         Parameters
         ----------
         isochrone_data : dict
@@ -234,16 +232,18 @@ class Isochrone:
         """
         Write the descriptor of the files of the isochrone.
 
-        Its first line is the only one that the backend reads: the name, the number of columns, the number of the required
-        ones (which is the index of the first magnitude) and the number of magnitudes, then the names of the magnitudes. A
-        comment line gives the magnitude system, if there is one.
-
         Parameters
         ----------
         iso_column_order : list of str
             The columns of the files, in order.
         magnitude_system : str, optional
             The magnitude system, for the comment line. Default to none.
+
+        Notes
+        -----
+        Its first line is the only one that the backend reads: the name, the number of columns, the number of the required
+        ones (which is the index of the first magnitude) and the number of magnitudes, then the names of the magnitudes. A
+        comment line gives the magnitude system, if there is one.
         """
         magnames = iso_column_order[len(self._required_keys):]
         lines = [f"Python_{self.name} {len(iso_column_order)} {len(self._required_keys)} {len(magnames)} {' '.join(magnames)}"]
@@ -345,6 +345,8 @@ class Isochrone:
         """
         The layout of the files of the isochrone: where their columns are, as the version of CMD that wrote them put them.
 
+        Notes
+        -----
         The systems of the padova category that CMD made have the layout of their version. What is made in Python, and a
         system that is not known, have the layout of Python.
         """
