@@ -76,6 +76,10 @@ def make_survey_from_particles(*args: Any,
         
         Parameters
         ----------
+        *args
+            The particles and the kernels, in this order, which are described below. They are not given when ``pname`` and
+            ``kname`` are.
+
         particles : dict
             Dictionary where each elements represent the properties of the
             input particles, given as equal-length array_like objects. Refer
