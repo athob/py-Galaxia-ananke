@@ -570,6 +570,23 @@ def test_the_docs_job_of_ci_installs_the_docs_lock_and_runs_on_the_python_it_is_
     assert re.search(r"\bsphinx-build\b", job), "the docs job of CI does not build the documentation"
 
 
+def test_read_the_docs_builds_with_the_python_and_the_lock_of_the_docs_job_of_ci():
+    # one build in two places: the same Python, and the tools of the same lock (the docs job says so)
+    rtd = read(".readthedocs.yaml")
+    header = "\n".join((REQUIREMENTS / "requirements-docs.txt").read_text(encoding="utf-8").splitlines()[:3])
+    lock_python = re.search(r"--python-version\s+(\d+\.\d+)\b", header).group(1)
+    rtd_python = re.search(r'^\s*python:\s*"(\d+\.\d+)"', rtd, flags=re.MULTILINE).group(1)
+    assert rtd_python == lock_python, f".readthedocs.yaml runs Python {rtd_python}, the docs lock is compiled for {lock_python}"
+    assert re.search(r"^\s*-\s*requirements:\s*\.github/requirements/requirements-docs\.txt\s*$", rtd, flags=re.MULTILINE), \
+        ".readthedocs.yaml has to install .github/requirements/requirements-docs.txt, the lock the docs job installs"
+
+
+def test_a_warning_fails_the_documentation_build_on_read_the_docs_and_in_ci():
+    assert re.search(r"^\s*fail_on_warning:\s*true\s*$", read(".readthedocs.yaml"), flags=re.MULTILINE), \
+        "fail_on_warning is not set in .readthedocs.yaml"
+    assert re.search(r"\bsphinx-build\s+-W\b", docs_job_of_ci()), "the docs job of CI builds without -W"
+
+
 def test_the_limits_on_sphinx_9_2_match_the_python_of_the_docs_lock():
     # Sphinx 9.2 needs Python 3.13. While the docs lock is compiled for an older Python, Dependabot cannot lock it and
     # reports an error (the ignore in dependabot.yml), and update.sh --upgrade would give Sphinx one version for 3.12 and

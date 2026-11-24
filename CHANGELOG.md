@@ -196,6 +196,8 @@ far as the commits of this package and of the backend say.
   class and method has one, with its parameters and its result documented.
 - A CI job builds the documentation with Sphinx, with the tools of a lock (`.github/requirements/requirements-docs.txt`), and
   a warning fails the build: `stable` waits for it.
+- Read the Docs builds the documentation with the Python and the locked tools of the CI job that builds it, and a warning
+  fails the build there too.
 
 ### Changed
 

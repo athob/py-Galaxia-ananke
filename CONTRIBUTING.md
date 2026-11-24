@@ -124,7 +124,8 @@ takes about four minutes. Its jobs:
 - **docs**: builds the documentation with [Sphinx](https://www.sphinx-doc.org/) on Python 3.12, with the
   tools of the lock `.github/requirements/requirements-docs.txt`, after installing the package (its
   API pages import it, so the backend is built, as in `install`). A warning fails the build. Like the
-  others, it has to pass for `stable` to move. To build it by hand: `pip install .`, then
+  others, it has to pass for `stable` to move. Read the Docs builds the same way, with the same
+  Python and the same lock (`.readthedocs.yaml`), and a warning fails its build too. To build it by hand: `pip install .`, then
   `pip install --require-hashes -r .github/requirements/requirements-docs.txt`, then
   `sphinx-build -W --keep-going -b dirhtml docs/source docs/_build`.
 - **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`
