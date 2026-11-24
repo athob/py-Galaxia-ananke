@@ -74,8 +74,11 @@ docs/source/*
 !docs/source/*.*
 docs/source/*.ebf
 docs/source/*.h5
+docs/source/*.hash
+docs/source/*.state
 !docs/source/_templates
 !docs/source/_static
+docs/jupyter_execute/
 docs/_build/
 
 # PyBuilder
