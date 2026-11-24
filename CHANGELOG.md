@@ -192,6 +192,8 @@ far as the commits of this package and of the backend say.
 - The package ships a `py.typed` marker ([PEP 561](https://peps.python.org/pep-0561/)), and the `Typing :: Typed` classifier
   says so: the type checkers of the people who use it read its type hints. The check of the sdist before it is published
   requires the marker, and a test checks that setuptools ships it.
+- Docstrings, in numpy style, for everything in the package and in the tools that build it, and tests that every function,
+  class and method has one, with its parameters and its result documented.
 
 ### Changed
 
@@ -529,6 +531,11 @@ far as the commits of this package and of the backend say.
 - The type of a partitioning rule (`CallableDFtoInt`) says that it gives the partition of each star, as an array, and no
   longer one integer: a rule that gives an array, as the package needs, did not match its type, and the package ships its type
   hints.
+- The documentation of `Output` said that its files hold two root groups, and gave `partition_id` as the key of the input that
+  sets the partitions: there are three groups, and the key is `partitionid`. The documentation of `Survey.make_survey`, of
+  `Input` and of `make_survey_from_particles` had entries that said TODO (`input_sorter`, `pp_auto_flush`,
+  `partitioning_rule`, `caching`, `append_hash`), as did that of `Output.apply_post_process_pipeline_and_flush` and of
+  `Output.flush_extra_columns_to_hdf5` (`consolidate_partitions_per_process`, `update_metadata`): they are filled in.
 
 ## [0.8.0] - 2026-08-10
 

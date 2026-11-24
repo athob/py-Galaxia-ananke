@@ -21,6 +21,7 @@ lock each of its Pythons uses). Standard library only, and nothing here needs Ga
 """
 import ast
 import configparser
+import inspect
 import json
 import pathlib
 import re
@@ -326,6 +327,77 @@ def test_every_function_of_the_package_is_annotated():
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not_annotated(node):
                 gaps.append(f"{path.relative_to(ROOT)}:{node.lineno} {node.name}: {not_annotated(node)}")
     assert not gaps, gaps
+
+
+def documentable_nodes():
+    """
+    The functions and classes at the top of the modules of the package, the tools that build it included, and the methods of
+    those classes. What is inside a function is not (a helper next to the code that uses it), and neither are the setters of a
+    property, which the property documents.
+    """
+    sources = [p for p in sorted((ROOT / "src" / "galaxia_ananke").rglob("*.py"))
+               if not p.is_symlink() and p.name != "_version.py"]
+    sources.append(ROOT / "src" / "_build_utils.py")
+    functions = (ast.FunctionDef, ast.AsyncFunctionDef)
+    for path in sources:
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            if isinstance(node, functions + (ast.ClassDef,)):
+                yield path, node
+                for member in node.body if isinstance(node, ast.ClassDef) else []:
+                    is_setter = isinstance(member, functions) and any(
+                        isinstance(d, ast.Attribute) and d.attr in ("setter", "deleter") for d in member.decorator_list)
+                    if isinstance(member, functions) and not is_setter:
+                        yield path, member
+
+
+def test_everything_of_the_package_that_can_be_documented_has_a_docstring():
+    gaps = [f"{path.relative_to(ROOT)}:{node.lineno} {node.name}" for path, node in documentable_nodes()
+            if not ast.get_docstring(node)]
+    assert not gaps, f"no docstring (an empty one is none): {gaps}"
+
+
+def test_the_parameters_and_the_result_of_every_function_are_documented():
+    # numpy style: a Parameters section naming each parameter ('a, b : type' names two), a Returns (or Yields) section for
+    # what is returned. **kwargs may be documented by naming the keywords it takes. A property is documented by its
+    # description, and so are a cached_property and a classproperty, which this package has as well.
+    property_like = ("property", "cached_property", "classproperty")
+
+    def sections(docstring):
+        parts = re.split(r"^(\w[\w ]*)\n-{3,}\n", inspect.cleandoc(docstring), flags=re.MULTILINE)
+        return dict(zip(parts[1::2], parts[2::2]))
+
+    problems = []
+    for path, node in documentable_nodes():
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not ast.get_docstring(node):
+            continue
+        if any((isinstance(d, ast.Name) and d.id in property_like)
+               or (isinstance(d, ast.Attribute) and d.attr in ("getter",) + property_like) for d in node.decorator_list):
+            continue
+        where = f"{path.relative_to(ROOT)}:{node.lineno} {node.name}"
+        found = sections(ast.get_docstring(node, clean=False))
+        arguments = node.args
+        explicit = [a.arg for a in arguments.posonlyargs + arguments.args + arguments.kwonlyargs]
+        if explicit and explicit[0] in ("self", "cls") and (arguments.posonlyargs + arguments.args)[:1]:
+            explicit = explicit[1:]
+        if explicit or arguments.vararg or arguments.kwarg:
+            if "Parameters" not in found:
+                problems.append(f"{where}: no Parameters section")
+            else:
+                documented = []
+                for line in found["Parameters"].splitlines():
+                    if line.strip() and not line[0].isspace():
+                        documented += [name.strip().replace("\\", "") for name in line.split(" : ")[0].split(",")]
+                problems += [f"{where}: {name} is not documented" for name in explicit if name not in documented]
+                keywords = [name for name in documented if name not in explicit and not name.startswith("*")]
+                if arguments.vararg and "*" + arguments.vararg.arg not in documented:
+                    problems.append(f"{where}: *{arguments.vararg.arg} is not documented")
+                if arguments.kwarg and "**" + arguments.kwarg.arg not in documented and not keywords:
+                    problems.append(f"{where}: **{arguments.kwarg.arg} is not documented")
+        returns = node.returns
+        returns_something = returns is not None and not (isinstance(returns, ast.Constant) and returns.value is None)
+        if returns_something and not ({"Returns", "Yields"} & set(found)):
+            problems.append(f"{where}: no Returns section")
+    assert not problems, problems
 
 
 def test_the_package_reads_no_docstring_but_through_format_docstring():
