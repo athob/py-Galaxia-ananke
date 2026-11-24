@@ -45,11 +45,25 @@ __all__ = ['Singleton', 'classproperty', 'State', 'execute', 'format_docstring',
 
 class Singleton(type):
     """
-    Singleton metaclass. Directly taken from
-    https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+    Metaclass whose classes have one instance, which is made on the first call and given again on the next ones.
+
+    Taken from https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
     """
     _instances: Dict[type, Any] = {}
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
+        """
+        Give the one instance of the class, making it on the first call.
+
+        Parameters
+        ----------
+        *args, **kwargs
+            Given to the class when the instance is made, on the first call; they are ignored afterwards.
+
+        Returns
+        -------
+        instance : object
+            The one instance of the class.
+        """
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
@@ -71,25 +85,104 @@ _BS = TypeVar('_BS', bound='_BaseState')
 @dc.dataclass()
 class _BaseState:
     """
-    Base dataclass to track an evolving state.
+    Dataclass that tracks a state which moves forward: a register of counters, one for each level of work, and a
+    description.
+
+    States are compared by their register first, and then by their description.
+
+    Attributes
+    ----------
+    register : list of int
+        The counters, one for each level: the work of a level counts the work of the levels above it.
+    description : str
+        What the last update said that it was done.
     """
     register: List[int] = dc.field(default_factory=lambda: [0])
     description: str = "initial"
     @classmethod
     def fromdict(cls: Type[_BS], dictionary: Dict[str, Any]) -> _BS:
+        """
+        Make a state from the values of its fields.
+
+        Parameters
+        ----------
+        dictionary : dict
+            The values of ``register`` and ``description``, as ``asdict`` gives them.
+
+        Returns
+        -------
+        state : _BaseState
+            The state.
+        """
         return cls(**dictionary)
     def asdict(self) -> Dict[str, Any]:
+        """
+        Give the values of the fields of the state.
+
+        Returns
+        -------
+        dictionary : dict
+            The values of ``register`` and ``description``.
+        """
         return dc.asdict(self)
     def __increment_register(self, level: int) -> None:
+        """
+        Count one more for a level, and forget the deeper ones.
+
+        The register grows with zeros to hold the level if it is too short, the counters of the levels below it are deleted,
+        and the counter of the level is increased by one.
+
+        Parameters
+        ----------
+        level : int
+            The level that moves forward.
+        """
         self.register += max(level+1 - len(self.register), 0)*[0]
         del self.register[level+1:]
         self.register[level] += 1
     def update(self, description: str = "", level: int = 0) -> None:
+        """
+        Move the state forward at a level.
+
+        Parameters
+        ----------
+        description : str, optional
+            What is being done. Default to an empty string.
+        level : int, optional
+            The level of the work that is done: its counter is increased, and those of the deeper levels start again.
+            Default to 0.
+        """
         self.__increment_register(level)
         self.description = description
     def __eq__(self, other: Any) -> bool:
+        """
+        Tell whether another state has the same register and the same description.
+
+        Parameters
+        ----------
+        other : object
+            What to compare to, which has to have a ``register`` and a ``description``.
+
+        Returns
+        -------
+        equal : bool
+            Whether both are the same.
+        """
         return (self.register, self.description) == (other.register, other.description)
     def __lt__(self, other: "_BaseState") -> bool:
+        """
+        Tell whether the state comes before another, by their registers and then by their descriptions.
+
+        Parameters
+        ----------
+        other : _BaseState
+            The state to compare to.
+
+        Returns
+        -------
+        before : bool
+            Whether the register of this state, and if both are equal its description, sorts before those of the other.
+        """
         return (self.register, self.description) < (other.register, other.description)
 
 
@@ -98,9 +191,22 @@ Param = ParamSpec("Param")
 
 class State(_BaseState):
     """
-    Class to track an evolving state with a file.
+    State that tracks an evolving process with a file: the state is written in a file, and a process that is run again can
+    tell what it did before.
     """
     def __init__(self, filebase: Union[str, pathlib.Path], parent: Any, *args: Any, **kwargs: Any) -> None:
+        """
+        Make the state, and write its file if there is none yet.
+
+        Parameters
+        ----------
+        filebase : str or path
+            The path that the file of the state is named after: the file has the suffix ``.state``.
+        parent : object
+            The object that the state belongs to, whose ``caching`` and ``verbose`` it reads (an Output).
+        *args, **kwargs
+            Given to the base state: its register and its description.
+        """
         super().__init__(*args, **kwargs) 
         self.filebase = filebase
         self.parent = parent
@@ -108,16 +214,28 @@ class State(_BaseState):
             self.__writefile()
     @property
     def caching(self) -> bool:
+        """Whether the parent caches its results, which makes the state skip the work that the file says is done."""
         return self.parent.caching
     @property
     def verbose(self) -> bool:
+        """Whether the parent prints what it does."""
         return self.parent.verbose
     @property
     def file_path(self) -> pathlib.Path:
+        """The path of the file of the state: its base with the suffix ``.state``, made absolute."""
         return pathlib.Path(self.filebase).with_suffix(".state").resolve()
     def __writefile(self) -> None:
+        """Write the state in its file, as JSON."""
         self.file_path.write_bytes(bytes(json.dumps(self.asdict()),'ascii'))
     def __readfile(self) -> _BaseState:
+        """
+        Read the state in the file.
+
+        Returns
+        -------
+        state : _BaseState
+            The state that the file holds, or a new one that has not moved if there is no file.
+        """
         file_path = self.file_path
         if file_path.exists():
             return _BaseState.fromdict(json.loads(self.file_path.read_bytes()))
@@ -125,9 +243,27 @@ class State(_BaseState):
             return _BaseState()
     @property
     def __is_behind_state_of_file(self) -> bool:
+        """Whether the state is not ahead of the one that the file holds, which means that the work is already done."""
         return self <= self.__readfile()
     def check_state_file_before_running(self, *args: Any, **kwargs: Any
                                         ) -> Callable[[Callable[Param, None]], Callable[Param, None]]:
+        """
+        Make a decorator that runs a function only if its work is not done yet.
+
+        When the decorated function is called, the state is updated with the arguments given here. If the parent caches, the
+        function runs only if the state is then ahead of the state in the file, and without caching it always runs. After it
+        ran the state is written in its file.
+
+        Parameters
+        ----------
+        *args, **kwargs
+            Given to ``update``: the description and the level of the work.
+
+        Returns
+        -------
+        decorator : callable
+            The decorator, which gives the function that checks the state before running its own.
+        """
         def decorator(func: Callable[Param, None]) -> Callable[Param, None]:
             def wrapper(*w_args: Param.args, **w_kwargs: Param.kwargs) -> None:
                 self.update(*args, **kwargs)
@@ -141,15 +277,67 @@ class State(_BaseState):
 
 class classproperty(object):
     """
+    Descriptor that makes a property of a class, read from the class itself and not from an instance.
+
     Credit https://stackoverflow.com/a/5192374
     """
     def __init__(self, f: Callable[[Any], Any]) -> None:
+        """
+        Hold the function that gives the property.
+
+        Parameters
+        ----------
+        f : callable
+            The function, which is given the class.
+        """
         self.f = f
     def __get__(self, _: Any, owner: Any) -> Any:
+        """
+        Give the value of the property for a class.
+
+        Parameters
+        ----------
+        _ : object
+            The instance that it is read from, which is not used.
+        owner : type
+            The class, which is given to the function.
+
+        Returns
+        -------
+        value : object
+            What the function gives for the class.
+        """
         return self.f(owner)
 
 
 def _execute_generator(cmds: List[str], max_workers: Optional[int] = None, **kwargs: Any) -> Iterator[Tuple[int, str]]:
+    """
+    Run commands at the same time, and give their output line by line as they print it, errors included.
+
+    The commands are read as a shell reads them (``shlex.split``), all of them before any is run, and are not run through a
+    shell.
+
+    Parameters
+    ----------
+    cmds : list of str
+        The commands.
+    max_workers : int, optional
+        Not used: all the commands are started at once.
+    **kwargs
+        Given to subprocess.Popen (for instance ``cwd``).
+
+    Yields
+    ------
+    tag : int
+        The number of the command, counted from 1.
+    line : str
+        A line that the command printed, its end of line included (the last line may not have one).
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        After the last line, if a command exited with an error: the one of the first command that did.
+    """
     arguments = [shlex.split(cmd) for cmd in cmds]          # all of them are read before any is run
     popens = [subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
@@ -167,12 +355,30 @@ def _execute_generator(cmds: List[str], max_workers: Optional[int] = None, **kwa
 
 def execute(cmds: Union[str, List[str]], max_workers: Optional[int] = None, verbose: bool = True, **kwargs: Any) -> None:
     """
-    Run the commands described by cmds, and use
-    verbose kwarg to redirect output/error stream
-    to python output stream.
+    Run commands at the same time, and print their output with the number of the command, errors included.
+
     Each command is a string that is read as a shell reads it (``shlex.split``): an argument that holds a space, a quote or
-    anything that the shell would take apart has to be quoted, with ``shlex.quote`` or ``shlex.join``.
+    anything that a shell would take apart has to be quoted, with ``shlex.quote`` or ``shlex.join``. The commands are not
+    run through a shell.
+
     Adapted from https://stackoverflow.com/a/4417735
+
+    Parameters
+    ----------
+    cmds : str or list of str
+        The command, or the commands.
+    max_workers : int, optional
+        Not used: all the commands are started at once.
+    verbose : bool, optional
+        Whether to print the commands and their output, errors included, as it comes, each line after ``JOB n/N |``. Default
+        to True.
+    **kwargs
+        Given to subprocess.Popen (for instance ``cwd``).
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        Once the output is read, if a command exited with an error.
     """
     commands: List[str] = [cmds] if isinstance(cmds, str) else cmds
     n_cmds = len(commands)
@@ -188,9 +394,17 @@ def execute(cmds: Union[str, List[str]], max_workers: Optional[int] = None, verb
 
 def format_docstring(function: Callable[..., Any], **values: Any) -> None:
     """
-    Fills the placeholders of the docstring of a function (or of a method, whose function holds it) with the values, which is
-    how the documentation of the package gets its defaults. A function has no docstring when Python runs with -OO: nothing is
-    done then.
+    Fill the placeholders of the docstring of a function with values.
+
+    This is how the documentation of the package gets its defaults. A method is given as itself: its function holds the
+    docstring. When Python runs with -OO there are no docstrings, and nothing is done.
+
+    Parameters
+    ----------
+    function : callable
+        The function, or the method, whose docstring is filled in place.
+    **values
+        The values of the placeholders, by name, as ``str.format`` takes them.
     """
     holder: Any = getattr(function, '__func__', function)
     if holder.__doc__ is not None:
@@ -198,6 +412,23 @@ def format_docstring(function: Callable[..., Any], **values: Any) -> None:
 
 
 def make_symlink(file_path: Union[str, pathlib.Path], dest_dir: Union[str, pathlib.Path]) -> None:
+    """
+    Make a symbolic link to a file, in a directory, with the name of the file.
+
+    Both paths are resolved first, and a link of that name that is already there is replaced.
+
+    Parameters
+    ----------
+    file_path : str or path
+        The file that the link points to.
+    dest_dir : str or path
+        The directory where the link is made.
+
+    Raises
+    ------
+    IsADirectoryError
+        If a directory, and not a file or a link, already has the name that the link would have.
+    """
     file_path = pathlib.Path(file_path).resolve()
     dest_dir = pathlib.Path(dest_dir).resolve()
     symlink_name = dest_dir / file_path.name
@@ -211,6 +442,26 @@ def make_symlink(file_path: Union[str, pathlib.Path], dest_dir: Union[str, pathl
 def compare_given_and_required(given: Iterable[Hashable], required: Iterable[Hashable] = set(),
                                optional: Iterable[Hashable] = set(),
                                error_message: str = "Given particle data covers wrong set of keys") -> None:
+    """
+    Check that a collection of keys has the required ones, and the optional ones only besides.
+
+    Parameters
+    ----------
+    given : iterable
+        The keys that were given.
+    required : iterable, optional
+        The keys that have to be there. Default to none.
+    optional : iterable, optional
+        The keys that may be there too. Default to none.
+    error_message : str, optional
+        The beginning of the message of the error. Default to a message about the keys of the particle data.
+
+    Raises
+    ------
+    ValueError
+        If the given keys, the optional ones apart, are not the required ones: the message names the ones that are missing
+        and the ones that are not expected.
+    """
     given_keys = set(given)
     required_keys = set(required)
     optional_keys = set(optional)
@@ -224,6 +475,23 @@ def compare_given_and_required(given: Iterable[Hashable], required: Iterable[Has
 
 def confirm_equal_length_arrays_in_dict(dictionary: Mapping[str, Any], control: Optional[str] = None,
                                         error_message_dict_name: str = '') -> None:
+    """
+    Check that all the arrays of a dictionary have the same length.
+
+    Parameters
+    ----------
+    dictionary : dict
+        The arrays, or anything that has a length, by name.
+    control : str, optional
+        The name of the array that the others are compared with. Default to the first one of the dictionary.
+    error_message_dict_name : str, optional
+        What the message of the error calls the dictionary, before ``input dictionary``. Default to nothing.
+
+    Raises
+    ------
+    ValueError
+        If an array has not the length of the control: the message names them.
+    """
     if control is None and dictionary:
         control = list(dictionary.keys())[0]
     wrong_keys = []
@@ -235,7 +503,19 @@ def confirm_equal_length_arrays_in_dict(dictionary: Mapping[str, Any], control: 
 
 def tuple_itemgetter(*items: Any) -> Callable[[Any], Tuple[Any, ...]]:
     """
-    operator.itemgetter that always gives a tuple: itemgetter gives the item itself, and not a tuple of one, when it is given a single one
+    Make a function that gets items, always as a tuple.
+
+    ``operator.itemgetter`` gives the item itself, and not a tuple of one, when it is given a single one: this one does not.
+
+    Parameters
+    ----------
+    *items
+        The items to get, as ``operator.itemgetter`` takes them.
+
+    Returns
+    -------
+    getter : callable
+        The function that gives, for an object, the tuple of its items.
     """
     getter = itemgetter(*items)
     return getter if len(items) != 1 else (lambda obj: (getter(obj),))
@@ -243,8 +523,20 @@ def tuple_itemgetter(*items: Any) -> Callable[[Any], Tuple[Any, ...]]:
 
 def common_entries(*dcts: Dict[Any, Any]) -> Iterator[Tuple[Any, ...]]:
     """
-    common_entries function equivalent to zip in dictionaries. Directly taken from
-    https://stackoverflow.com/a/16458780
+    Give the entries of dictionaries that have the same key, as ``zip`` does for lists.
+
+    Taken from https://stackoverflow.com/a/16458780
+
+    Parameters
+    ----------
+    *dcts : dict
+        The dictionaries.
+
+    Yields
+    ------
+    entry : tuple
+        A key that all the dictionaries have, followed by its value in each of them, in the order of the dictionaries. The
+        keys come in no particular order. Nothing comes if there is no dictionary.
     """
     if not dcts:
         return
@@ -253,25 +545,96 @@ def common_entries(*dcts: Dict[Any, Any]) -> Iterator[Tuple[Any, ...]]:
 
 
 def get_version_of_command(cmd: str) -> str:
+    """
+    Give the version that a command reports with ``--version``.
+
+    Parameters
+    ----------
+    cmd : str
+        The command, which has to be on the PATH.
+
+    Returns
+    -------
+    version : str
+        The first of the dotted numbers in what the command prints, such as ``"4.3"`` for ``GNU Make 4.3``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the command does not exist.
+    subprocess.CalledProcessError
+        If the command exited with an error.
+    IndexError
+        If what the command prints has no dotted number.
+    """
     return re.findall(r"((?:[0-9]+\.)+[0-9]+)",
                       str(subprocess.check_output([cmd, '--version'])))[0]
 
 
 def lexicalorder_dict(dictionary: Dict[Any, Any]) -> OrderedDict[Any, Any]:
+    """
+    Give a dictionary with the same items, in the order of the sorted keys.
+
+    Parameters
+    ----------
+    dictionary : dict
+        The dictionary, whose keys can be sorted.
+
+    Returns
+    -------
+    ordered : collections.OrderedDict
+        The same items, sorted by key.
+    """
     return ODict({k: dictionary[k] for k in sorted(dictionary)})
 
 
 def in_description_order(properties: Iterable[Tuple[Any, str]]) -> List[Tuple[Any, str]]:
     """
-    The (key, description) pairs of properties in the alphabetical order of their descriptions. A set has no order that stays
-    the same from one run to the next (it depends on the hash seed), so a docstring that lists the properties of a set does it
-    in this one.
+    Put properties in the alphabetical order of their descriptions.
+
+    A set has no order that stays the same from one run to the next (it depends on the hash seed), so a docstring that lists
+    the properties of a set does it in this order.
+
+    Parameters
+    ----------
+    properties : iterable of tuple
+        The (key, description) pairs of the properties. The keys, which may be strings or tuples, only break a tie.
+
+    Returns
+    -------
+    ordered : list of tuple
+        The pairs, sorted by description.
     """
     return sorted(properties, key=lambda item: (item[1], str(item[0])))
 
 
 def import_source_file(module_name: str, file_path: Union[str, pathlib.Path]) -> ModuleType:
     # based on https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+    """
+    Import a Python source file as a module of the given name.
+
+    The module is registered in ``sys.modules``, and the file is read on every call, whatever was imported under that name
+    before. Based on https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+
+    Parameters
+    ----------
+    module_name : str
+        The name that the module is given.
+    file_path : str or path
+        The source file.
+
+    Returns
+    -------
+    module : types.ModuleType
+        The module.
+
+    Raises
+    ------
+    AttributeError
+        If the file is not one that Python imports (its suffix is not known), which leaves nothing to load it with.
+    FileNotFoundError
+        If the file does not exist.
+    """
     spec = cast(ModuleSpec, importlib.util.spec_from_file_location(module_name, file_path))
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
@@ -287,10 +650,20 @@ _PG = TypeVar('_PG', bound=Union[Callable[..., Any], property])   # a getter or 
 
 def mark_metadata_prop(prop_or_getter: _PG) -> _PG:
     """
-    Marks a property getter so that the corresponding property can be
-    included in the parent Class collected dictionary of metadata
-    properties. Can be applied before OR after @property without causing
-    an AttributeError.
+    Mark a property getter, so that its property goes in the metadata of a class decorated with
+    collect_metadata_marked_properties.
+
+    It can be applied before or after ``@property``: after it, the getter of the property is the one that is marked.
+
+    Parameters
+    ----------
+    prop_or_getter : callable or property
+        The getter to mark, or the property whose getter is.
+
+    Returns
+    -------
+    prop_or_getter : callable or property
+        What was given, which is marked and otherwise unchanged.
     """
     if isinstance(prop_or_getter, property):
         # Applied after @property – mark the getter instead.
@@ -307,10 +680,20 @@ C = TypeVar('C', bound=type)   # Generic for any class
 
 def collect_metadata_marked_properties(cls: C) -> C:
     """
-    Class decorator that adds a `_metadata` property.
-    This property returns a dictionary whose keys are the names of
-    all properties decorated with `@mark_for_metadata` and whose values
-    are the current values of those properties on the instance.
+    Class decorator that gives a class the metadata of its marked properties.
+
+    It adds a ``_metadata`` property, which gives a dictionary of the names of the properties marked with
+    ``mark_metadata_prop`` and their current values, and a ``_metadata_names`` property that holds the sorted names.
+
+    Parameters
+    ----------
+    cls : type
+        The class to decorate.
+
+    Returns
+    -------
+    cls : type
+        The same class, with the two properties.
     """
     # Define property that gather names of all marked properties.
     def _metadata_names(self: Any) -> List[str]:
@@ -334,13 +717,45 @@ def collect_metadata_marked_properties(cls: C) -> C:
 
 def metadata_dicts_to_consolidated_json(*args: Any, **kwargs: Any) -> str:
     # Create compact metadata
+    """
+    Give the compact form of the metadata of several sources as JSON.
+
+    Parameters
+    ----------
+    *args, **kwargs
+        Given to ``create_compact_metadata``.
+
+    Returns
+    -------
+    json_string : str
+        The compact metadata, as JSON indented by 2 spaces.
+    """
     metadata = create_compact_metadata(*args, **kwargs)
     json_string = json.dumps(metadata, indent=2)
     return json_string
 
 
 class _CompactMetadata(TypedDict, total=False):
-    # what create_compact_metadata gives: {} when it is given no metadata
+    """
+    The compact form of the metadata of several sources, which create_compact_metadata gives and reconstruct_log reads.
+
+    It is an empty dictionary when there is no metadata to compact.
+
+    Attributes
+    ----------
+    metadata_name : str
+        The name that the metadata was given.
+    schema_version : str
+        The version of this form.
+    common_values : dict
+        The values that every source has, and that are the same.
+    varying_keys : list of str
+        The other keys, in the order that most of the sources have them.
+    metadata_count : int
+        The number of sources.
+    variations : list of dict
+        For each source, its values of the varying keys.
+    """
     metadata_name: str
     schema_version: str
     common_values: Dict[str, Union[str,int,float]]
@@ -351,7 +766,22 @@ class _CompactMetadata(TypedDict, total=False):
 
 def create_compact_metadata(metadata_dicts: List[Dict[str, Union[str,int,float]]],
                             metadata_name: str = "") -> _CompactMetadata:
-    """Create a compact JSON representation that avoids redundant data"""
+    """
+    Give the metadata of several sources in a compact form that avoids what is redundant.
+
+    Parameters
+    ----------
+    metadata_dicts : list of dict
+        The metadata of each source, by key.
+    metadata_name : str, optional
+        A name for the metadata. Default to an empty string.
+
+    Returns
+    -------
+    compact : dict
+        The values that all the sources have in common, the other keys, and for each source the values of those: see
+        ``_CompactMetadata``. An empty dictionary if no metadata is given.
+    """
     if not metadata_dicts:
         return {}
     # Find common values across all metadata dictionaries
@@ -386,7 +816,22 @@ def create_compact_metadata(metadata_dicts: List[Dict[str, Union[str,int,float]]
 
 
 def get_majority_voting_ordered_common_keys(metadata_dicts: List[Dict[str, Union[str,int,float]]]) -> List[str]:
-    """Use the most common ordering pattern across logs"""
+    """
+    Give the keys of several dictionaries in the order that most of them have.
+
+    Each key goes at the position where it is most often, and the keys that share a position come in the order that they
+    first appear in.
+
+    Parameters
+    ----------
+    metadata_dicts : list of dict
+        The dictionaries.
+
+    Returns
+    -------
+    keys : list of str
+        All the keys that appear in any of the dictionaries. Empty if there is no dictionary.
+    """
     if not metadata_dicts:
         return []
     # Get all unique keys
@@ -410,7 +855,26 @@ def get_majority_voting_ordered_common_keys(metadata_dicts: List[Dict[str, Union
 
 
 def reconstruct_log(compact_metadata: _CompactMetadata, metadata_index: int) -> Dict[str, Union[str,int,float]]:
-    """Reconstruct original metadata dictionary from compact metadata"""
+    """
+    Give back the metadata of one source from the compact form.
+
+    Parameters
+    ----------
+    compact_metadata : dict
+        The compact metadata, as ``create_compact_metadata`` gives it.
+    metadata_index : int
+        The number of the source.
+
+    Returns
+    -------
+    metadata : dict
+        The common values, with the values of the source that vary.
+
+    Raises
+    ------
+    IndexError
+        If the number is not smaller than the number of sources.
+    """
     if metadata_index >= compact_metadata['metadata_count']:
         raise IndexError(f"Metadata index {metadata_index} out of range")
     # Start with common values
