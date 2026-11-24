@@ -34,18 +34,20 @@ apply_vaex_patch()
 
 class CallableDFtoNone(Protocol):
     """
-    The type of a function that takes the table of the catalogue, and then other positional arguments, and gives nothing:
-    the post processing pipelines that ``Output.apply_post_process_pipeline_and_flush`` applies, which change the table in
-    place.
+    The type of a function that takes the table of a partition of the catalogue, and then other positional arguments, and
+    gives nothing: the post processing pipelines that ``Output.apply_post_process_pipeline_and_flush`` applies, which change
+    the table in place.
     """
     def __call__(self, df: pd.DataFrame, *args: Any) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
         """
-        Process the table of the catalogue in place.
+        Process the table of a partition of the catalogue in place.
 
         Parameters
         ----------
-        df : pandas.DataFrame
-            The table, which is changed in place.
+        df : vaex.dataframe.DataFrame
+            The table of a partition: pipelines are given a vaex DataFrame, the one opened on the HDF5 file of the partition
+            or the one held in memory. The type hint says pandas.DataFrame for now (a ``TODO`` of the code): what the
+            pipelines of the package do with the table works the same with a pandas one, which is what the tests give them.
         *args
             Other positional arguments, as the user gave them.
         """
