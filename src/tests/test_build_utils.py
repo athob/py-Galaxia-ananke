@@ -34,6 +34,9 @@ import pytest
 pytest.importorskip('setuptools')
 pytest.importorskip('distutils.errors')
 
+from setuptools import Distribution
+from setuptools.command.build_py import build_py
+
 from .. import _build_utils as build
 from .utils import in_tmp_wd, fake_commands, patch_cache
 
@@ -146,7 +149,7 @@ def test_all_files_takes_the_base_to_be_the_working_directory():
     assert build.all_files('a') == ['a/x.txt']
 
 
-def test_the_package_data_is_the_license_of_the_package_and_builds_nothing(monkeypatch):
+def test_the_package_data_is_the_marker_of_the_type_hints_and_the_license_of_the_package_and_builds_nothing(monkeypatch):
     calls = []
     monkeypatch.chdir(build.ROOT_DIR)
     with mock.patch.object(build, 'verify_system_dependencies', lambda: calls.append('verify')), \
@@ -154,8 +157,23 @@ def test_the_package_data_is_the_license_of_the_package_and_builds_nothing(monke
         data = build.make_package_data()
     assert calls == []                                                  # reading setup.py builds nothing
     assert list(data) == [build.NAME]
+    assert data[build.NAME][0] == 'py.typed'                            # PEP 561: the marker of the type hints
     assert {'__license__/LICENSE', '__license__/__init__.py'} <= set(data[build.NAME])
-    assert all(name.startswith('__license__/') for name in data[build.NAME])
+    assert all(name.startswith('__license__/') for name in data[build.NAME][1:])
+
+
+def test_setuptools_ships_the_marker_of_the_type_hints_with_the_package(monkeypatch):
+    # what the wheel and the sdist hold of the package is what setuptools collects of it with its package data (alone: with
+    # include_package_data, setuptools would also run egg_info, which writes in the tree)
+    monkeypatch.chdir(build.ROOT_DIR)
+    distribution = Distribution({'name': build.NAME, 'packages': [build.NAME], 'package_dir': {'': build.SRC_DIR},
+                                 'package_data': build.make_package_data()})
+    command = build_py(distribution)
+    command.finalize_options()
+    command.analyze_manifest()
+    package_dir = build.ROOT_DIR / build.SRC_DIR / build.NAME
+    shipped = command.find_data_files(build.NAME, str(package_dir))
+    assert {'py.typed', '__license__/LICENSE'} <= {pathlib.Path(path).relative_to(package_dir).as_posix() for path in shipped}
 
 
 def test_the_autotools_files_are_made_and_made_recent(tmp_path):

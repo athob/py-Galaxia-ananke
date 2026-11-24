@@ -123,6 +123,12 @@ def test_ci_type_checks_the_tools_that_build_galaxia_with_the_settings_made_for_
     assert "[mypy-setuptools" not in settings
 
 
+def test_the_marker_of_the_type_hints_is_there_and_says_nothing_is_partial():
+    # PEP 561: an empty py.typed says the package is typed all through; "partial" in it would say it is not
+    marker = ROOT / "src" / "galaxia_ananke" / "py.typed"
+    assert marker.is_file() and marker.read_bytes() == b""
+
+
 def test_no_job_of_ci_is_allowed_to_fail():
     # a job that may fail is red without holding stable back: if one is ever meant to, say so here
     assert "continue-on-error" not in read(".github/workflows/ci.yml")

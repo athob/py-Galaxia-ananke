@@ -46,6 +46,7 @@ SDIST_REQUIRED = [  # relative to the directory the sdist unpacks into
     "versioneer.py",
     "src/_build_utils.py",
     f"src/{PACKAGE}/__init__.py",
+    f"src/{PACKAGE}/py.typed",
     f"src/{PACKAGE}/_version.py",
     f"src/{PACKAGE}/__license__/LICENSE",
 ]

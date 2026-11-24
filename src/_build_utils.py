@@ -366,8 +366,8 @@ def build_and_install_galaxia(galaxia_dir: pathlib.Path) -> None:
 
 def make_package_data() -> Dict[str, List[str]]:
     for_all_files = ('__license__', )
-    return {NAME: all_files(*for_all_files,
-                            basedir=pathlib.Path(SRC_DIR, NAME))}
+    return {NAME: ['py.typed'] + all_files(*for_all_files,
+                                           basedir=pathlib.Path(SRC_DIR, NAME))}
 
 
 def make_cmdclass() -> Dict[str, Any]:
