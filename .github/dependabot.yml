@@ -62,6 +62,21 @@ updates:
     open-pull-requests-limit: 5
     allow:
       - dependency-type: all
+    ignore:
+      # docutils 0.23 cannot be locked: every myst-parser release caps docutils below 0.23 (the
+      # docs lock). uv rightly refuses to resolve it, but Dependabot reports that as an error and
+      # fails its whole run, every week. Carried over from py-EnBiD-ananke, which has the same
+      # documentation tools: check that the docs lock holds docutils below 0.23 once it is made,
+      # and remove this once a myst-parser release allows 0.23.
+      - dependency-name: docutils
+        versions: [">=0.23"]
+      # Sphinx 9.2 needs Python 3.13, and the docs lock is compiled for 3.12 and up (the docs job
+      # of ci.yml runs on 3.12): uv rightly refuses to lock it, and Dependabot reports that as an
+      # error. update.sh does not read this ignore, so the same limit is in requirements-docs.in.
+      # Remove both when the docs lock is compiled for Python 3.13 or later:
+      # test_the_limits_on_sphinx_9_2_match_the_python_of_the_docs_lock fails then, to say so.
+      - dependency-name: sphinx
+        versions: [">=9.2"]
     groups:
       ci-tools:
         patterns: ["*"]

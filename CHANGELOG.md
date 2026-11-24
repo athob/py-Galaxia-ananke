@@ -194,6 +194,8 @@ far as the commits of this package and of the backend say.
   requires the marker, and a test checks that setuptools ships it.
 - Docstrings, in numpy style, for everything in the package and in the tools that build it, and tests that every function,
   class and method has one, with its parameters and its result documented.
+- A CI job builds the documentation with Sphinx, with the tools of a lock (`.github/requirements/requirements-docs.txt`), and
+  a warning fails the build: `stable` waits for it.
 
 ### Changed
 

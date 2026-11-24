@@ -26,6 +26,7 @@ lock test 3.9 ../requirements-frozen   # the end-of-life Pythons, where Dependab
 lock cd-build 3.12
 lock package 3.12
 lock types 3.12
+lock docs 3.12
 
 # actionlint is not a Python package. Its version is ACTIONLINT_VERSION in ci.yml; the sha256
 # of its release archive is kept here, and ci.yml refuses a download that does not match it.

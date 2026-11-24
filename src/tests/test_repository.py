@@ -554,6 +554,40 @@ def test_update_sh_locks_every_input_with_the_python_its_lock_records():
             f"update.sh locks {source.name} for Python {python}, but {lock.parent.name}/{lock.name} was compiled otherwise"
 
 
+def docs_job_of_ci():
+    return jobs_of("ci.yml")["docs"]
+
+
+def test_the_docs_job_of_ci_installs_the_docs_lock_and_runs_on_the_python_it_is_compiled_for():
+    job = docs_job_of_ci()
+    header = "\n".join((REQUIREMENTS / "requirements-docs.txt").read_text(encoding="utf-8").splitlines()[:3])
+    lock_python = re.search(r"--python-version\s+(\d+\.\d+)\b", header).group(1)
+    ci_python = re.search(r'python-version:\s*"(\d+\.\d+)"', job).group(1)
+    assert ci_python == lock_python, (
+        f"the docs job of CI runs Python {ci_python}, the docs lock is compiled for {lock_python}")
+    assert re.search(r"^\s*pip install --require-hashes -r \.github/requirements/requirements-docs\.txt\s*$", job,
+                     flags=re.MULTILINE), "the docs job of CI does not install the docs lock with its hashes"
+    assert re.search(r"\bsphinx-build\b", job), "the docs job of CI does not build the documentation"
+
+
+def test_the_limits_on_sphinx_9_2_match_the_python_of_the_docs_lock():
+    # Sphinx 9.2 needs Python 3.13. While the docs lock is compiled for an older Python, Dependabot cannot lock it and
+    # reports an error (the ignore in dependabot.yml), and update.sh --upgrade would give Sphinx one version for 3.12 and
+    # another for 3.13 and up, which a lock must not do (the bound in requirements-docs.in). Once the lock is compiled for
+    # 3.13 or later neither is needed, and they would hold Sphinx back for good.
+    text = read(".github/dependabot.yml")
+    ignored = re.search(r"dependency-name:\s*sphinx\s*\n\s*versions:\s*\[\"?>=9\.2\"?\]", text) is not None
+    bounded = re.search(r"^sphinx<9\.2\s*$", (REQUIREMENTS / "requirements-docs.in").read_text(encoding="utf-8"),
+                        flags=re.MULTILINE) is not None
+    header = "\n".join((REQUIREMENTS / "requirements-docs.txt").read_text(encoding="utf-8").splitlines()[:3])
+    lowest = int(re.search(r"--python-version\s+3\.(\d+)", header).group(1))
+    what = "has to stay" if lowest < 13 else "has to go"
+    assert ignored == (lowest < 13), (
+        f"the docs lock is compiled for Python 3.{lowest}, so the ignore of sphinx >=9.2 in dependabot.yml {what}")
+    assert bounded == (lowest < 13), (
+        f"the docs lock is compiled for Python 3.{lowest}, so the bound sphinx<9.2 in requirements-docs.in {what}")
+
+
 def test_dependabot_updates_the_locks_with_uv():
     # The pip ecosystem would regenerate a lock with pip-compile for its own Python only, and drop
     # what the other Pythons need. The uv ecosystem runs the lock's own `uv pip compile` command again.

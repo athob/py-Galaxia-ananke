@@ -1,0 +1,8 @@
+# What the docs job builds the documentation with (ci.yml): the same list as Read the Docs
+# is given, which does not pin it.
+-r ../../docs/source/requirements.txt
+# Sphinx 9.2 needs Python 3.13, and this lock covers 3.12 and up (the docs job of ci.yml runs on
+# 3.12): without a bound, uv gives Sphinx one version for 3.12 and another for 3.13 and up, and a
+# lock has to pin each package once (see dependabot.yml). Remove it when the lock is compiled for
+# Python 3.13 or later: test_the_limits_on_sphinx_9_2_match_the_python_of_the_docs_lock says when.
+sphinx<9.2
