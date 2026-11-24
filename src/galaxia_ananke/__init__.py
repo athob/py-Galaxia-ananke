@@ -152,7 +152,10 @@ def make_survey_from_particles(*args: Any,
             Default to 1 (no adjustment).
         
         caching : bool
-            TODO
+            Whether the work that is already done for the same input, in the same directory, is not
+            done again: the files of the input are not written again if their hash is the one of the
+            data, and the steps of the survey that a state file says are done are skipped. This is
+            experimental, and a warning says so. Default to False.
         
         **kwargs
             Additional keyword arguments to customize the survey. Refer to
