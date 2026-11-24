@@ -34,45 +34,46 @@ apply_vaex_patch()
 
 class CallableDFtoNone(Protocol):
     """
-    The type of a function that takes the table of a partition of the catalogue, and then other positional arguments, and
-    gives nothing: the post processing pipelines that ``Output.apply_post_process_pipeline_and_flush`` applies, which change
-    the table in place.
+    The type of a function that takes the table of a partition of the catalogue, and then the positional arguments that the
+    user gave, and gives nothing: the post processing pipelines that ``Output.apply_post_process_pipeline_and_flush``
+    applies, which change the table in place.
+
+    The package applies it to the table of each partition.
     """
     def __call__(self, df: pd.DataFrame, *args: Any) -> None:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
         """
-        Process the table of a partition of the catalogue in place.
+        Process the table of a partition in place.
 
         Parameters
         ----------
         df : vaex.dataframe.DataFrame
-            The table of a partition: pipelines are given a vaex DataFrame, the one opened on the HDF5 file of the partition
-            or the one held in memory. The type hint says pandas.DataFrame for now (a note in the code says that it is to
-            change): what the pipelines of the package do with the table works the same with a pandas one, which is what the
-            tests give them.
+            The table of a partition, which is changed in place: it is opened on the HDF5 file of the partition, or held in
+            memory. The type hint says pandas.DataFrame; what the pipelines of the package do with the table works the same
+            with a pandas one, which is what the tests give them.
         *args
-            Other positional arguments, as the user gave them.
+            The positional arguments that the user gave to ``apply_post_process_pipeline_and_flush``, after the pipeline.
         """
         pass
 
 
 class CallableDFtoInt(Protocol):
     """
-    The type of a function that takes the table of the catalogue and gives the partition of each of its stars: the
+    The type of a function that takes the table of the stars of the catalogue and gives the partition of each of them: the
     partitioning rules that ``Survey.make_survey`` takes.
 
-    The rule is first applied to an empty table, to know the columns that it uses, and then to a table made of those
+    The package first applies it to an empty table, to know the columns that it uses, and then to a table made of those
     columns.
     """
     def __call__(self, df: pd.DataFrame, *args: Any) -> ArrayLike:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
         """
-        Give the partition of each star of the table of the catalogue.
+        Give the partition of each star of a table.
 
         Parameters
         ----------
         df : pandas.DataFrame
-            The table.
+            The table of the stars, with the columns that the rule uses.
         *args
-            Other positional arguments.
+            Other positional arguments, which the package does not give: it calls a rule with the table only.
 
         Returns
         -------
