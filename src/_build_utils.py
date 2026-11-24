@@ -60,6 +60,16 @@ GITHUB_UNREACHABLE = (urllib.error.URLError, ConnectionError, TimeoutError, sock
 
 # force printing to the terminal even if stdout was redirected
 def say(text: str) -> None:
+    """
+    Write a text, followed by a space, to the standard output and, if that is redirected, to the terminal too.
+
+    The terminal is the one of ``/dev/tty``, if there is one that can be written to: nothing is said if there is none.
+
+    Parameters
+    ----------
+    text : str
+        The text.
+    """
     text += ' '
     sys.stdout.write(text)
     sys.stdout.flush()
@@ -77,6 +87,21 @@ def say(text: str) -> None:
 
 # get the list of all files in the given directories (including those in nested directories)
 def all_files(*paths: str, basedir: Union[str, pathlib.Path] = '.') -> List[str]:
+    """
+    List the files of directories, those in nested directories included.
+
+    Parameters
+    ----------
+    *paths : str
+        The directories, relative to ``basedir``.
+    basedir : str or path, optional
+        Where the paths are relative to. Default to the working directory.
+
+    Returns
+    -------
+    files : list of str
+        The files, as paths relative to ``basedir``. A directory that does not exist has none.
+    """
     basedir = pathlib.Path(basedir)
     return [str(pathlib.Path(dirpath, f).relative_to(basedir))
             for path in paths
@@ -85,6 +110,16 @@ def all_files(*paths: str, basedir: Union[str, pathlib.Path] = '.') -> List[str]
 
 
 def verify_system_dependencies() -> None:
+    """
+    Check that the system has what building the backend needs: git, GNU make and a C++ compiler.
+
+    The versions have to be at least ``MIN_MAKE_VERSION`` for make and ``MIN_GPP_VERSION`` for g++.
+
+    Raises
+    ------
+    OSError
+        If a tool is missing, or too old: the message says which, and what to do.
+    """
     try:
         git_version = Version(get_version_of_command("git"))
     except FileNotFoundError:
@@ -120,16 +155,36 @@ def verify_cache_can_be_written() -> None:
 
 def get_submodule_commit(repo_owner: str, repo_name: str, commit_sha: str, submodule_path: str) -> str:
     """
-    Get submodule commit hash for a specific GitHub repository commit.
+    Give the commit of a submodule that a commit of a GitHub repository pins.
 
-    Args:
-        repo_owner: Repository owner
-        repo_name: Repository name
-        commit_sha: Commit SHA in the main repository
-        submodule_path: Relative path to the submodule
+    The repository tree of that commit is asked of the GitHub API.
 
-    Returns:
-        Submodule commit SHA string
+    Parameters
+    ----------
+    repo_owner : str
+        The owner of the repository.
+    repo_name : str
+        The name of the repository.
+    commit_sha : str
+        The commit of the repository.
+    submodule_path : str
+        The path of the submodule in the repository.
+
+    Returns
+    -------
+    commit : str
+        The SHA of the commit of the submodule.
+
+    Raises
+    ------
+    RuntimeError
+        If the rate limit of the GitHub API is exceeded.
+    urllib.error.HTTPError
+        If GitHub refuses the request for another reason.
+    ValueError
+        If the path is in the repository, but is not a submodule.
+    FileNotFoundError
+        If there is nothing at the path of the submodule.
     """
     # Create SSL context
     ctx = ssl.create_default_context()
@@ -162,11 +217,45 @@ def get_submodule_commit(repo_owner: str, repo_name: str, commit_sha: str, submo
 
 
 def commit_lookup_error(reason: str, submodule_name: str) -> CompileError:
-    """The error of the build when the commit of a submodule to clone cannot be found, whatever the reason."""
+    """
+    Make the error of the build for when the commit of a submodule to clone cannot be found, whatever the reason.
+
+    Parameters
+    ----------
+    reason : str
+        What went wrong, which starts the message.
+    submodule_name : str
+        The name of the submodule.
+
+    Returns
+    -------
+    error : distutils.errors.CompileError
+        The error, which is not raised.
+    """
     return CompileError(f"{reason}\nError finding the commit of {submodule_name} to clone, aborting...\n")
 
 
 def clone_and_checkout_submodules(root_dir: pathlib.Path, submodule_names: List[str]) -> None:
+    """
+    Clone submodules from GitHub, and check out the commit that this version of the package pins.
+
+    This is for sources that are not a git repository, as an unpacked sdist is. The address of each submodule is read in
+    ``.gitmodules``, and its commit is the one that the revision of this package pins, which is asked of GitHub. What git
+    prints is said as it comes.
+
+    Parameters
+    ----------
+    root_dir : pathlib.Path
+        The root of the sources, where ``.gitmodules`` is and where the submodules are cloned.
+    submodule_names : list of str
+        The names of the submodules.
+
+    Raises
+    ------
+    distutils.errors.CompileError
+        If the commit of a submodule cannot be found (the message says why, as GitHub answered or could not be reached), or
+        if the clone or the check out fail (the message gives what git said).
+    """
     parsed_url = urllib.parse.urlparse(__url__)
     url_path = pathlib.Path(parsed_url.path)
     gitmodules = configparser.ConfigParser()
@@ -207,6 +296,26 @@ def clone_and_checkout_submodules(root_dir: pathlib.Path, submodule_names: List[
 
 
 def check_galaxia_submodule(root_dir: Union[str, pathlib.Path]) -> None:
+    """
+    Check that the sources of the backend are there, and fetch them if they are not.
+
+    Git is asked to update the submodule. Where the sources are not a git repository, which git says with the status 128,
+    the submodule is cloned instead (see ``clone_and_checkout_submodules``).
+
+    Parameters
+    ----------
+    root_dir : str or path
+        The root of the sources of the package.
+
+    Raises
+    ------
+    OSError
+        If git is not installed, or fails in another way.
+    PermissionError
+        If the script ``install-sh`` of the backend cannot be executed.
+    distutils.errors.CompileError
+        If the clone fails (see ``clone_and_checkout_submodules``).
+    """
     root_dir = pathlib.Path(root_dir)
     say("\nChecking submodule Galaxia, running git...")
     try:
@@ -229,14 +338,28 @@ def check_galaxia_submodule(root_dir: Union[str, pathlib.Path]) -> None:
 
 def installation_aside() -> pathlib.Path:
     """
-    Where the earlier installation waits while the new one is built: next to the cache, so on its file system, where a
-    directory can be renamed whatever it holds.
+    Give where the earlier installation waits while the new one is built.
+
+    It is next to the cache, so on its file system, where a directory can be renamed whatever it holds.
+
+    Returns
+    -------
+    path : pathlib.Path
+        The path.
     """
     return CACHE.with_name(CACHE.name + '.aside')
 
 
 def installation_to_delete() -> pathlib.Path:
-    """Where the earlier installation goes, once the new one is complete, to be deleted: a rename cannot be left half done."""
+    """
+    Give where the earlier installation goes, once the new one is complete, to be deleted: a rename cannot be left half
+    done.
+
+    Returns
+    -------
+    path : pathlib.Path
+        The path.
+    """
     return CACHE.with_name(CACHE.name + '.delete')
 
 
@@ -273,11 +396,22 @@ def recover_from_a_stopped_build() -> None:
 
 
 def put_earlier_installation_aside() -> None:
+    """Rename the cache, if there is one, to where the earlier installation waits while the new one is built."""
     if CACHE.is_dir():
         CACHE.rename(installation_aside())
 
 
 def touch_autotools_files(galaxia_dir: pathlib.Path) -> None:
+    """
+    Make the files that autotools generates, and make them recent.
+
+    This is so that make does not try to remake them with autotools, which the system may not have.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     (galaxia_dir / 'Makefile.am').touch()
     (galaxia_dir / 'configure.ac').touch()
     (galaxia_dir / 'aclocal.m4').touch()
@@ -288,8 +422,29 @@ def touch_autotools_files(galaxia_dir: pathlib.Path) -> None:
 
 def run_step(name: str, command: List[str], log: str, galaxia_dir: pathlib.Path, fatal: bool = True, tail: int = 20) -> None:
     """
-    Run a step of the build with its output in its log. If it fails, raise an error that gives the last lines of the log, or
-    only warn if the step is not ``fatal``.
+    Run a step of the build with its output in its log.
+
+    If it fails, an error is raised that gives the last lines of the log, or only a warning if the step is not ``fatal``.
+
+    Parameters
+    ----------
+    name : str
+        What the step is called in the messages.
+    command : list of str
+        The command, as a list of its arguments.
+    log : str
+        The name of the file of the log, in the folder of the logs of the backend.
+    galaxia_dir : pathlib.Path
+        The sources of the backend, where the command is run.
+    fatal : bool, optional
+        Whether a failure stops the build. Default to True.
+    tail : int, optional
+        The number of the last lines of the log that the error gives. Default to 20.
+
+    Raises
+    ------
+    distutils.errors.CompileError
+        If the command exited with an error, and the step is fatal.
     """
     with (GALAXIA_LOG / log).open('w') as f:
         status = subprocess.call(command, cwd=galaxia_dir, stdout=f, stderr=f)
@@ -302,20 +457,53 @@ def run_step(name: str, command: List[str], log: str, galaxia_dir: pathlib.Path,
 
 
 def configure_galaxia(galaxia_dir: pathlib.Path) -> None:
+    """
+    Run the configure script of the backend, so that it is installed in the cache, with its data in the data directory of
+    the installation.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     run_step('configure', ["./configure", f"--prefix={CACHE}", f"--datadir={GALAXIA_DATA}"],
              'Galaxia-configure.log', galaxia_dir)
 
 
 def make_galaxia(galaxia_dir: pathlib.Path) -> None:
+    """
+    Run make in the sources of the backend.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     run_step('make', ["make"], 'Galaxia-make.log', galaxia_dir)
 
 
 def make_install_galaxia(galaxia_dir: pathlib.Path) -> None:
+    """
+    Run make install in the sources of the backend, and copy its data directory to the one of the installation.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     run_step('make install', ["make", "install"], 'Galaxia-make-install.log', galaxia_dir)
     shutil.copytree(galaxia_dir / GALAXIA_DATA.name, GALAXIA_DATA)
 
 
 def make_distclean_galaxia(galaxia_dir: pathlib.Path) -> None:
+    """
+    Run make distclean in the sources of the backend, to clean them. A failure only warns: it only cleans.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir, fatal=False)  # it only cleans
 
 
@@ -340,6 +528,16 @@ def give_up_earlier_installation() -> None:
 
 
 def build_and_install_galaxia(galaxia_dir: pathlib.Path) -> None:
+    """
+    Build the backend, and install it in the cache.
+
+    The earlier installation, if there is one, is put aside, and put back if the build fails or is interrupted.
+
+    Parameters
+    ----------
+    galaxia_dir : pathlib.Path
+        The sources of the backend.
+    """
     galaxia_dir = pathlib.Path(galaxia_dir).resolve()
     recover_from_a_stopped_build()
     put_earlier_installation_aside()
@@ -365,6 +563,16 @@ def build_and_install_galaxia(galaxia_dir: pathlib.Path) -> None:
 
 
 def make_package_data() -> Dict[str, List[str]]:
+    """
+    Give what the package ships besides its modules: the marker of its type hints and the files of its license.
+
+    Reading this builds nothing.
+
+    Returns
+    -------
+    package_data : dict
+        The files to ship, relative to the package, by the name of the package.
+    """
     for_all_files = ('__license__', )
     return {NAME: ['py.typed'] + all_files(*for_all_files,
                                            basedir=pathlib.Path(SRC_DIR, NAME))}
@@ -372,6 +580,16 @@ def make_package_data() -> Dict[str, List[str]]:
 
 def make_cmdclass() -> Dict[str, Any]:
     """
+    Give the commands of setup.py: those of versioneer, with a ``build_py`` that builds the backend and a ``test`` that does
+    nothing.
+
+    The ``build_py`` command runs the standard one, and then checks the system and the cache, fetches the sources of the
+    backend if they are not there, and builds and installs the backend.
+
+    Returns
+    -------
+    cmdclass : dict
+        The commands, by name.
     """
     class _build_py(build_py):
         def run(self) -> None:
