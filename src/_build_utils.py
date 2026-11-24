@@ -31,6 +31,7 @@ import urllib.request
 import urllib.parse
 import json
 import configparser
+from typing import Any, ClassVar, Dict, IO, List, Optional, Tuple, Union, cast
 from warnings import warn
 from distutils.errors import CompileError
 from setuptools.command.build_py import build_py
@@ -58,7 +59,7 @@ GITHUB_UNREACHABLE = (urllib.error.URLError, ConnectionError, TimeoutError, sock
 
 
 # force printing to the terminal even if stdout was redirected
-def say(text):
+def say(text: str) -> None:
     text += ' '
     sys.stdout.write(text)
     sys.stdout.flush()
@@ -75,7 +76,7 @@ def say(text):
 
 
 # get the list of all files in the given directories (including those in nested directories)
-def all_files(*paths, basedir='.'):
+def all_files(*paths: str, basedir: Union[str, pathlib.Path] = '.') -> List[str]:
     basedir = pathlib.Path(basedir)
     return [str(pathlib.Path(dirpath, f).relative_to(basedir))
             for path in paths
@@ -83,7 +84,7 @@ def all_files(*paths, basedir='.'):
             for f in files]
 
 
-def verify_system_dependencies():
+def verify_system_dependencies() -> None:
     try:
         git_version = Version(get_version_of_command("git"))
     except FileNotFoundError:
@@ -102,7 +103,7 @@ def verify_system_dependencies():
         raise OSError(f"Your system has g++ v{gpp_version} installed, but {NAME} requires v{MIN_GPP_VERSION}")
 
 
-def verify_cache_can_be_written():
+def verify_cache_can_be_written() -> None:
     """
     Refuse, before anything is built, a cache that the installation cannot make. The earlier installation is put aside next to
     the cache and the new one is built in its place, so the directory that the cache is in has to be writable: the nearest one
@@ -117,7 +118,7 @@ def verify_cache_can_be_written():
                               f"{directory} or define a custom system prefix via the environment variable {PREFIX_ENV_VAR}")
 
 
-def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
+def get_submodule_commit(repo_owner: str, repo_name: str, commit_sha: str, submodule_path: str) -> str:
     """
     Get submodule commit hash for a specific GitHub repository commit.
 
@@ -160,12 +161,12 @@ def get_submodule_commit(repo_owner, repo_name, commit_sha, submodule_path):
     raise FileNotFoundError(f"Submodule path '{submodule_path}' not found in repository")
 
 
-def commit_lookup_error(reason, submodule_name):
+def commit_lookup_error(reason: str, submodule_name: str) -> CompileError:
     """The error of the build when the commit of a submodule to clone cannot be found, whatever the reason."""
     return CompileError(f"{reason}\nError finding the commit of {submodule_name} to clone, aborting...\n")
 
 
-def clone_and_checkout_submodules(root_dir, submodule_names):
+def clone_and_checkout_submodules(root_dir: pathlib.Path, submodule_names: List[str]) -> None:
     parsed_url = urllib.parse.urlparse(__url__)
     url_path = pathlib.Path(parsed_url.path)
     gitmodules = configparser.ConfigParser()
@@ -190,10 +191,11 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
         output = []
         process = subprocess.Popen(['git', 'clone', galaxia_url], cwd=root_dir,
                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        for line in iter(process.stdout.readline, ""):
+        stdout = cast(IO[str], process.stdout)
+        for line in iter(stdout.readline, ""):
             say(line)
             output.append(line.rstrip('\n'))
-        process.stdout.close()
+        stdout.close()
         status = process.wait()
         if status:
             raise CompileError('\n'.join([f"Error cloning {submodule_name} from {galaxia_url} (git exit status {status})"]
@@ -204,7 +206,7 @@ def clone_and_checkout_submodules(root_dir, submodule_names):
                                f"(git exit status {status}), see what git says above\naborting...\n")
 
 
-def check_galaxia_submodule(root_dir):
+def check_galaxia_submodule(root_dir: Union[str, pathlib.Path]) -> None:
     root_dir = pathlib.Path(root_dir)
     say("\nChecking submodule Galaxia, running git...")
     try:
@@ -238,7 +240,7 @@ def installation_to_delete() -> pathlib.Path:
     return CACHE.with_name(CACHE.name + '.delete')
 
 
-def restore_earlier_installation():
+def restore_earlier_installation() -> None:
     """
     Put the earlier installation back in the place of what a build that stopped made, which is removed but for its logs: they
     take the place of the earlier ones, where the error of the build says that they are. Without an earlier installation, as in
@@ -258,7 +260,7 @@ def restore_earlier_installation():
     aside.rename(CACHE)
 
 
-def recover_from_a_stopped_build():
+def recover_from_a_stopped_build() -> None:
     """
     Put the cache back as it was before a build that was killed in the middle of its work, if there was one. The earlier
     installation waits aside during a build and is only given up when the new one is complete: one that is aside belongs to a
@@ -270,12 +272,12 @@ def recover_from_a_stopped_build():
     restore_earlier_installation()
 
 
-def put_earlier_installation_aside():
+def put_earlier_installation_aside() -> None:
     if CACHE.is_dir():
         CACHE.rename(installation_aside())
 
 
-def touch_autotools_files(galaxia_dir: pathlib.Path):
+def touch_autotools_files(galaxia_dir: pathlib.Path) -> None:
     (galaxia_dir / 'Makefile.am').touch()
     (galaxia_dir / 'configure.ac').touch()
     (galaxia_dir / 'aclocal.m4').touch()
@@ -284,7 +286,7 @@ def touch_autotools_files(galaxia_dir: pathlib.Path):
     (galaxia_dir / 'config.h.in').touch()
 
 
-def run_step(name: str, command: list, log: str, galaxia_dir: pathlib.Path, fatal: bool = True, tail: int = 20):
+def run_step(name: str, command: List[str], log: str, galaxia_dir: pathlib.Path, fatal: bool = True, tail: int = 20) -> None:
     """
     Run a step of the build with its output in its log. If it fails, raise an error that gives the last lines of the log, or
     only warn if the step is not ``fatal``.
@@ -299,25 +301,25 @@ def run_step(name: str, command: list, log: str, galaxia_dir: pathlib.Path, fata
         warn(message + ": the installation goes on", RuntimeWarning)
 
 
-def configure_galaxia(galaxia_dir: pathlib.Path):
+def configure_galaxia(galaxia_dir: pathlib.Path) -> None:
     run_step('configure', ["./configure", f"--prefix={CACHE}", f"--datadir={GALAXIA_DATA}"],
              'Galaxia-configure.log', galaxia_dir)
 
 
-def make_galaxia(galaxia_dir: pathlib.Path):
+def make_galaxia(galaxia_dir: pathlib.Path) -> None:
     run_step('make', ["make"], 'Galaxia-make.log', galaxia_dir)
 
 
-def make_install_galaxia(galaxia_dir: pathlib.Path):
+def make_install_galaxia(galaxia_dir: pathlib.Path) -> None:
     run_step('make install', ["make", "install"], 'Galaxia-make-install.log', galaxia_dir)
     shutil.copytree(galaxia_dir / GALAXIA_DATA.name, GALAXIA_DATA)
 
 
-def make_distclean_galaxia(galaxia_dir: pathlib.Path):
+def make_distclean_galaxia(galaxia_dir: pathlib.Path) -> None:
     run_step('make distclean', ["make", "distclean"], 'Galaxia-make-distclean.log', galaxia_dir, fatal=False)  # it only cleans
 
 
-def give_up_earlier_installation():
+def give_up_earlier_installation() -> None:
     """
     The new installation is complete: take the custom photometric systems of the earlier one, and give it up. The systems are
     copied before the earlier installation is renamed to be deleted, so that a build that is killed before the rename leaves
@@ -337,7 +339,7 @@ def give_up_earlier_installation():
         warn(f"Could not delete the earlier installation of Galaxia in {to_delete}: {error}", RuntimeWarning)
 
 
-def build_and_install_galaxia(galaxia_dir: pathlib.Path):
+def build_and_install_galaxia(galaxia_dir: pathlib.Path) -> None:
     galaxia_dir = pathlib.Path(galaxia_dir).resolve()
     recover_from_a_stopped_build()
     put_earlier_installation_aside()
@@ -362,17 +364,17 @@ def build_and_install_galaxia(galaxia_dir: pathlib.Path):
     say("\n")
 
 
-def make_package_data():
+def make_package_data() -> Dict[str, List[str]]:
     for_all_files = ('__license__', )
     return {NAME: all_files(*for_all_files,
                             basedir=pathlib.Path(SRC_DIR, NAME))}
 
 
-def make_cmdclass():
+def make_cmdclass() -> Dict[str, Any]:
     """
     """
     class _build_py(build_py):
-        def run(self):
+        def run(self) -> None:
             build_py.run(self)
             verify_system_dependencies()
             verify_cache_can_be_written()
@@ -382,12 +384,12 @@ def make_cmdclass():
 
     class _test(Command):
         description = 'run tests'
-        user_options = []
+        user_options: ClassVar[List[Tuple[str, Optional[str], str]]] = []
 
-        def initialize_options(self): pass
+        def initialize_options(self) -> None: pass
 
-        def finalize_options(self): pass
+        def finalize_options(self) -> None: pass
 
-        def run(self): pass
+        def run(self) -> None: pass
 
     return versioneer.get_cmdclass({'build_py': _build_py, 'test': _test})
