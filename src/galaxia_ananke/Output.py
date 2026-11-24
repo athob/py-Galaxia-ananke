@@ -199,11 +199,14 @@ class Output:
             {_optional_properties}
             
             Internally, the catalogue is stored across one or more HDF5 files
-            (single by default, splittable via a ``partition_id`` key or a
-            custom ``partitioning_rule``). Each file contains two root groups:
-            ``{STARCATALOG_GROUP}``, with datasets for individual catalogue
-            columns, and ``{PARENTPARTICLE_GROUP}``, holding parent-particle
-            properties and within-file and cross-file demographic statistics.
+            (single by default, splittable via a ``partitionid`` key of the
+            input particles or a custom ``partitioning_rule``; a star whose
+            partition is negative is left out of the catalogue). Each file
+            contains three root groups: ``{STARCATALOG_GROUP}``, with datasets
+            for individual catalogue columns, ``{PARENTPARTICLE_GROUP}``,
+            holding parent-particle properties and within-file and cross-file
+            demographic statistics, and ``{PARTITIONING_GROUP}``, whose dataset
+            ``partition_id`` lists the partitions of the catalogue.
             Root-level HDF5 attributes additionally log pipeline runtime
             metadata (e.g., software versions and run parameters).
         """
@@ -1099,7 +1102,8 @@ format_docstring(Output.__init__,
                      [f"\n            * {desc} via key{'' if isinstance(key, str) else 's'} ``{str(key).replace(chr(39),'')}``"
                       for key, desc in in_description_order(Output._all_optional_properties)]),
                  STARCATALOG_GROUP=STARCATALOG_GROUP,
-                 PARENTPARTICLE_GROUP=PARENTPARTICLE_GROUP)
+                 PARENTPARTICLE_GROUP=PARENTPARTICLE_GROUP,
+                 PARTITIONING_GROUP=PARTITIONING_GROUP)
 
 
 if __name__ == '__main__':

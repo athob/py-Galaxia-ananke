@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from ..galaxia_ananke import Output
-from ..galaxia_ananke._constants import STARCATALOG_GROUP, PARENTPARTICLE_GROUP
+from ..galaxia_ananke._constants import STARCATALOG_GROUP, PARENTPARTICLE_GROUP, PARTITIONING_GROUP
 from ..galaxia_ananke.photometry.PhotoSystem import PhotoSystem
 from ..galaxia_ananke.Output import shift_g_lon     # the function, and not the module that the class takes its name from
 
@@ -141,9 +141,17 @@ def test_the_documentation_of_the_constructor_has_what_it_is_made_of_filled_in()
     documentation = Output.__init__.__doc__
     assert "{_output_properties}" not in documentation and "{_optional_properties}" not in documentation
     assert "{STARCATALOG_GROUP}" not in documentation and "{PARENTPARTICLE_GROUP}" not in documentation
+    assert "{PARTITIONING_GROUP}" not in documentation
     assert "via keys ``(px, py, pz)``" in documentation and "via key ``rad``" in documentation        # the ones that are made of three
     assert "via keys ``(glon, glat)``" in documentation and "via key ``satid``" in documentation
     assert f"``{STARCATALOG_GROUP}``" in documentation and f"``{PARENTPARTICLE_GROUP}``" in documentation
+
+
+def test_the_documentation_of_the_constructor_says_what_the_files_hold_and_how_the_partitions_are_given():
+    # each file has the three root groups that the function that writes it makes, and the key of the input gives the partitions
+    documentation = Output.__init__.__doc__
+    assert "three root groups" in documentation and f"``{PARTITIONING_GROUP}``" in documentation
+    assert "``partitionid`` key" in documentation and "``partition_id`` key" not in documentation
 
 
 def test_the_documentation_of_the_constructor_lists_the_properties_in_the_alphabetical_order_of_their_descriptions():
