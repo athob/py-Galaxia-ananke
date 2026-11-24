@@ -540,6 +540,8 @@ far as the commits of this package and of the backend say.
   `Input` and of `make_survey_from_particles` had entries that said TODO (`input_sorter`, `pp_auto_flush`,
   `partitioning_rule`, `caching`, `append_hash`), as did that of `Output.apply_post_process_pipeline_and_flush` and of
   `Output.flush_extra_columns_to_hdf5` (`consolidate_partitions_per_process`, `update_metadata`): they are filled in.
+- The documentation build warned of duplicate section labels, for the "Submodules" section that the API pages of a package and
+  of its subpackage `photometry` both have: the labels are now made of the name of the page and the title of the section.
 
 ## [0.8.0] - 2026-08-10
 

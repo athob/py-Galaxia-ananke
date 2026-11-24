@@ -40,6 +40,10 @@ exclude_patterns = ['.ipynb_checkpoints/*']
 
 napoleon_use_param = False
 
+# Two pages can have a section of the same name: apidoc writes a "Submodules" section in the page of a package and in the one of
+# each of its subpackages. A label made of the name of the page and the title of the section keeps them apart.
+autosectionlabel_prefix_document = True
+
 myst_enable_extensions = [
     "amsmath",
     "attrs_inline",
