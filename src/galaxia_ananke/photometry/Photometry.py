@@ -14,7 +14,7 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The registry of the photometric systems that are available, by category and then by name.
 """
 import shutil
 from glob import glob

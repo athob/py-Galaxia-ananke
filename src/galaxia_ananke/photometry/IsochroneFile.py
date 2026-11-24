@@ -14,7 +14,7 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The files of an isochrone, one for each metallicity.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, IO, List, Optional, Union

@@ -14,6 +14,7 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
+The name of the package.
 """
 __all__ = ['NAME']
 

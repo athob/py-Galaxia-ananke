@@ -14,7 +14,7 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The isochrones of a photometric system, made from a folder of files that exists or from data.
 """
 import re
 import sys

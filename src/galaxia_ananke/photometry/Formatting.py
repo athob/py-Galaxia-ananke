@@ -14,7 +14,8 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The layouts of the files of the isochrones: where the columns that the package needs are in the files that each version of CMD
+wrote, and the tables that are made of them.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Tuple, List, Dict

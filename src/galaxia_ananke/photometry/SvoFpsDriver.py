@@ -14,7 +14,7 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The questions that the SVO Filter Profile Service is asked for one instrument of a photometric system.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional

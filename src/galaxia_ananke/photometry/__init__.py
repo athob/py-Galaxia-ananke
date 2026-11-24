@@ -14,7 +14,8 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The photometric systems that are available to a survey: ``available_photo_systems`` holds them, by category and then by name
+(``available_photo_systems['category/name']``), made when this is first imported from the isochrones of the installation.
 """
 from .Photometry import Photometry
 

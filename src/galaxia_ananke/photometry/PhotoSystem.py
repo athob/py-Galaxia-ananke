@@ -14,7 +14,8 @@
 # - COPYRIGHT <https://github.com/athob/py-Galaxia-ananke/blob/main/COPYRIGHT>
 #
 """
-Docstring
+The photometric systems: the isochrones and the magnitudes of a system, with what the SVO Filter Profile Service knows of its
+filters.
 """
 from typing import Any, Callable, Union, List, Dict, Optional
 from numpy.typing import NDArray
