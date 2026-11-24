@@ -20,7 +20,7 @@ Please note that this module is private. The Output class is
 available in the main ``galaxia_ananke`` namespace - use that instead.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Callable, Hashable, Optional, Union, Tuple, List, Dict, Iterable, cast
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Optional, Union, Tuple, List, Set, Dict, Iterable, Iterator, cast
 from numpy.typing import NDArray, ArrayLike
 from warnings import warn
 from functools import cached_property
@@ -52,8 +52,10 @@ if TYPE_CHECKING:
 
 __all__ = ['Output']
 
+_Property = Tuple[Union[str, Tuple[str, ...]], str]  # the key, or the keys, of a property, and its description
 
-def shift_g_lon(lon): # restrict longitude values to be within (-180,180)
+
+def shift_g_lon(lon: Any) -> Any: # restrict longitude values to be within (-180,180)
     return -((-lon+180)%360-180)
 
 
@@ -86,7 +88,7 @@ def _decorate_post_processing(pp: CallableDFtoNone, hdf5_path_input: bool = Fals
                               max_thread_workers: Optional[int] = None,
                               update_metadata: Optional[Dict[str, Union[str,float,int]]] = None,
                               verbose: bool = True) -> Callable[..., None]:
-    def new_pp(*args) -> None:
+    def new_pp(*args: Any) -> None:
         first_arg = args[0]
         if not isinstance(first_arg, list):
             first_arg = [first_arg]
@@ -218,7 +220,7 @@ class Output:
         pass
 
     @classproperty
-    def _export_properties(cls):
+    def _export_properties(cls) -> Set[_Property]:
         return {
             cls._position_prop,
             cls._velocity_prop,
@@ -238,7 +240,7 @@ class Output:
             }
     
     @classproperty
-    def _postprocess_properties(cls):
+    def _postprocess_properties(cls) -> Set[_Property]:
         return {
             cls._celestial_prop,
             cls._galactic_prop,
@@ -249,104 +251,104 @@ class Output:
             }
     
     @classproperty
-    def _all_optional_properties(cls):
+    def _all_optional_properties(cls) -> Set[Tuple[str, str]]:
         return Input._optional_properties \
               - {cls._parentindex_prop, cls._partitionindex_prop, cls._satindex_prop} \
                 | {(cls._satindex, cls._satindex_prop[1])}
     
     @classproperty
-    def _export_keys(cls):
+    def _export_keys(cls) -> Tuple[str, ...]:
         return tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in cls._export_properties], ()))
     
     @classproperty
-    def _postprocess_keys(cls):
+    def _postprocess_keys(cls) -> Tuple[str, ...]:
         return tuple(sum([(_p[0],) if isinstance(_p[0], str) else _p[0] for _p in cls._postprocess_properties], ()))
     
     @classproperty
-    def _pos(cls):
+    def _pos(cls) -> Tuple[str, str, str]:
         return cls._position_prop[0]
     
     @classproperty
-    def _vel(cls):
+    def _vel(cls) -> Tuple[str, str, str]:
         return cls._velocity_prop[0]
     
     @classproperty
-    def _cel(cls):
+    def _cel(cls) -> Tuple[str, str]:
         return cls._celestial_prop[0]
     
     @classproperty
-    def _gal(cls):
+    def _gal(cls) -> Tuple[str, str]:
         return cls._galactic_prop[0]
     
     @classproperty
-    def _rad(cls):
+    def _rad(cls) -> str:
         return cls._distance_prop[0]
     
     @classproperty
-    def _dmod(cls):
+    def _dmod(cls) -> str:
         return cls._modulus_prop[0]
     
     @classproperty
-    def _mtip(cls):
+    def _mtip(cls) -> str:
         return cls._trgbmass_prop[0]
     
     @classproperty
-    def _mact(cls):
+    def _mact(cls) -> str:
         return cls._currentmass_prop[0]
     
     @classproperty
-    def _minit(cls):
+    def _minit(cls) -> str:
         return cls._initialmass_prop[0]
     
     @classproperty
-    def _age(cls):
+    def _age(cls) -> str:
         return cls._age_prop[0]
     
     @classproperty
-    def _grav(cls):
+    def _grav(cls) -> str:
         return cls._surfacegravity_prop[0]
     
     @classproperty
-    def _feh(cls):
+    def _feh(cls) -> str:
         return cls._metallicity_prop[0]
     
     @classproperty
-    def _teff(cls):
+    def _teff(cls) -> str:
         return cls._temperature_prop[0]
     
     @classproperty
-    def _lum(cls):
+    def _lum(cls) -> str:
         return cls._luminosity_prop[0]
     
     @classproperty
-    def _parentid(cls):
+    def _parentid(cls) -> str:
         return cls._parentindex_prop[0]
     
     @classproperty
-    def _partitionid(cls):
+    def _partitionid(cls) -> str:
         return cls._partitionindex_prop[0]
         
     @classproperty
-    def _partid(cls):
+    def _partid(cls) -> str:
         return cls._particleflag_prop[0]
     
     @classproperty
-    def _pi(cls):
+    def _pi(cls) -> str:
         return cls._parallax_prop[0]
     
     @classproperty
-    def _mu(cls):
+    def _mu(cls) -> Tuple[str, str]:
         return cls._propermotion_prop[0]
     
     @classproperty
-    def _mugal(cls):
+    def _mugal(cls) -> Tuple[str, str]:
         return cls._galacticpropermotion_prop[0]
     
     @classproperty
-    def _vr(cls):
+    def _vr(cls) -> str:
         return cls._radialvelocity_prop[0]
     
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         return sorted({i for i in self.__vaex.__dir__() if not i.startswith('_')}.union(
             super(Output, self).__dir__()).union(
             self._vaex_under_list if self.__vaex is not None else []))
@@ -354,16 +356,16 @@ class Output:
     def __repr__(self) -> str:
         return repr(self._vaex)
     
-    def __getitem__(self, item: str):
+    def __getitem__(self, item: str) -> Any:
         return self._vaex[item]
     
-    def __setitem__(self, item: str, value):
+    def __setitem__(self, item: str, value: Any) -> None:
         self._vaex[item] = value
 
     def __len__(self) -> int:
         return len(self._vaex)
 
-    def __getattr__(self, item: str):
+    def __getattr__(self, item: str) -> Any:
         if (item in self.__vaex.__dir__() and not item.startswith('_')) or (item in self._vaex_under_list and self.__vaex is not None):
             return getattr(self.__vaex, item)
         else:
@@ -374,11 +376,11 @@ class Output:
         return tuple(itertools.chain.from_iterable([photosystem.to_export_keys for photosystem in photosystems]))
     
     @classmethod
-    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str, ...]:
+    def _make_export_keys(cls, photosystems: list[PhotoSystem], extra_keys: Iterable[str] = ()) -> Tuple[str, ...]:
         return tuple(set(cls._export_keys).union(extra_keys).union(cls._compile_export_mag_names(photosystems)))
 
     @classmethod
-    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys=()) -> Tuple[str, ...]:
+    def _make_catalogue_keys(cls, photosystems: list[PhotoSystem], extra_keys: Tuple[str, ...] = ()) -> Tuple[str, ...]:
         return cls._make_export_keys(photosystems, extra_keys=cls._postprocess_keys+extra_keys)
 
     def _make_input_optional_keys(self) -> Tuple[str, ...]:
@@ -655,8 +657,9 @@ class Output:
         df.sort_values(['process_id','temp'], inplace=True)
         return df.groupby('process_id').groups
 
-    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args,
-                                              flush_with_columns=(), hold_flush: bool = False, hold_reload: bool = False,
+    def apply_post_process_pipeline_and_flush(self, post_process: CallableDFtoNone, *args: Any,
+                                              flush_with_columns: Iterable[str] = (), hold_flush: bool = False,
+                                              hold_reload: bool = False,
                                               consolidate_partitions_per_process: bool = False,
                                               update_metadata: Optional[Dict[str, Union[str,float,int]]] = None) -> None:
         r"""
@@ -696,7 +699,7 @@ class Output:
                 TODO
         """
         # post_process(self._vaex, *args)
-        vaex_df_or_hdf5_or_list_s = self._hdf5s if self._pp_auto_flush else self._vaex_per_partition
+        vaex_df_or_hdf5_or_list_s: Dict[Any, Any] = self._hdf5s if self._pp_auto_flush else self._vaex_per_partition
         if consolidate_partitions_per_process:
             partitions_per_process: Dict[Hashable, pd.Index] = self.__consolidate_partitions_per_process(
                 np.array(list(self.__partitions_lengths.keys())),
@@ -747,35 +750,35 @@ class Output:
                  "its input and its partitioning rule", UserWarning)
         self.check_state_before_running(description="export_parent_data", level=1)(self.__export_parent_particles_data)()
 
-    def _pp_convert_cartesian_to_galactic(self, **kwargs) -> None:
+    def _pp_convert_cartesian_to_galactic(self, **kwargs: Any) -> None:
         pipeline_name = "convert_cartesian_to_galactic"
         if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_cartesian_to_galactic, flush_with_columns=self._gal+(self._rad,), **kwargs)
 
-    def _pp_convert_galactic_to_icrs(self, **kwargs) -> None:
+    def _pp_convert_galactic_to_icrs(self, **kwargs: Any) -> None:
         pipeline_name = "convert_galactic_to_icrs"
         if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_galactic_to_icrs, flush_with_columns=self._cel, **kwargs)
     
-    def _pp_convert_icrs_to_galactic(self, **kwargs) -> None:
+    def _pp_convert_icrs_to_galactic(self, **kwargs: Any) -> None:
         pipeline_name = "convert_icrs_to_galactic"
         if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_convert_icrs_to_galactic, flush_with_columns=self._gal+self._mugal, **kwargs)
 
-    def _pp_last_conversions(self, **kwargs) -> None:
+    def _pp_last_conversions(self, **kwargs: Any) -> None:
         pipeline_name = "last_conversions"
         if self.verbose:
             print(f"Running {pipeline_name} post-processing pipeline")
         self.apply_post_process_pipeline_and_flush(self.__pp_last_conversions, flush_with_columns=(self._teff, self._lum), **kwargs)
 
-    def __name_with_ext(self, ext):
+    def __name_with_ext(self, ext: str) -> pathlib.Path:
         name_base = self._file_base
         return name_base.parent / f"{name_base.name}{ext}"
     
-    def save(self, path):  # TODO Gotta update this
+    def save(self, path: Union[str, pathlib.Path]) -> None:  # TODO Gotta update this
         """
             Save output to new path
 
@@ -788,7 +791,7 @@ class Output:
         old_path.rename(self._path)
         self.__vaex = vaex.open(self._path)
 
-    def __make_state(self):
+    def __make_state(self) -> None:
         self.__state: Output._State = self._State(self.__name_with_ext('.dummy'), self)
 
     @property
@@ -796,23 +799,23 @@ class Output:
         return self.__state
 
     @property
-    def check_state_before_running(self):
+    def check_state_before_running(self) -> Callable[..., Callable[[Callable[..., None]], Callable[..., None]]]:
         return self._state.check_state_file_before_running
 
     @property
-    def caching(self):
+    def caching(self) -> bool:
         return self.survey.caching
 
     @property
-    def verbose(self):
+    def verbose(self) -> bool:
         return self.survey.verbose
 
     @property
-    def survey(self):
+    def survey(self) -> Survey:
         return self.__survey
     
     @property
-    def photosystems(self):
+    def photosystems(self) -> List[PhotoSystem]:
         return self.survey.photosystems
 
     @property
@@ -842,15 +845,15 @@ class Output:
         return self._make_catalogue_keys(self.photosystems, extra_keys=self._make_input_optional_keys())
     
     @property
-    def output_dir(self):
+    def output_dir(self) -> pathlib.Path:
         return pathlib.Path(cast("Union[str, pathlib.Path]", self.parameters[FTTAGS.output_dir]))
 
     @property
-    def output_name(self):
+    def output_name(self) -> str:
         return f"{self.survey.surveyname_hash}.{self.survey.inputname_hash}"
 
     @property
-    def rsun_skycoord(self):
+    def rsun_skycoord(self) -> coordinates.SkyCoord:
         _temp = [self.parameters[k] for k in FTTAGS.rSun]
         return coordinates.SkyCoord(u=_temp[0], v=_temp[1], w=_temp[2], unit='kpc', representation_type='cartesian', frame='galactic')
 
@@ -955,7 +958,7 @@ class Output:
         return {i: vaex.open(str(hdf5_file), group=STARCATALOG_GROUP) for i, hdf5_file in self._hdf5s.items()}
 
     @property
-    def _path(self):
+    def _path(self) -> pathlib.Path:
         raise NotImplementedError
         if self.__path is None:
             return self.__hdf5
@@ -963,15 +966,15 @@ class Output:
             return self.__path
 
     @property
-    def _file_base(self):
+    def _file_base(self) -> pathlib.Path:
         return self.output_dir / self.output_name
 
     @property
-    def _ebf_glob_pattern(self):
+    def _ebf_glob_pattern(self) -> pathlib.Path:
         return self.__name_with_ext('.*.ebf')
     
     @property
-    def _ebf_glob(self):
+    def _ebf_glob(self) -> Iterator[pathlib.Path]:
         _temp = self._ebf_glob_pattern
         return _temp.parent.glob(_temp.name)
     
@@ -982,7 +985,7 @@ class Output:
         return (0, int(generation)) if generation.isdigit() else (1, generation)
 
     @cached_property
-    def _ebfs(self):
+    def _ebfs(self) -> List[pathlib.Path]:
         ebfs = sorted(self._ebf_glob, key=self._ebf_generation_key)  # not in the order that the file system lists them in, which can change
         if not ebfs:
             raise RuntimeError("Galaxia didn't return any ebf output files")
@@ -994,11 +997,11 @@ class Output:
                 ebf.unlink()
     
     @property
-    def _hdf5_glob_pattern(self):
+    def _hdf5_glob_pattern(self) -> pathlib.Path:
         return self.__name_with_ext('.*.h5')
     
     @cached_property
-    def _hdf5s(self):
+    def _hdf5s(self) -> Dict[int, pathlib.Path]:
         pattern = self._hdf5_glob_pattern
         partitions = self.__ebfs_partitions
         length_tags = len(str(max(tuple(partitions.keys())+(0,))))
