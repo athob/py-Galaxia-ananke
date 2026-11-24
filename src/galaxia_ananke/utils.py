@@ -46,8 +46,9 @@ class CallableDFtoNone(Protocol):
         ----------
         df : vaex.dataframe.DataFrame
             The table of a partition: pipelines are given a vaex DataFrame, the one opened on the HDF5 file of the partition
-            or the one held in memory. The type hint says pandas.DataFrame for now (a ``TODO`` of the code): what the
-            pipelines of the package do with the table works the same with a pandas one, which is what the tests give them.
+            or the one held in memory. The type hint says pandas.DataFrame for now (a note in the code says that it is to
+            change): what the pipelines of the package do with the table works the same with a pandas one, which is what the
+            tests give them.
         *args
             Other positional arguments, as the user gave them.
         """
