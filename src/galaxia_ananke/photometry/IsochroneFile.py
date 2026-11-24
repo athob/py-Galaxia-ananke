@@ -35,8 +35,32 @@ __all__ = ['IsochroneFile']
 
 
 class IsochroneFile:
+    """
+    The file of the isochrone of a photometric system for one metallicity.
+
+    The name of the file is ``output_`` followed by the metallicity and ``.dat``, and the names of its columns are in a
+    commented line before the table. A file is made from the path of one that exists, or from a table that is written there.
+    It is a file of an isochrone, which it has to be given.
+    """
     _file_format = "output_{}.dat"
     def __init__(self, *args: Any, isochrone: Optional[Isochrone] = None) -> None:
+        """
+        Make the file from its path, and write it if a table is given.
+
+        Parameters
+        ----------
+        *args
+            The path of the file, and optionally the table to write in it (see ``_write_table``).
+        isochrone : Isochrone
+            The isochrone that this is a file of. It has to be given.
+
+        Raises
+        ------
+        TypeError
+            If the isochrone is not given, or no argument, or more than two.
+        ValueError
+            If the table is neither a pandas DataFrame nor an astropy Table.
+        """
         if isochrone is None:
             raise TypeError(f"Keyword argument 'isochrone' missing")
         self._isochrone = isochrone
@@ -50,11 +74,36 @@ class IsochroneFile:
             raise TypeError(f"Too many arguments ({len(args)} given)")
 
     def __repr__(self) -> str:
+        """
+        Give the representation of the file.
+
+        Returns
+        -------
+        representation : str
+            The class, with the name of the file.
+        """
         cls = self.__class__.__name__
         description = ', '.join([(f"{prop}={getattr(self, prop)}") for prop in ['filename']])
         return f'{cls}({description})'
 
     def _write_table(self, data: Union[pd.DataFrame, ascii.core.Table]) -> None:
+        """
+        Write a table in the file, sorted by age and then by initial mass.
+
+        The sort keeps the order of the rows that share both, which the sort of an astropy table does not, and it does not
+        change the table that was given. The columns are written with the names in a commented line, as the backend reads
+        them.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame or astropy.table.Table
+            The table, which has the columns of the age and of the initial mass of the isochrone.
+
+        Raises
+        ------
+        ValueError
+            If it is neither of the two.
+        """
         if isinstance(data, pd.DataFrame):
             data = ascii.core.Table.from_pandas(data)
         elif not isinstance(data, ascii.core.Table):
@@ -63,23 +112,44 @@ class IsochroneFile:
         data.write(self.path, format='ascii.commented_header')
 
     def _open(self, *args: Any, **kwargs: Any) -> IO[Any]:
+        """
+        Open the file as ``open`` does.
+
+        Parameters
+        ----------
+        *args, **kwargs
+            Given to ``open``, after the path of the file.
+
+        Returns
+        -------
+        file : file object
+            The file.
+        """
         return open(self._path, *args, **kwargs)
 
     @property
     def path(self) -> pathlib.Path:
+        """The path of the file."""
         return self._path
 
     @property
     def filename(self) -> str:
+        """The name of the file."""
         return self._path.name
 
     @property
     def metallicity(self) -> float:
+        """The metallicity of the file: the number in its name, between ``output_`` and ``.dat``."""
         return float(re.findall("(?<={})(.*)(?={})".format(*tuple(self._file_format.split('{}'))),
                                 self.filename)[0])
 
     @cached_property
     def column_names(self) -> List[str]:
+        """
+        The names of the columns of the file: the words of the last commented line before the table.
+
+        Whatever white space separates them, and wherever it is, is taken for a separator.
+        """
         with self._open('r') as f:
             _temp = '#'
             while (_temp[0] == '#') if _temp else False:
@@ -90,10 +160,12 @@ class IsochroneFile:
 
     @cached_property
     def data(self) -> ascii.core.Table:
+        """The table of the file, as astropy reads it, with the names of the columns that its header gives."""
         return ascii.read(self._path, names=self.column_names)
     
     @property
     def isochrone(self) -> Isochrone:
+        """The isochrone that this is a file of."""
         return self._isochrone
 
 
