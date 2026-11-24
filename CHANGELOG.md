@@ -188,7 +188,7 @@ far as the commits of this package and of the backend say.
   hold `stable` back.
 - A test checks that the annotations are valid on the oldest Python supported, 3.9, which mypy no longer checks against since its
   version 2.0: a union written `int | None` fails it, in a module that does not have `from __future__ import annotations`.
-- Every function of the package has type hints, and a test checks it.
+- Every function of the package and of the tools that build it has type hints, and a test checks it.
 
 ### Changed
 

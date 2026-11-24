@@ -288,7 +288,7 @@ def test_annotations_do_not_need_a_newer_python_than_the_oldest_one_supported():
 
 def test_every_function_of_the_package_is_annotated():
     # every parameter (self and cls apart) and the return of every function and method, the nested ones too:
-    # mypy is told to refuse the others (disallow_untyped_defs in pyproject.toml), and this holds without it
+    # mypy is told to refuse the others of the package (disallow_untyped_defs in pyproject.toml), and this holds without it
     def not_annotated(function):
         arguments = function.args
         positional = arguments.posonlyargs + arguments.args
@@ -298,9 +298,9 @@ def test_every_function_of_the_package_is_annotated():
         return [a.arg for a in parameters if a.annotation is None] + (["return"] if function.returns is None else [])
 
     gaps = []
-    for path in sorted((ROOT / "src" / "galaxia_ananke").rglob("*.py")):
-        if path.is_symlink() or path.name == "_version.py":
-            continue
+    sources = [p for p in sorted((ROOT / "src" / "galaxia_ananke").rglob("*.py"))
+               if not p.is_symlink() and p.name != "_version.py"]
+    for path in sources + [ROOT / "src" / "_build_utils.py"]:     # the package, and the tools that build it
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not_annotated(node):
                 gaps.append(f"{path.relative_to(ROOT)}:{node.lineno} {node.name}: {not_annotated(node)}")
