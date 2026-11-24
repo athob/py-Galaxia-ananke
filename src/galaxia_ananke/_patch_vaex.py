@@ -35,6 +35,8 @@ Currently includes:
 - Suppression of all vaex internal logging (which is excessively verbose for a
   backend library and can show non-critical errors from uninstalled plugins).
 """
+from __future__ import annotations
+from typing import Any, Iterable
 import logging
 import os
 from warnings import warn
@@ -53,7 +55,7 @@ __all__ = ['apply_vaex_patch']
 
 _original_hdf5_load = vaex.hdf5.dataset.Hdf5MemoryMapped._load
 
-def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped):  # https://github.com/vaexio/vaex/blob/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-hdf5/vaex/hdf5/dataset.py#L186-L221
+def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped) -> None:  # https://github.com/vaexio/vaex/blob/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-hdf5/vaex/hdf5/dataset.py#L186-L221
     self.ucds = {}
     self.descriptions = {}
     self.units = {}
@@ -93,7 +95,7 @@ def new_hdf5_load(self: vaex.hdf5.dataset.Hdf5MemoryMapped):  # https://github.c
 
 _original_open_many = vaex.open_many
 
-def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-core/vaex/__init__.py#L273-L286
+def new_open_many(filenames: Iterable[str], **kwargs: Any) -> vaex.dataframe.DataFrame:  # github.com/vaexio/vaex/tree/65ab46281939e2fd2fc291266bb08a328ff59882/packages/vaex-core/vaex/__init__.py#L273-L286
     """Open a list of filenames, and return a DataFrame with all DataFrames concatenated.
 
     The filenames can be of any format that is supported by :py:func:`vaex.open`, namely hdf5, arrow, parquet, csv, etc.
@@ -112,7 +114,7 @@ def new_open_many(filenames, **kwargs):  # github.com/vaexio/vaex/tree/65ab46281
 
 _original_hdf5_open = vaex.hdf5.dataset.Hdf5MemoryMapped._open
 
-def new_hdf5_open(self, path):
+def new_hdf5_open(self: vaex.hdf5.dataset.Hdf5MemoryMapped, path: Any) -> None:
     """
     Open the file as vaex does, and close the file object that h5py was given when h5py closes the HDF5 file.
 
@@ -125,7 +127,7 @@ def new_hdf5_open(self, path):
         return
     close_hdf5 = self.h5file.close
 
-    def close_hdf5_and_its_file():
+    def close_hdf5_and_its_file() -> None:
         close_hdf5()
         file.close()
     self.h5file.close = close_hdf5_and_its_file
@@ -135,16 +137,16 @@ _original_create_hasher = vaex.utils.create_hasher
 
 _in_forked_child = False
 
-def _mark_forked_child():
+def _mark_forked_child() -> None:
     global _in_forked_child
     _in_forked_child = True
 
-def new_create_hasher(initial_data=None, large_data=True):
+def new_create_hasher(initial_data: Any = None, large_data: bool = True) -> Any:
     """Create a blake3 hasher as vaex does, with one thread (``large_data=False``) in a process that was made by ``fork``."""
     return _original_create_hasher(initial_data, large_data=large_data and not _in_forked_child)
 
 
-def apply_vaex_patch():
+def apply_vaex_patch() -> None:
     """
     Apply all vaex-related customisations:
 
