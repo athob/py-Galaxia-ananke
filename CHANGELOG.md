@@ -185,7 +185,7 @@ far as the commits of this package and of the backend say.
   give `ANANKE_SYSTEM_PREFIX` the path of the environment to install into, and run `uv cache clean galaxia-ananke`
   before installing in another one. The troubleshooting names `uv` and `pip` among what can leave the backend missing.
 - A CI job checks the type hints of the package and of the tools that build it with mypy (the settings are in `pyproject.toml` and
-  `.github/mypy-build.ini`). For now it informs, and does not hold `stable` back.
+  `.github/mypy-build.ini`), which `stable` waits for.
 - A test checks that the annotations are valid on the oldest Python supported, 3.9, which mypy no longer checks against since its
   version 2.0: a union written `int | None` fails it, in a module that does not have `from __future__ import annotations`.
 - Every function of the package and of the tools that build it has type hints, and a test checks it.

@@ -120,11 +120,9 @@ takes about four minutes. Its jobs:
   Python 3.12 (its settings are in `pyproject.toml`), and, in a second run with its own
   settings (`.github/mypy-build.ini`), the tools that build py-Galaxia-ananke, which `setup.py`
   imports under another name: `mypy --config-file .github/mypy-build.ini src/_build_utils.py`.
-  For now it only informs: it shows in red when mypy finds something, and does not stop
-  `stable` from moving. Once the hints of the package are complete, it will be one of the jobs
-  `promote` waits for.
-- **promote**: on a push to `develop`, once the jobs above have passed (`types` aside, for now), moves
-  `stable` forward to that commit.
+  Like the others, it has to pass for `stable` to move.
+- **promote**: on a push to `develop`, once all the jobs above have passed, moves `stable`
+  forward to that commit.
 
 Apart from CI, two workflows report to Security > Code scanning: **CodeQL** (GitHub's code
 scanning of the Python source; on `develop`, on pull requests and every Wednesday) and

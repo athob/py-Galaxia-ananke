@@ -123,12 +123,9 @@ def test_ci_type_checks_the_tools_that_build_galaxia_with_the_settings_made_for_
     assert "[mypy-setuptools" not in settings
 
 
-def test_no_job_of_ci_is_allowed_to_fail_but_types():
-    # a job that may fail is red without holding stable back: if one is ever meant to, say so here.
-    # `types` is, until the hints of the package are complete and it holds stable back like the others.
-    ci = read(".github/workflows/ci.yml")
-    assert ci.count("continue-on-error") == jobs_of("ci.yml")["types"].count("continue-on-error"), \
-        "only the types job may be allowed to fail"
+def test_no_job_of_ci_is_allowed_to_fail():
+    # a job that may fail is red without holding stable back: if one is ever meant to, say so here
+    assert "continue-on-error" not in read(".github/workflows/ci.yml")
 
 
 def test_cd_waits_for_a_workflow_that_exists():
