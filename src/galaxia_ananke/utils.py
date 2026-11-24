@@ -20,6 +20,7 @@ from typing import Any, Protocol, Iterable, Set, Union
 import hashlib
 
 import pandas as pd
+from numpy.typing import ArrayLike
 
 from ._builtin_utils import *
 from ._constants import HASH_ENCODING
@@ -37,7 +38,7 @@ class CallableDFtoNone(Protocol):
 
 
 class CallableDFtoInt(Protocol):
-    def __call__(self, df: pd.DataFrame, *args: Any) -> int:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
+    def __call__(self, df: pd.DataFrame, *args: Any) -> ArrayLike:  # TODO change DataFrame typing annotation to a "DataFrameLike" type if such exists (similar to ArrayLike)
         pass
 
 

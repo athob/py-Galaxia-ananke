@@ -526,6 +526,9 @@ far as the commits of this package and of the backend say.
   order that changed from one run of Python to the next.
 - `Output.apply_post_process_pipeline_and_flush` no longer raises a `TypeError` on a machine where Python cannot tell its
   number of CPUs (`os.cpu_count()` is then `None`): it gives one thread to each process, as for a single CPU.
+- The type of a partitioning rule (`CallableDFtoInt`) says that it gives the partition of each star, as an array, and no
+  longer one integer: a rule that gives an array, as the package needs, did not match its type, and the package ships its type
+  hints.
 
 ## [0.8.0] - 2026-08-10
 
