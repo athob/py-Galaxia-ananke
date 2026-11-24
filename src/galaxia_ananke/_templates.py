@@ -29,6 +29,11 @@ __all__ = ['FTTAGS', 'FILENAME_TEMPLATE', 'PARFILENAME_TEMPLATE', 'PARFILE_TEMPL
 
 @dataclass(frozen=True)
 class FileTemplateTags(metaclass=Singleton):
+    """
+    The names of the placeholders of the templates of the files (FILENAME_TEMPLATE, PARFILENAME_TEMPLATE and PARFILE_TEMPLATE),
+    which are also the names of the parameters of a survey that set them: PARFILE_TEMPLATE says what each is for. Its one
+    instance is FTTAGS.
+    """
     name: str            = 'name'
     pname: str           = 'pname'
     output_file: str     = 'output_file'
@@ -65,19 +70,60 @@ class FileTemplateTags(metaclass=Singleton):
     
     @property
     def rSun(self) -> List[str]:
+        """The names of the three components of the location of the survey viewpoint relative to the Galactic center."""
         return [self.rSun0, self.rSun1, self.rSun2]
     
     @property
     def vSun(self) -> List[str]:
+        """The names of the three components of the velocity of the survey viewpoint relative to the Galactic center."""
         return [self.vSun0, self.vSun1, self.vSun2]
     
     def append_photo_categ(self, n: int) -> str:
+        """
+        Give the name of the parameter that holds the category of a photometric system that is appended to the first.
+
+        Parameters
+        ----------
+        n : int
+            The number of the appended system, counted from 1.
+
+        Returns
+        -------
+        name : str
+            The name, which is the one of the parameter of the category of the first system, followed by ``_{n}``.
+        """
         return f"{self.photo_categ}_{n}"
     
     def append_photo_sys(self, n: int) -> str:
+        """
+        Give the name of the parameter that holds the name of a photometric system that is appended to the first.
+
+        Parameters
+        ----------
+        n : int
+            The number of the appended system, counted from 1.
+
+        Returns
+        -------
+        name : str
+            The name, which is the one of the parameter of the name of the first system, followed by ``_{n}``.
+        """
         return f"{self.photo_sys}_{n}"
     
     def append_photo(self, n: int) -> List[str]:
+        """
+        Give the names of the two parameters of a photometric system that is appended to the first.
+
+        Parameters
+        ----------
+        n : int
+            The number of the appended system, counted from 1.
+
+        Returns
+        -------
+        names : list of str
+            The name of the parameter of the category, and the one of the parameter of the name of the system.
+        """
         return [self.append_photo_categ(n), self.append_photo_sys(n)]
 
 
@@ -120,6 +166,10 @@ vSun[2]\t${{{FTTAGS.vSun2}}}
 
 @dataclass(frozen=True)
 class CommandTemplateTags(metaclass=Singleton):
+    """
+    The names of the placeholders of the templates of the commands that run the backend (RUN_TEMPLATE, HDIMBLOCK_TEMPLATE and
+    APPEND_TEMPLATE). Its one instance is CTTAGS.
+    """
     hdim_block: str = 'hdim_block'
     hdim: str       = 'hdim'
     nfile: str      = 'nfile'
@@ -133,8 +183,20 @@ CTTAGS = CommandTemplateTags()
 
 def backend_command(arguments: str) -> Template:
     """
-    The template of a command that runs the backend with these arguments. Its path is quoted, as execute reads a command as a
-    shell does, and its dollars are doubled, as a template would take them for the start of a placeholder.
+    Give the template of a command that runs the backend with these arguments.
+
+    The path of the backend is quoted, as execute reads a command as a shell does, and its dollars are doubled, as a template
+    would take them for the start of a placeholder.
+
+    Parameters
+    ----------
+    arguments : str
+        The arguments of the backend, in which the placeholders of the template are written.
+
+    Returns
+    -------
+    template : string.Template
+        The template, which starts with the path of the backend.
     """
     return Template(f"{shlex.quote(str(GALAXIA)).replace('$', '$$')} {arguments}")
 

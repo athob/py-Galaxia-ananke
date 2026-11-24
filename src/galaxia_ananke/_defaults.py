@@ -40,6 +40,22 @@ GALAXIA_TMP = pathlib.Path.cwd()  # CACHE / TMP_DIR   # TODO use temporary direc
 
 @dataclass(frozen=True)
 class DefaultUnits(metaclass=Singleton):
+    """
+    The units that the package uses by default. Its one instance is DEF_UNIT.
+
+    Attributes
+    ----------
+    position : astropy.units.Unit
+        Unit of the positions: the kiloparsec.
+    velocity : astropy.units.Unit
+        Unit of the velocities: the kilometer per second.
+    wavelength : astropy.units.Unit
+        Unit of the wavelengths: the micron.
+    irradiance : astropy.units.Unit
+        Unit of the irradiance: the erg per square centimeter and per second.
+    spectral : astropy.units.Unit
+        Unit of the spectral flux density (the irradiance per wavelength): the jansky.
+    """
     position: units.Unit   = units.kpc
     velocity: units.Unit   = units.km/units.s
     wavelength: units.Unit = units.micron

@@ -66,7 +66,22 @@ SURVEY_METADATA_PREFIX = 'Survey_'
 
 
 def backend_missing_message(url: str) -> str:
-    """What the AssertionError of the import says when the executable of the backend is not where the installation puts it."""
+    """
+    Give what the AssertionError of the import says when the executable of the backend is not where the installation puts it.
+
+    The message says what that means, why the installer may have built the backend somewhere else, or not at all, and where
+    the troubleshooting of the installation is.
+
+    Parameters
+    ----------
+    url : str
+        The address of the project, whose README has the troubleshooting of the installation.
+
+    Returns
+    -------
+    message : str
+        The message.
+    """
     distribution = NAME.replace('_', '-')
     return (f"Galaxia's executable {GALAXIA} doesn't exist, which means that {NAME}'s installation didn't build the backend "
             f"{GALAXIA_SUBMODULE_NAME} submodule appropriately.\n"
