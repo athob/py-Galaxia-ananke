@@ -5,6 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/py-galaxia-ananke/badge/?version=latest)](https://py-galaxia-ananke.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/501369954.svg)](https://zenodo.org/badge/latestdoi/501369954)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](https://github.com/athob/py-Galaxia-ananke/blob/main/LICENSE)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/17109/badge)](https://www.bestpractices.dev/projects/17109)
 [![Slack](https://img.shields.io/badge/slack-chat-green.svg)](https://join.slack.com/t/ananke-users/shared_invite/zt-37wmyn7ki-kmroxUul2W_VdFlEt0qCig)
 
 Python wrapper for a modified version of Galaxia ([Sharma et al. 2011](http://ascl.net/1101.007)), to be used by [py-ananke](https://github.com/athob/py-ananke).

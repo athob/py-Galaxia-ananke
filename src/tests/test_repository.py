@@ -686,6 +686,7 @@ def test_the_actionlint_download_has_its_checksum():
 
 ZENODO_DOI = "10.5281/zenodo.13942945"   # all versions of this package
 JOSS_DOI = "10.21105/joss.06234"         # the py-ananke article
+OPENSSF_PROJECT = "17109"                # the OpenSSF Best Practices badge entry
 
 
 def test_the_dois_agree():
@@ -715,6 +716,17 @@ def test_the_troubleshooting_of_the_readme_sends_to_uv_and_says_what_pip_does():
     section = readme.split("\n#### Installed with uv, or from a wheel built before\n")[1].split("\n## ")[0]
     assert "[With uv](#with-uv)" in section
     assert "`pip install --no-cache-dir` builds the wheel again" in section
+
+
+def test_the_openssf_badge_names_one_project_everywhere():
+    pattern = re.compile(r"bestpractices\.dev/projects/(\d+)")
+    readme = read("README.md")
+    # the image and the page it opens are the same entry, and the other documents agree with it
+    assert (f"(https://www.bestpractices.dev/projects/{OPENSSF_PROJECT}/badge)]"
+            f"(https://www.bestpractices.dev/projects/{OPENSSF_PROJECT})") in readme
+    assert set(pattern.findall(readme)) == {OPENSSF_PROJECT}
+    for name in ("CONTRIBUTING.md", "SECURITY.md", "RELEASING.md"):
+        assert set(pattern.findall(read(name))) <= {OPENSSF_PROJECT}, f"{name} names another badge entry"
 
 
 def test_the_license_is_said_the_same_way_everywhere():

@@ -231,6 +231,7 @@ prepared with.
   installation).
 - A test checks that the README says what the code has for the version of vaex that is pinned, the bound of pandas that stops
   the supported Pythons, and where the installation puts the backend.
+- The OpenSSF Best Practices badge, shown in the README. The entry is in progress: the passing level is not reached yet.
 
 ### Changed
 
