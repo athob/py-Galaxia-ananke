@@ -403,7 +403,7 @@ def test_the_parameters_and_the_result_of_every_function_are_documented():
 def test_no_heading_of_the_documentation_is_followed_by_a_rule():
     # docutils refuses a section that begins with a transition ("Document or section may not begin with a transition"),
     # and the docs job fails on the warning. The documentation is made of the README and of the notebook.
-    notebook = json.loads(read("jupyter/testing_Galaxia.ipynb"))
+    notebook = json.loads(read("jupyter/testing_galaxia_ananke.ipynb"))
     sources = {"README.md": read("README.md")}
     sources.update({f"the notebook, cell {number}": "".join(cell["source"])
                     for number, cell in enumerate(notebook["cells"]) if cell["cell_type"] == "markdown"})
