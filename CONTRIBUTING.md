@@ -217,15 +217,15 @@ Scorecard also lists a few findings that are accepted rather than fixed, each fo
 - **Fuzzing**: not set up. The package is a wrapper, with some tools of its own, around a C++
   backend that is a modified version of Galaxia and lives in its own repository, which is
   where a fuzzer would belong.
-- **Pinned-Dependencies, the `pip install .` line of `ci.yml`**: it installs this repository
-  itself, which cannot be pinned by hash.
+- **Pinned-Dependencies, the `pip install .` lines of `ci.yml`** (the `install` and the `docs`
+  jobs): they install this repository itself, which cannot be pinned by hash.
 - **Vulnerabilities, the three advisories of the frozen test lock** that are listed above:
   Scorecard reads the locks itself, so it keeps listing them after the alerts of Dependabot are
   dismissed (it names the second one `PYSEC-2026-3447`, which is `GHSA-h35f-9h28-mq5c`).
 
 An alert is identified by the place it is raised at, so a dismissed one comes back as a new
 alert when a change moves its line. Check the list of open alerts first, then dismiss the
-`pip install .` one again with:
+`pip install .` ones again with:
 
 ```bash
 gh api "repos/athob/py-Galaxia-ananke/code-scanning/alerts?state=open&per_page=100" \
