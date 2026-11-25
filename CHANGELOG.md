@@ -216,6 +216,8 @@ far as the commits of this package and of the backend say.
   number of magnitudes, the size), the three generations, the recipe of the systems that were made again in November 2026,
   what changed in them, and what to know (the solar metallicity, the end of an isochrone, the size and how the data reaches an
   installation).
+- A test checks that the README says what the code has for the version of vaex that is pinned, the bound of pandas that stops
+  the supported Pythons, and where the installation puts the backend.
 
 ### Changed
 

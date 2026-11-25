@@ -760,6 +760,23 @@ def test_the_readme_says_what_the_build_requires():
     assert "pip install galaxia_ananke" in readme                    # from PyPI first
 
 
+def test_the_readme_says_where_the_backend_is_and_what_limits_the_python_range():
+    # the pin of vaex, the bound of pandas that stops the Pythons at the last one that is supported, and where the installation puts the
+    # backend, are those that the code has
+    setup, constants = read("setup.py"), read("src/galaxia_ananke/_constants.py")
+    readme = read("README.md")
+    vaex = re.search(r"['\"]vaex==([\d.]+)['\"]", setup).group(1)
+    pandas_before = re.search(r"['\"]pandas>=[\d.]+,<([\d.]+)['\"]", setup).group(1)
+    first_unsupported = f"3.{supported_pythons()[1] + 1}"
+    assert f"({first_unsupported} waits for pandas {pandas_before}, which vaex {vaex} requires from that version)" in readme
+    cache = re.search(r"^GLOBAL_CACHE = PREFIX / '([^']+)'$", constants, flags=re.MULTILINE).group(1)
+    name = re.search(r"^NAME = '(\w+)'$", read("src/galaxia_ananke/_name.py"), flags=re.MULTILINE).group(1)
+    binary, executable = (re.search(rf"^{key} = '(\w+)'$", constants, flags=re.MULTILINE).group(1) for key in ("BIN_DIR", "GALAXIA_EXEC"))
+    variable = re.search(r'^PREFIX_ENV_VAR = "(\w+)"$', constants, flags=re.MULTILINE).group(1)
+    assert f"`{cache}/{name}/{binary}` under `sys.prefix`, or under the path that `{variable}` gives" in readme
+    assert f"`<path_to_galaxia_bin>/{executable} --version`" in readme
+
+
 def test_python_sources_compile_without_warnings():
     # An invalid escape sequence ("\s" in a plain string) is only a warning today: a DeprecationWarning, then
     # a SyntaxWarning, and the one a future Python turns into an error. What versioneer generates is exempt.
