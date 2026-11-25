@@ -568,6 +568,8 @@ far as the commits of this package and of the backend say.
   of its subpackage `photometry` both have: the labels are now made of the name of the page and the title of the section.
 - The documentation build gave a warning for the example notebook, whose title was followed by a horizontal rule.
 - `Photometry.add_isochrone` says why it refuses a name that has a slash: it raised a `ValueError` with no message.
+- The documentation of `Output` named the first part of the key of a magnitude `photosys` in its format and `photo_sys` in the
+  line that explains it: it is `photosys` in both.
 
 ## [0.8.0] - 2026-08-10
 

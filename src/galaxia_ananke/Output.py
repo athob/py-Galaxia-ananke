@@ -252,7 +252,7 @@ class Output:
             
             where
 
-            * ``photo_sys`` corresponds to the chosen photometric system
+            * ``photosys`` corresponds to the chosen photometric system
             * ``filtername`` corresponds to a filter name of that system
             
             As an example, the photometry in filters ``gbp``, ``grp`` & ``g``
