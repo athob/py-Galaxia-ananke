@@ -210,6 +210,8 @@ far as the commits of this package and of the backend say.
 - The documentation of `Photometry.add_isochrone` says what the data of a custom isochrone has to be: a table for each of the
   34 metallicities of the library, with the columns `Age` (decimal logarithm), `M_ini`, `M_act`, `Lum`, `T_eff`, `Grav` and
   the magnitudes, the same ages for every metallicity, and the order of the rows that share an age and a mass kept.
+- The README says that the backend has a version of its own, tied to the tags of its repository, and how to read it
+  (`<path_to_galaxia_bin>/galaxia --version`, as the executable is not on the `PATH`).
 
 ### Changed
 
