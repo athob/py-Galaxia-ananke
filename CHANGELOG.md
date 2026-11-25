@@ -345,6 +345,10 @@ far as the commits of this package and of the backend say.
   README.
 - The header of the documentation, and the title of its pages, say the name and the version of the project, without the word
   "documentation" that Sphinx adds to them, as in py-EnBiD-ananke: the header is shorter.
+- `make_survey_from_particles` refuses `simname`, `ngb` and `k_factor` when it is given `pname` and `kname`, instead of
+  ignoring them: with files, the name of the input is the one of the particles file, the number of neighbours is read in the
+  name of the kernels file and the kernels are used as they are. Their defaults are now `None`, which leaves the choice to the
+  input: `'sim'`, 64 and 1, as before.
 
 ### Removed
 

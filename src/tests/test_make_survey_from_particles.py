@@ -147,6 +147,47 @@ def test_without_either_it_is_for_the_survey_to_choose(forwarded):
     assert forwarded[0]['fsample'] is None and forwarded[0]['sampling_factor'] is None
 
 
+@pytest.fixture
+def given_to_input(monkeypatch):
+    """What the function gives to the input that it makes (and to nothing else), with an input and a survey that run nothing."""
+    package = sys.modules[make_survey_from_particles.__module__]
+    calls = []
+
+    class FakeSurvey:
+        def __init__(self, input, **kwargs):
+            pass
+
+        def make_survey(self, **kwargs):
+            return 'output'
+    monkeypatch.setattr(package, 'Input', lambda *args, **kwargs: calls.append((args, kwargs)))
+    monkeypatch.setattr(package, 'Survey', FakeSurvey)
+    return calls
+
+
+def test_particles_and_kernels_are_given_to_the_input_with_what_the_input_chooses_for_what_is_not_asked(given_to_input):
+    make_survey_from_particles(0, 1)
+    assert given_to_input == [((0, 1), {'caching': False})]
+
+
+def test_what_is_asked_for_particles_and_kernels_is_given_to_the_input_under_its_names(given_to_input):
+    make_survey_from_particles(0, 1, simname='mine', ngb=32, k_factor=2.5, caching=True)
+    assert given_to_input == [((0, 1), {'name': 'mine', 'ngb': 32, 'k_factor': 2.5, 'caching': True})]
+
+
+def test_files_are_given_to_the_input_as_they_are(given_to_input):
+    make_survey_from_particles(pname='sim_abcdef0.ebf', kname='sim_abcdef0_d6n64_den.ebf', caching=True)
+    assert given_to_input == [((), {'pname': 'sim_abcdef0.ebf', 'kname': 'sim_abcdef0_d6n64_den.ebf', 'caching': True})]
+
+
+@pytest.mark.parametrize("keywords, named", [({'simname': 'mine'}, 'simname'), ({'ngb': 64}, 'ngb'), ({'k_factor': 1}, 'k_factor'),
+                                             ({'simname': 'mine', 'ngb': 32, 'k_factor': 2}, 'simname, ngb, k_factor')],
+                         ids=["simname", "ngb, even that of the default", "k_factor, even that of the default", "all three"])
+def test_what_the_files_decide_is_refused_with_them_and_nothing_is_made(given_to_input, keywords, named):
+    with pytest.raises(TypeError, match=f"^{named} cannot be given with pname and kname: .*number of neighbours is read in the name of the kernels file"):
+        make_survey_from_particles(pname='sim_abcdef0.ebf', kname='sim_abcdef0_d6n64_den.ebf', **keywords)
+    assert given_to_input == []
+
+
 @pytest.mark.parametrize("args, keywords", [((0,), {}), ((0, 1, 2), {}), ((), {'pname': 'sim_abcdef0.ebf'}), ((), {})],
                          ids=["the particles only", "three arguments", "pname only", "nothing"])
 def test_a_call_that_is_none_of_the_documented_ones_says_what_the_calls_are(args, keywords):

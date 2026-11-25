@@ -56,8 +56,9 @@ def make_survey_from_particles(*args: Any,
                                kname: Optional[Union[str, pathlib.Path]] = None,
                                photo_sys: Union[str, List[str]] = DEFAULT_PSYS,
                                cmd_magnames: Union[str, Dict[str, str]] = DEFAULT_CMD,
-                               simname: str = 'sim', surveyname: str = 'survey', sampling_factor: Optional[float] = None,
-                               ngb: int = 64, k_factor: float = 1, caching: bool = False, fsample: Optional[float] = None,
+                               simname: Optional[str] = None, surveyname: str = 'survey', sampling_factor: Optional[float] = None,
+                               ngb: Optional[int] = None, k_factor: Optional[float] = None, caching: bool = False,
+                               fsample: Optional[float] = None,
                                **kwargs: Any) -> Output:  # args is (particles, rho_pos, rho_vel)
     """
         Returns a handler object representing the synthetic star survey
@@ -79,8 +80,9 @@ def make_survey_from_particles(*args: Any,
         are, so that the name of the input is the one of the particles file,
         the number of neighbours is read in the name of the kernels file
         (``<name>_d<dim>n<ngb>_den.ebf``, with ``<dim>`` the dimension of the
-        kernels), and ``simname``, ``ngb`` and ``k_factor`` are not used. The
-        two files have to be in the same directory.
+        kernels), and ``simname``, ``ngb`` and ``k_factor`` cannot be given: a
+        ``TypeError`` refuses them. The two files have to be in the same
+        directory.
         
         Parameters
         ----------
@@ -132,8 +134,8 @@ def make_survey_from_particles(*args: Any,
 
         simname : string
             Optional name Galaxia should use for the input files. Default to
-            'sim'. Not used with ``pname`` and ``kname``, whose files keep
-            their name.
+            'sim'. It cannot be given with ``pname`` and ``kname``, whose
+            files keep their name.
         
         surveyname : string
             Optional name Galaxia should use for the output files. Default to
@@ -153,14 +155,15 @@ def make_survey_from_particles(*args: Any,
         ngb : int
             Number of neighbouring particles Galaxia should consider. Default to
             64. It is the number of the input: with ``pname`` and ``kname`` it
-            is read in the name of the kernels file, and this is not used.
+            is read in the name of the kernels file, and giving this one is
+            refused.
     
         k_factor : float
             Scaling factor applied to the kernels lengths to adjust all
             the kernels sizes uniformly. Lower values reduces the kernels
             extents, while higher values increases them.
-            Default to 1 (no adjustment). Not used with ``pname`` and
-            ``kname``: the kernels of the file are used as they are.
+            Default to 1 (no adjustment). It cannot be given with ``pname``
+            and ``kname``: the kernels of the file are used as they are.
         
         caching : bool
             Whether the work that is already done for the same input, in the same directory, is not
@@ -180,10 +183,14 @@ def make_survey_from_particles(*args: Any,
         output : :obj:`Output`
             Handler with utilities to utilize the output survey and its data.
     """
+    given = {keyword: value for keyword, value in (('simname', simname), ('ngb', ngb), ('k_factor', k_factor)) if value is not None}
     if pname is not None and kname is not None:
+        if given:
+            raise TypeError(f"{', '.join(given)} cannot be given with pname and kname: with files, the name of the input is the one of the particles file, "
+                            "the number of neighbours is read in the name of the kernels file and the kernels are used as they are")
         input = Input(pname=pname, kname=kname, caching=caching)
     elif len(args) == 2:
-        input = Input(*args,  name=simname, ngb=ngb, k_factor=k_factor, caching=caching)
+        input = Input(*args, **{'name' if keyword == 'simname' else keyword: value for keyword, value in given.items()}, caching=caching)
     else:
         raise TypeError("make_survey_from_particles takes the particles and the kernels as its two arguments, or the keywords pname and kname together, "
                         f"and not {len(args)} arguments with pname {'given' if pname is not None else 'unset'} and kname {'given' if kname is not None else 'unset'}: "
