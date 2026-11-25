@@ -85,7 +85,7 @@ The backend is built when the installer builds the wheel, in the environment whe
 
 ## Usage
 
-Visit the [jupyter](https://github.com/athob/py-Galaxia-ananke/tree/main/jupyter) directory for example uses, and the [documentation](https://py-galaxia-ananke.readthedocs.io) for the API reference.
+Visit the [jupyter](https://github.com/athob/py-Galaxia-ananke/tree/main/jupyter) directory for example uses, and the [documentation](https://py-galaxia-ananke.readthedocs.io) for the API reference and for the [isochrone library](https://py-galaxia-ananke.readthedocs.io/en/latest/isochrones/): its photometric systems, how they were made and what to know of them.
 
 ## Citing
 

@@ -12,5 +12,6 @@
 :caption: Contents:
 
 testing_galaxia_ananke.ipynb
+isochrones.md
 reference.rst
 ```

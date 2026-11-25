@@ -212,6 +212,10 @@ far as the commits of this package and of the backend say.
   the magnitudes, the same ages for every metallicity, and the order of the rows that share an age and a mass kept.
 - The README says that the backend has a version of its own, tied to the tags of its repository, and how to read it
   (`<path_to_galaxia_bin>/galaxia --version`, as the executable is not on the `PATH`).
+- A page of the documentation describes the isochrone library: its 16 photometric systems (the version of CMD, the date, the
+  number of magnitudes, the size), the three generations, the recipe of the systems that were made again in November 2026,
+  what changed in them, and what to know (the solar metallicity, the end of an isochrone, the size and how the data reaches an
+  installation).
 
 ### Changed
 
