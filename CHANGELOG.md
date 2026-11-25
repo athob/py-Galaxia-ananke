@@ -567,6 +567,7 @@ far as the commits of this package and of the backend say.
 - The documentation build warned of duplicate section labels, for the "Submodules" section that the API pages of a package and
   of its subpackage `photometry` both have: the labels are now made of the name of the page and the title of the section.
 - The documentation build gave a warning for the example notebook, whose title was followed by a horizontal rule.
+- `Photometry.add_isochrone` says why it refuses a name that has a slash: it raised a `ValueError` with no message.
 
 ## [0.8.0] - 2026-08-10
 

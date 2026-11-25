@@ -214,7 +214,7 @@ class Photometry(nested_dict, metaclass=Singleton):
         table that share an age and a mass keep the order that they are given in.
         """
         if '/' in name:
-            raise ValueError()
+            raise ValueError(f"The name of a custom photometric system cannot have a slash, which separates the category from the name of a system: {name!r}")
         self[CUSTOM_PHOTOCAT][name] = PhotoSystem(Isochrone(name, isochrone_data, **kwargs))
 
     def _purge(self, hard: bool = False, yes: bool = False) -> None:

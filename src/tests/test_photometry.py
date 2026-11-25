@@ -182,7 +182,7 @@ def test_an_isochrone_is_added_in_the_custom_category_and_written_there(isochron
 
 
 def test_a_name_with_a_slash_cannot_be_added(isochrones_path):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="cannot have a slash.*'a/b'"):
         scan().add_isochrone('a/b', custom_isochrone_data())
     assert not (isochrones_path / CUSTOM_PHOTOCAT).exists()
 
