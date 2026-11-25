@@ -3,10 +3,11 @@
 All notable changes to py-Galaxia-ananke are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-the project follows [Semantic Versioning](https://semver.org/) as far as `0.x` allows:
-anything may change between minor versions (the sections say so when the interface did).
-A section is written for every release when it is made; those below were written
-afterwards, from the release notes and the history. The date of a version is the day it
+the project follows [Semantic Versioning](https://semver.org/). Up to `1.0.0` the major
+number is `0` and anything may change between minor versions (the sections say so when the
+interface did); from `1.0.0` on, a change that breaks the interface is a new major version.
+A section is written for every release when it is made; those of the versions before
+`1.0.0` were written afterwards, from the release notes and the history. The date of a version is the day it
 was published: its upload to PyPI, which began with 0.6.0, or, for 0.4.0 and 0.5.0, its
 GitHub release (in UTC). The package did not start with 0.4.0: it had been in development
 since June 2022, in pre-releases that are summarized at the bottom, under
@@ -15,6 +16,18 @@ no changelog of its own: its changes are told here, under the version that pins 
 far as the commits of this package and of the backend say.
 
 ## [Unreleased]
+
+The first stable release: its interface is stable from here on, Semantic Versioning applies, and a change that breaks it will
+be a new major version. What a user gets: Python 3.9 to 3.14; type hints that type checkers read (`py.typed`) and docstrings
+for everything in the package; a `sampling_factor` that is the sampling factor of the whole survey, whatever its number of
+generations; the magnitude system of every photometric system (Vega, AB or ST) and the offsets to go from Vega to AB; the raw
+descriptor and header of the isochrones of every photometric system in the logs of the HDF5 files; an isochrone library of 16
+photometric systems, described in the documentation, with five of them made again (`Pan_STARRS1`, `Roman`, `LSST`, `GAIA__DR2`
+and `HST__WFC3`) and one new (`2MASS+Spitzer+WISE`); surveys that no longer contain stars that are neither alive nor dead; a
+backend whose version is tied to its tags; installation errors that say what failed; and vaex 4.20. What breaks for a user of
+0.8.0 is under Changed (the entries that say **Breaking:**, and the isochrones that were replaced) and under Removed. The
+details follow, and so does the work on the repository (tests, CI and CD, locked tools, documentation) that the release was
+prepared with.
 
 ### Added
 
