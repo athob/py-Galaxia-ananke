@@ -294,13 +294,13 @@ rather than bad luck.
 ## Versioning
 
 The package version is not written down anywhere in the source: versioneer
-derives it from the git tags, which start with `v` (`v0.8.0`). Version numbers
+derives it from the git tags, which start with `v` (`v1.0.0`). Version numbers
 follow [Semantic Versioning](https://semver.org/). While the major number is 0, up to
 `1.0.0`, a minor version may change the interface, as 0.6.0, 0.7.0 and 0.8.0 did; from `1.0.0`
 on, a change that breaks it (a function, a class, a method or a property of the documentation,
 its arguments or its results) is a new major version, and the changelog says so. Pre-releases
-are written the Python way ([PEP 440](https://peps.python.org/pep-0440/)): `v0.9.0a1`,
-`v0.9.0b1`, `v0.9.0rc0`, `v0.9.0.dev1`.
+are written the Python way ([PEP 440](https://peps.python.org/pep-0440/)): `v1.0.0a1`,
+`v1.0.0b1`, `v1.0.0rc0`, `v1.0.0.dev1`.
 
 ## Releasing (maintainer)
 

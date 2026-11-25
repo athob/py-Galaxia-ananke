@@ -11,11 +11,11 @@ What happens depends on its kind:
 
 | Tag                                   | Kind        | Published to                                     |
 |---------------------------------------|-------------|--------------------------------------------------|
-| `v0.9.0`, `v0.9.0.post1`              | release     | TestPyPI, then PyPI, then a GitHub release       |
-| `v0.9.0a1`, `v0.9.0b1`, `v0.9.0rc0`   | pre-release | TestPyPI only, once CI has passed on the commit  |
-| `v0.9.0.dev0`, `v0.9.0rc0.dev1`       | development | TestPyPI only, straight away                     |
+| `v1.0.0`, `v1.0.0.post1`              | release     | TestPyPI, then PyPI, then a GitHub release       |
+| `v1.0.0a1`, `v1.0.0b1`, `v1.0.0rc0`   | pre-release | TestPyPI only, once CI has passed on the commit  |
+| `v1.0.0.dev0`, `v1.0.0rc0.dev1`       | development | TestPyPI only, straight away                     |
 
-Anything else (`v0.9.0-test`, `v0.9.0dev1`, ...) is refused by the first job of the
+Anything else (`v1.0.0-test`, `v1.0.0dev1`, ...) is refused by the first job of the
 workflow, so that nothing that is not a clean release can reach PyPI. Development tags
 are for trying the pipeline out. TestPyPI refuses a file name it has already seen, even
 after deleting it, so every try needs a new number (`.dev1`, `.dev2`, ...).
@@ -57,27 +57,27 @@ workflow whose trigger is on the default branch, so `main` has to have it first.
 1. Everything for the release is on `develop`, and the CI run of that commit is green
    (`stable` then points at it). The commit of Galaxia-ananke it pins is on GitHub.
 2. In [`CHANGELOG.md`](CHANGELOG.md), turn `## [Unreleased]` into
-   `## [0.9.0] - YYYY-MM-DD`, add a new empty `## [Unreleased]` above it, and update the
+   `## [1.0.0] - YYYY-MM-DD`, add a new empty `## [Unreleased]` above it, and update the
    links at the bottom of the file (`[Unreleased]` compares the new tag with `develop`;
-   `[0.9.0]` compares the previous tag with the new one). Commit it.
-3. Optionally try the pipeline first with a pre-release, `v0.9.0rc0`: it goes to TestPyPI
+   `[1.0.0]` compares the previous tag with the new one). Commit it.
+3. Optionally try the pipeline first with a pre-release, `v1.0.0rc0`: it goes to TestPyPI
    after CI, and the release itself then only differs by going to PyPI. To see that the
    sdist installs, do it in a clean environment, on a machine that has git, g++ and make,
    network access and the disk space the backend needs:
 
    ```bash
    pip install --index-url https://test.pypi.org/simple/ \
-               --extra-index-url https://pypi.org/simple/ galaxia-ananke==0.9.0rc0
+               --extra-index-url https://pypi.org/simple/ galaxia-ananke==1.0.0rc0
    ```
 
 4. Tag the commit and push the tag:
 
    ```bash
-   git tag v0.9.0
-   git push origin v0.9.0
+   git tag v1.0.0
+   git push origin v1.0.0
    ```
 
-5. Move `main` to the released commit: `git switch main && git merge --ff-only v0.9.0
+5. Move `main` to the released commit: `git switch main && git merge --ff-only v1.0.0
    && git push`.
 
 The workflow then runs these jobs, and stops at the first one that fails:
@@ -108,12 +108,12 @@ names the workflow file, `cd.yml`, and that environment.
 ## If it goes wrong
 
 - A tag refused by the first job, or a job that failed before anything was published:
-  fix the cause, delete the tag (`git tag -d v0.9.0 && git push --delete origin v0.9.0`)
+  fix the cause, delete the tag (`git tag -d v1.0.0 && git push --delete origin v1.0.0`)
   and tag again.
 - A job that failed after the file reached TestPyPI or PyPI: do not tag again, as those
   services never accept the same file twice. Use **Re-run failed jobs** on the run in the
   Actions tab, which only repeats what did not succeed. If the file itself was wrong,
-  release a new version instead (`v0.9.0.post1`, or the next one).
+  release a new version instead (`v1.0.0.post1`, or the next one).
 - A GitHub release created by hand before the workflow got there is completed by it (its
   notes and files are replaced), not refused.
 - An installation that fails with `GitHub API rate limit exceeded`: the installer asks the
