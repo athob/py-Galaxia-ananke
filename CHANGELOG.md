@@ -323,6 +323,9 @@ far as the commits of this package and of the backend say.
   `uv` builds in a temporary environment (give `ANANKE_SYSTEM_PREFIX` the path of the environment to install into), and
   `uv` and `pip` reuse a wheel that they built before without building it again (`uv cache clean galaxia-ananke`, or
   `pip install --no-cache-dir`, makes them build it).
+- The example notebook of the documentation is named after the package, in lower case, as the package is:
+  `jupyter/testing_galaxia_ananke.ipynb` (it was `testing_Galaxia.ipynb`). The link in the title cell of
+  `testing_isochrones.ipynb` pointed to the other notebook: it points to itself.
 
 ### Removed
 
