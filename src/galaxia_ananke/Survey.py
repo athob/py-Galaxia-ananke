@@ -535,6 +535,12 @@ class Survey:
             started by ``fork``, as on macOS or after
             ``multiprocess.set_start_method('forkserver')``: those start
             methods run the script again in each worker.
+
+            Any keyword that is not a survey parameter (those listed above,
+            and the other ones of ``PARFILE_TEMPLATE``) raises a ``TypeError``
+            that lists the survey parameters. The number of neighbours is not
+            one of them: it is the one of the input, ``ngb``, and giving it
+            here as ``nres`` raises a ``TypeError`` that says so.
         """  # TODO Move documentation around to the subroutines where they should go
         self.verbose = verbose
         self._vanilla_survey(**kwargs)

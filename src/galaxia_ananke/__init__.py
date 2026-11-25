@@ -73,6 +73,14 @@ def make_survey_from_particles(*args: Any,
             output = make_survey_from_particles(pname=None, kname=None,
              photo_sys=DEFAULT_PSYS, cmd_magnames=DEFAULT_CMD,
              surveyname='survey', sampling_factor=1, **kwargs)
+
+        The two calls are exclusive: any other combination of arguments
+        raises a ``TypeError``. In the second one the files are used as they
+        are, so that the name of the input is the one of the particles file,
+        the number of neighbours is read in the name of the kernels file
+        (``<name>_d<dim>n<ngb>_den.ebf``, with ``<dim>`` the dimension of the
+        kernels), and ``simname``, ``ngb`` and ``k_factor`` are not used. The
+        two files have to be in the same directory.
         
         Parameters
         ----------
@@ -124,7 +132,8 @@ def make_survey_from_particles(*args: Any,
 
         simname : string
             Optional name Galaxia should use for the input files. Default to
-            'sim'.
+            'sim'. Not used with ``pname`` and ``kname``, whose files keep
+            their name.
         
         surveyname : string
             Optional name Galaxia should use for the output files. Default to
@@ -143,13 +152,15 @@ def make_survey_from_particles(*args: Any,
         
         ngb : int
             Number of neighbouring particles Galaxia should consider. Default to
-            64.
+            64. It is the number of the input: with ``pname`` and ``kname`` it
+            is read in the name of the kernels file, and this is not used.
     
         k_factor : float
             Scaling factor applied to the kernels lengths to adjust all
             the kernels sizes uniformly. Lower values reduces the kernels
             extents, while higher values increases them.
-            Default to 1 (no adjustment).
+            Default to 1 (no adjustment). Not used with ``pname`` and
+            ``kname``: the kernels of the file are used as they are.
         
         caching : bool
             Whether the work that is already done for the same input, in the same directory, is not
@@ -159,7 +170,10 @@ def make_survey_from_particles(*args: Any,
         
         **kwargs
             Additional keyword arguments to customize the survey. Refer to
-            constant PARFILE_TEMPLATE for all the possible keyword arguments.
+            constant PARFILE_TEMPLATE for all the possible keyword arguments:
+            a name that is not one of them raises a ``TypeError`` that lists
+            them. The number of neighbours is not one of them, it is the one
+            of the input (``ngb`` here).
         
         Returns
         ----------

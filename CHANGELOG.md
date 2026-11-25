@@ -204,6 +204,9 @@ far as the commits of this package and of the backend say.
   system, the raw descriptor and header of its isochrones (`isochrone_info_<system>`).
 - The documentation of `Output` says what the catalogue of a survey that has no star is: empty, with a warning, in the file of
   the partition -1, with the types of any other catalogue in its file but float64 through vaex.
+- The documentation of `make_survey_from_particles` and of `Survey.make_survey` says that the two calls are exclusive, that
+  with files the number of neighbours is read in the name of the kernels file (and `simname`, `ngb` and `k_factor` are not
+  used), and that a keyword that is not a survey parameter is refused.
 
 ### Changed
 
