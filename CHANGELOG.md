@@ -326,6 +326,9 @@ far as the commits of this package and of the backend say.
 - The example notebook of the documentation is named after the package, in lower case, as the package is:
   `jupyter/testing_galaxia_ananke.ipynb` (it was `testing_Galaxia.ipynb`). The link in the title cell of
   `testing_isochrones.ipynb` pointed to the other notebook: it points to itself.
+- The home page of the documentation is the README, included. It was a title and a table of contents, and the README was a
+  page of its own, called Introduction: the table of contents (the example notebook and the API reference) is now under the
+  README.
 
 ### Removed
 

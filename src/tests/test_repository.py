@@ -400,6 +400,23 @@ def test_the_parameters_and_the_result_of_every_function_are_documented():
     assert not problems, problems
 
 
+def test_the_documentation_is_built_from_the_readme_and_not_from_a_copy_of_it():
+    # a text is said in one place: the home page includes the README. An include that fails only warns, and the page would
+    # be published empty: this is what notices.
+    docs = ROOT / "docs" / "source"
+    index = (docs / "index.md").read_text(encoding="utf-8")
+    included = re.search(r"^```\{include\} (\S+)", index, flags=re.MULTILINE)
+    assert included, "docs/source/index.md does not include anything"
+    assert (docs / included.group(1)).resolve() == (ROOT / "README.md").resolve(), (
+        f"docs/source/index.md includes {included.group(1)}, and not the README")
+    # there is one master document, and no page that is, or copies parts of, the README
+    for name in ("index.rst", "installation.rst", "intro.rst", "README.md"):
+        assert not (docs / name).exists(), f"docs/source/{name} would say again what the README says"
+    # what the table of contents lists is there
+    for name in re.findall(r"^([\w./-]+\.(?:rst|md|ipynb))$", index, flags=re.MULTILINE):
+        assert (docs / name).is_file(), f"{name} is in the table of contents of the documentation, and is not there"
+
+
 def test_no_heading_of_the_documentation_is_followed_by_a_rule():
     # docutils refuses a section that begins with a transition ("Document or section may not begin with a transition"),
     # and the docs job fails on the warning. The documentation is made of the README and of the notebook.
