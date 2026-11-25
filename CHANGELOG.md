@@ -198,6 +198,7 @@ far as the commits of this package and of the backend say.
   a warning fails the build: `stable` waits for it.
 - Read the Docs builds the documentation with the Python and the locked tools of the CI job that builds it, and a warning
   fails the build there too.
+- The documentation of `Output` says that the magnitudes of the catalogue are absolute.
 
 ### Changed
 

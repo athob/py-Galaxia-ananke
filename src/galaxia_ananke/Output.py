@@ -258,6 +258,7 @@ class Output:
             As an example, the photometry in filters ``gbp``, ``grp`` & ``g``
             of the Gaia DR2 system identified as ``GAIA__DR2`` are respectively
             under keys ``gaia__dr2_gbp``, ``gaia__dr2_grp`` & ``gaia__dr2_g``.
+            These magnitudes are absolute.
 
             With those are also always included the following properties:
             {_output_properties}
