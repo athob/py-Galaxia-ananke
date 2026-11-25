@@ -478,6 +478,8 @@ far as the commits of this package and of the backend say.
   10.06 to 10.12 and metallicities of 0.0005 to 0.0009, it is 44% (0.79 to 1.13 solar masses) and holds half of the bright stars of the isochrone. In the survey of the
   integration test (log age of 9.7 +- 0.4, [Fe/H] of -0.7 +- 0.4), 28% of the stars were of that kind (2695 stars, 1932 now). The backend gives such a mass the values of the
   row that ends the isochrone, a remnant that no magnitude limit lets through. The submodule has to be at the commit of the backend that has the fix.
+  A survey that was made before this fix with any system of the library but `APO__SDSS`, `Generic__Johnson_UBVRIJHK`, `DCMC`, `Generic__Stroemgren` and `GAIA__0` (the
+  ones of CMD 3.6 and later) contains these stars, more of them for an old and metal-poor population: it should be made again.
 - A function of one's own that post-processes a survey no longer makes pandas warn that it doesn't
   allow columns to be created via a new attribute name: the frame that records which columns the
   function reads now sets its record apart from the attribute setting of pandas.
