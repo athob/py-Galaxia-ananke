@@ -329,6 +329,8 @@ far as the commits of this package and of the backend say.
 - The home page of the documentation is the README, included. It was a title and a table of contents, and the README was a
   page of its own, called Introduction: the table of contents (the example notebook and the API reference) is now under the
   README.
+- The header of the documentation, and the title of its pages, say the name and the version of the project, without the word
+  "documentation" that Sphinx adds to them, as in py-EnBiD-ananke: the header is shorter.
 
 ### Removed
 
