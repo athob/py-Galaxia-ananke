@@ -202,6 +202,8 @@ far as the commits of this package and of the backend say.
 - The documentation of `Output` lists the attributes of its HDF5 files (`Header`, `Cat_partition_id`, `All_partition_ids`, the
   prefixed metadata of the survey and of the input) and says that `Galaxia_ebf_output_logs` holds, for each photometric
   system, the raw descriptor and header of its isochrones (`isochrone_info_<system>`).
+- The documentation of `Output` says what the catalogue of a survey that has no star is: empty, with a warning, in the file of
+  the partition -1, with the types of any other catalogue in its file but float64 through vaex.
 
 ### Changed
 

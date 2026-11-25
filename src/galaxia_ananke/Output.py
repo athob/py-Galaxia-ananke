@@ -296,6 +296,17 @@ class Output:
             the system: the raw descriptor of its isochrones, with their
             magnitude system, and the raw header of their files, which record
             the choices made when the isochrones were produced.
+
+            A survey in which no star is made has an empty catalogue, and warns
+            of it (a ``UserWarning`` that asks to check the limits of the
+            survey, its input and its partitioning rule). The catalogue then
+            has no row and the same columns as any other, in a single file,
+            the one of the partition -1. The types of those columns are the
+            ones that any other catalogue has in its files, but vaex gives a
+            column that has no row the type that numpy gives to an empty
+            array, float64, whatever its type is: ``to_numpy()`` of an empty
+            catalogue says nothing of the types of its columns, and they are
+            to be read in the file.
         """
         self.__survey: Survey = survey
         self.__vaex: Any = None
