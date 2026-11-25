@@ -199,6 +199,9 @@ far as the commits of this package and of the backend say.
 - Read the Docs builds the documentation with the Python and the locked tools of the CI job that builds it, and a warning
   fails the build there too.
 - The documentation of `Output` says that the magnitudes of the catalogue are absolute.
+- The documentation of `Output` lists the attributes of its HDF5 files (`Header`, `Cat_partition_id`, `All_partition_ids`, the
+  prefixed metadata of the survey and of the input) and says that `Galaxia_ebf_output_logs` holds, for each photometric
+  system, the raw descriptor and header of its isochrones (`isochrone_info_<system>`).
 
 ### Changed
 

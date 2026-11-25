@@ -279,6 +279,23 @@ class Output:
             ``partition_id`` lists the partitions of the catalogue.
             Root-level HDF5 attributes additionally log pipeline runtime
             metadata (e.g., software versions and run parameters).
+
+            These attributes record where a file comes from: ``Header`` names
+            the version of this package that made it, ``Cat_partition_id`` is
+            the partition that the file holds, ``All_partition_ids`` says where
+            the numbers of all of them are, and the parameters and the metadata
+            of the survey are under the prefixes ``SurveyParam_``, ``Input_``
+            (the name and the hash of the input) and ``Survey_`` (its name, its
+            hash and its sampling factor). ``Galaxia_ebf_output_logs`` is JSON
+            text that holds the logs that the backend wrote in its ``.ebf``
+            files, one for each file, in a compact form: the items that are the
+            same in all of them are under ``common_values``, and the others are
+            named in ``varying_keys`` and have their value for each file in
+            ``variations``. Among those items, each photometric system of the
+            survey has one named ``isochrone_info_`` followed by the name of
+            the system: the raw descriptor of its isochrones, with their
+            magnitude system, and the raw header of their files, which record
+            the choices made when the isochrones were produced.
         """
         self.__survey: Survey = survey
         self.__vaex: Any = None
