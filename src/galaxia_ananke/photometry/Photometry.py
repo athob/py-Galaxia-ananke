@@ -180,8 +180,8 @@ class Photometry(nested_dict, metaclass=Singleton):
         """
         Add a custom photometric system, made from the data of its isochrone.
 
-        The isochrone is written in the folder of the custom systems of the installation, and its photometric system is
-        added to the registry in the custom category.
+        The isochrone is written in the folder of the custom systems of the installation, and its photometric system is added
+        to the registry in the custom category.
 
         Parameters
         ----------
@@ -195,9 +195,23 @@ class Photometry(nested_dict, metaclass=Singleton):
         Raises
         ------
         ValueError
-            If the name has a slash.
+            If the name has a slash, or if the data is refused (see the notes): nothing is written then.
         FileExistsError
             If a system has this name and ``overwrite`` is not given.
+
+        Notes
+        -----
+        The data is a dictionary with one table for each of the 34 metallicities (mass fractions Z) of the library, from
+        0.0001 to 0.03: the tables of an installed system are the model.
+
+        Each table has the columns ``Age`` (the decimal logarithm of the age in years), ``M_ini`` and ``M_act`` (the initial
+        and the current mass, in solar masses), ``Lum``, ``T_eff`` and ``Grav`` (the decimal logarithms of the luminosity in
+        solar luminosities, of the temperature in kelvin and of the surface gravity in CGS units), and one column for each
+        magnitude, whose name is the one that the magnitude has in the system: the one that ``cmd_magnames`` and the keys of
+        the catalogue use.
+
+        Every metallicity has the same ages as the others: the backend takes those of the first one for all. The rows of a
+        table that share an age and a mass keep the order that they are given in.
         """
         if '/' in name:
             raise ValueError()

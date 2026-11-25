@@ -207,6 +207,9 @@ far as the commits of this package and of the backend say.
 - The documentation of `make_survey_from_particles` and of `Survey.make_survey` says that the two calls are exclusive, that
   with files the number of neighbours is read in the name of the kernels file (and `simname`, `ngb` and `k_factor` are not
   used), and that a keyword that is not a survey parameter is refused.
+- The documentation of `Photometry.add_isochrone` says what the data of a custom isochrone has to be: a table for each of the
+  34 metallicities of the library, with the columns `Age` (decimal logarithm), `M_ini`, `M_act`, `Lum`, `T_eff`, `Grav` and
+  the magnitudes, the same ages for every metallicity, and the order of the rows that share an age and a mass kept.
 
 ### Changed
 
